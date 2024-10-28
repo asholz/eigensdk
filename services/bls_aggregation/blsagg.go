@@ -342,6 +342,8 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	taskExpiredTimer := time.NewTimer(timeToExpiry)
 
 	aggregatedOperatorsDict := map[types.TaskResponseDigest]aggregatedOperators{}
+	windowTimer := time.NewTimer(timeToExpiry + 1)
+	openWindow := false
 	for {
 		select {
 		case signedTaskResponseDigest := <-signedTaskRespsC:
@@ -425,6 +427,12 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 				totalStakePerQuorum,
 				quorumThresholdPercentagesMap,
 			) {
+				if !openWindow {
+					openWindow = true
+					windowTimer = time.NewTimer(2 * time.Second)
+					a.logger.Info("Window timer started")
+					continue
+				}
 				a.logger.Debug("Task goroutine stake threshold reached",
 					"taskIndex", taskIndex,
 					"taskResponseDigest", taskResponseDigest)
@@ -443,10 +451,18 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 
 			}
 		case <-taskExpiredTimer.C:
+			if openWindow {
+				// send the aggregated response
+			}
+
 			a.aggregatedResponsesC <- BlsAggregationServiceResponse{
 				Err:       TaskExpiredErrorFn(taskIndex),
 				TaskIndex: taskIndex,
 			}
+			return
+		case <-windowTimer.C:
+			a.logger.Info("Window timer expired")
+			// a.sendAggregatedResponse()
 			return
 		}
 	}
