@@ -197,6 +197,24 @@ func (a *BlsAggregatorService) InitializeNewTask(
 	quorumThresholdPercentages types.QuorumThresholdPercentages,
 	timeToExpiry time.Duration,
 ) error {
+	return a.InitializeNewTaskWithWindow(
+		taskIndex,
+		taskCreatedBlock,
+		quorumNumbers,
+		quorumThresholdPercentages,
+		timeToExpiry,
+		0,
+	)
+}
+
+func (a *BlsAggregatorService) InitializeNewTaskWithWindow(
+	taskIndex types.TaskIndex,
+	taskCreatedBlock uint32,
+	quorumNumbers types.QuorumNums,
+	quorumThresholdPercentages types.QuorumThresholdPercentages,
+	timeToExpiry time.Duration,
+	windowTime time.Duration,
+) error {
 	a.logger.Debug(
 		"AggregatorService initializing new task",
 		"taskIndex",
@@ -225,6 +243,7 @@ func (a *BlsAggregatorService) InitializeNewTask(
 		quorumNumbers,
 		quorumThresholdPercentages,
 		timeToExpiry,
+		windowTime,
 		signedTaskRespsC,
 	)
 	return nil
@@ -265,12 +284,14 @@ func (a *BlsAggregatorService) ProcessNewSignature(
 	}
 }
 
+// TODO: document this
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	taskIndex types.TaskIndex,
 	taskCreatedBlock uint32,
 	quorumNumbers types.QuorumNums,
 	quorumThresholdPercentages []types.QuorumThresholdPercentage,
 	timeToExpiry time.Duration,
+	windowTime time.Duration,
 	signedTaskRespsC <-chan types.SignedTaskResponseDigest,
 ) {
 	a.logger.Debug("AggregatorService goroutine processing new task",
@@ -438,25 +459,13 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			) {
 				if !openWindow {
 					openWindow = true
-					windowTimer = time.NewTimer(2 * time.Second)
-					a.logger.Info("Window timer started")
+					windowTimer = time.NewTimer(windowTime * time.Second)
+					a.logger.Debug("Window timer started")
 					continue
 				}
 				a.logger.Debug("Task goroutine stake threshold reached",
 					"taskIndex", taskIndex,
 					"taskResponseDigest", taskResponseDigest)
-
-				a.sendAggregatedResponse(
-					operatorsAvsStateDict,
-					taskIndex,
-					taskCreatedBlock,
-					signedTaskResponseDigest,
-					digestAggregatedOperators,
-					quorumNumbers,
-					taskResponseDigest,
-					quorumApksG1,
-				)
-				taskExpiredTimer.Stop()
 				return
 			}
 		case <-taskExpiredTimer.C:
@@ -479,7 +488,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			}
 			return
 		case <-windowTimer.C:
-			a.logger.Info("Window timer expired")
+			a.logger.Debug("Window timer expired")
 			a.sendAggregatedResponse(
 				operatorsAvsStateDict,
 				taskIndex,
