@@ -82,8 +82,9 @@ type aggregatedOperators struct {
 // Currently its only implementation is the BlsAggregatorService, so see the comment there for more details
 type BlsAggregationService interface {
 	// InitializeNewTask creates a new task goroutine meant to process new signed task responses for that task
-	// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to it.
-	// The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered complete, which
+	// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to
+	// it. The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered
+	// complete, which
 	// happens when a particular TaskResponseDigest (received via the a.taskChans[taskIndex]) has been signed by signers
 	// whose stake in each of the listed quorums adds up to at least quorumThresholdPercentages[i] of the total stake in
 	// that quorum
@@ -96,12 +97,14 @@ type BlsAggregationService interface {
 	) error
 
 	// InitializeNewTaskWithWindow creates a new task goroutine meant to process new signed task responses for that task
-	// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to it.
-	// The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered complete, which
+	// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to
+	// it. The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered
+	// complete, which
 	// happens when a particular TaskResponseDigest (received via the a.taskChans[taskIndex]) has been signed by signers
 	// whose stake in each of the listed quorums adds up to at least quorumThresholdPercentages[i] of the total stake in
 	// that quorum.
-	// Once the quorum is reached, the task is still open for a window of `windowDuration` time to receive more signatures,
+	// Once the quorum is reached, the task is still open for a window of `windowDuration` time to receive more
+	// signatures,
 	// before sending the aggregation response through the aggregatedResponsesC channel.
 	InitializeNewTaskWithWindow(
 		taskIndex types.TaskIndex,
