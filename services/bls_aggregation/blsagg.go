@@ -106,6 +106,8 @@ type BlsAggregationService interface {
 	// Once the quorum is reached, the task is still open for a window of `windowDuration` time to receive more
 	// signatures,
 	// before sending the aggregation response through the aggregatedResponsesC channel.
+	// If the task expiration is reached before the window finishes, the task response will still be sent to the
+	// aggregatedResponsesC channel.
 	InitializeNewTaskWithWindow(
 		taskIndex types.TaskIndex,
 		taskCreatedBlock uint32,
