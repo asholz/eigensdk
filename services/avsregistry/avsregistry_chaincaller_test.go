@@ -2,6 +2,7 @@ package avsregistry
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 
 	"math/big"
@@ -33,11 +34,24 @@ func (f *fakeOperatorInfoService) GetOperatorInfo(
 	return f.operatorInfo, true
 }
 
-func TestAvsRegistryServiceChainCaller_getOperatorPubkeys(t *testing.T) {
+func TestAvsRegistryServiceChainCaller_GetOperatorPubkeys(t *testing.T) {
 	logger := testutils.GetTestLogger()
-	testOperator1 := fakes.TestOperator{
+	var defaultInput = struct {
+		OperatorAddr types.OperatorAddr `json:"operator_address"`
+		OperatorId   string             `json:"operator_id"`
+	}{
 		OperatorAddr: common.HexToAddress("0x1"),
-		OperatorId:   types.OperatorId{1},
+		OperatorId:   "0000000000000000000000000000000000000000000000000000000000000001",
+	}
+	testData := testutils.NewTestData(defaultInput)
+
+	opid, err := hex.DecodeString(testData.Input.OperatorId)
+	if err != nil {
+		t.Fatalf("failed to decode operator id: %v", err)
+	}
+	testOperator1 := fakes.TestOperator{
+		OperatorAddr: testData.Input.OperatorAddr,
+		OperatorId:   types.OperatorId(opid),
 		OperatorInfo: types.OperatorInfo{
 			Pubkeys: types.OperatorPubkeys{
 				G1Pubkey: bls.NewG1Point(big.NewInt(1), big.NewInt(1)),
@@ -94,6 +108,17 @@ func TestAvsRegistryServiceChainCaller_getOperatorPubkeys(t *testing.T) {
 
 func TestAvsRegistryServiceChainCaller_GetOperatorsAvsState(t *testing.T) {
 	logger := testutils.GetTestLogger()
+
+	// read input from JSON if available, otherwise use default values
+	var defaultInput = struct {
+		QuorumNumbers types.QuorumNums `json:"quorum_numbers"`
+		BlockNum      uint32           `json:"block_num"`
+	}{
+		QuorumNumbers: types.QuorumNums{1},
+		BlockNum:      1,
+	}
+	testData := testutils.NewTestData(defaultInput)
+
 	testOperator1 := fakes.TestOperator{
 		OperatorAddr: common.HexToAddress("0x1"),
 		OperatorId:   types.OperatorId{1},
@@ -119,16 +144,16 @@ func TestAvsRegistryServiceChainCaller_GetOperatorsAvsState(t *testing.T) {
 	}{
 		{
 			name:               "should return operatorsAvsState",
-			queryQuorumNumbers: types.QuorumNums{1},
+			queryQuorumNumbers: testData.Input.QuorumNumbers,
 			operator:           &testOperator1,
-			queryBlockNum:      1,
+			queryBlockNum:      testData.Input.BlockNum,
 			wantErr:            nil,
 			wantOperatorsAvsStateDict: map[types.OperatorId]types.OperatorAvsState{
 				testOperator1.OperatorId: {
 					OperatorId:     testOperator1.OperatorId,
 					OperatorInfo:   testOperator1.OperatorInfo,
 					StakePerQuorum: map[types.QuorumNum]types.StakeAmount{1: big.NewInt(123)},
-					BlockNumber:    1,
+					BlockNumber:    testData.Input.BlockNum,
 				},
 			},
 		},
