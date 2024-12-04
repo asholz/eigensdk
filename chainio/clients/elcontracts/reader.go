@@ -15,6 +15,7 @@ import (
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
+	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -25,16 +26,18 @@ type Config struct {
 	DelegationManagerAddress  gethcommon.Address
 	AvsDirectoryAddress       gethcommon.Address
 	RewardsCoordinatorAddress gethcommon.Address
+	PermissionManagerAddress  gethcommon.Address
 }
 
 type ChainReader struct {
-	logger             logging.Logger
-	delegationManager  *delegationmanager.ContractDelegationManager
-	strategyManager    *strategymanager.ContractStrategyManager
-	avsDirectory       *avsdirectory.ContractAVSDirectory
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator
-	allocationManager  *allocationmanager.ContractAllocationManager
-	ethClient          eth.HttpBackend
+	logger               logging.Logger
+	delegationManager    *delegationmanager.ContractDelegationManager
+	strategyManager      *strategymanager.ContractStrategyManager
+	avsDirectory         *avsdirectory.ContractAVSDirectory
+	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	allocationManager    *allocationmanager.ContractAllocationManager
+	permissionController *permissioncontroller.ContractPermissionController
+	ethClient            eth.HttpBackend
 }
 
 var errLegacyAVSsNotSupported = errors.New("method not supported for legacy AVSs")
@@ -137,7 +140,6 @@ func (r *ChainReader) IsOperatorRegistered(
 func (r *ChainReader) GetStakerShares(
 	ctx context.Context,
 	stakerAddress gethcommon.Address,
-	blockNumber *big.Int,
 ) ([]gethcommon.Address, []*big.Int, error) {
 	return r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
@@ -426,7 +428,6 @@ func (r *ChainReader) GetOperatorsShares(
 	if r.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
-
 	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddresses)
 }
 
@@ -641,4 +642,18 @@ func (r *ChainReader) GetRegisteredSets(
 		return nil, errors.New("AllocationManager contract not provided")
 	}
 	return r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+}
+
+func (r *ChainReader) UserCanCall(
+	ctx context.Context,
+	userAddress gethcommon.Address,
+	callerAddress gethcommon.Address,
+	target gethcommon.Address,
+	selector [4]byte,
+) (bool, error) {
+	canCall, err := r.permissionController.CanCall(&bind.CallOpts{Context: ctx}, userAddress, callerAddress, target, selector)
+	if err != nil {
+		return false, errors.New("call to permission controller failed: " + err.Error())
+	}
+	return canCall, nil
 }
