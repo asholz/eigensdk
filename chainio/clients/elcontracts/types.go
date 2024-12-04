@@ -35,7 +35,8 @@ type DeregistrationRequest struct {
 }
 
 type RegistrationRequest struct {
-	AVSAddress     common.Address
-	OperatorSetIds []uint32
-	WaitForReceipt bool
+	OperatorAddress common.Address
+	AVSAddress      common.Address
+	OperatorSetIds  []uint32
+	WaitForReceipt  bool
 }

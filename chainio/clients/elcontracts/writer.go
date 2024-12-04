@@ -164,15 +164,6 @@ func (w *ChainWriter) RegisterAsOperator(
 	}
 
 	w.logger.Infof("registering operator %s to EigenLayer", operator.Address)
-	opDetails := delegationmanager.IDelegationManagerTypesOperatorDetails{
-		// Earning receiver has been deprecated, so we just use the operator address as a dummy value
-		// Any reward related setup is via RewardsCoordinator contract
-		DeprecatedEarningsReceiver: gethcommon.HexToAddress(operator.Address),
-		// DeprecatedStakerOptOutWindowBlocks has been deprecated, so we just use the operator's
-		// StakerOptOutWindowBlocks
-		DeprecatedStakerOptOutWindowBlocks: operator.StakerOptOutWindowBlocks,
-		DelegationApprover:                 gethcommon.HexToAddress(operator.DelegationApproverAddress),
-	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
@@ -180,7 +171,7 @@ func (w *ChainWriter) RegisterAsOperator(
 	}
 	tx, err := w.delegationManager.RegisterAsOperator(
 		noSendTxOpts,
-		opDetails,
+		gethcommon.HexToAddress(operator.DelegationApproverAddress),
 		operator.AllocationDelay,
 		operator.MetadataUrl,
 	)
@@ -206,22 +197,17 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	}
 
 	w.logger.Infof("updating operator details of operator %s to EigenLayer", operator.Address)
-	opDetails := delegationmanager.IDelegationManagerTypesOperatorDetails{
-		// Earning receiver has been deprecated, so we just use the operator address as a dummy value
-		// Any reward related setup is via RewardsCoordinator contract
-		DeprecatedEarningsReceiver: gethcommon.HexToAddress(operator.Address),
-		DelegationApprover:         gethcommon.HexToAddress(operator.DelegationApproverAddress),
-		// DeprecatedStakerOptOutWindowBlocks has been deprecated, so we just use the operator's
-		// StakerOptOutWindowBlocks
-		DeprecatedStakerOptOutWindowBlocks: operator.StakerOptOutWindowBlocks,
-	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := w.delegationManager.ModifyOperatorDetails(noSendTxOpts, opDetails)
+	tx, err := w.delegationManager.ModifyOperatorDetails(
+		noSendTxOpts,
+		gethcommon.HexToAddress(operator.Address),
+		gethcommon.HexToAddress(operator.DelegationApproverAddress),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +226,11 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	return receipt, nil
 }
 
-func (w *ChainWriter) UpdateMetadataURI(ctx context.Context, uri string, waitForReceipt bool,
+func (w *ChainWriter) UpdateMetadataURI(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	uri string,
+	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
@@ -251,7 +241,7 @@ func (w *ChainWriter) UpdateMetadataURI(ctx context.Context, uri string, waitFor
 		return nil, err
 	}
 
-	tx, err := w.delegationManager.UpdateOperatorMetadataURI(noSendTxOpts, uri)
+	tx, err := w.delegationManager.UpdateOperatorMetadataURI(noSendTxOpts, operatorAddress, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +358,7 @@ func (w *ChainWriter) ProcessClaim(
 
 func (w *ChainWriter) ProcessClaims(
 	ctx context.Context,
-	claims []rewardscoordinator.IRewardsCoordinatorRewardsMerkleClaim,
+	claims []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 	earnerAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
@@ -436,6 +426,7 @@ func (w *ChainWriter) ForceDeregisterFromOperatorSets(
 
 func (w *ChainWriter) ModifyAllocations(
 	ctx context.Context,
+	operatorAddress gethcommon.Address,
 	allocations []allocationmanager.IAllocationManagerTypesAllocateParams,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
@@ -448,7 +439,7 @@ func (w *ChainWriter) ModifyAllocations(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.allocationManager.ModifyAllocations(noSendTxOpts, allocations)
+	tx, err := w.allocationManager.ModifyAllocations(noSendTxOpts, operatorAddress, allocations)
 	if err != nil {
 		return nil, utils.WrapError("failed to create ModifyAllocations tx", err)
 	}
@@ -463,6 +454,7 @@ func (w *ChainWriter) ModifyAllocations(
 
 func (w *ChainWriter) SetAllocationDelay(
 	ctx context.Context,
+	operatorAddress gethcommon.Address,
 	delay uint32,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
@@ -475,7 +467,7 @@ func (w *ChainWriter) SetAllocationDelay(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.allocationManager.SetAllocationDelay0(noSendTxOpts, delay)
+	tx, err := w.allocationManager.SetAllocationDelay(noSendTxOpts, operatorAddress, delay)
 	if err != nil {
 		return nil, utils.WrapError("failed to create InitializeAllocationDelay tx", err)
 	}
@@ -535,6 +527,7 @@ func (w *ChainWriter) RegisterForOperatorSets(
 
 	tx, err := w.allocationManager.RegisterForOperatorSets(
 		noSendTxOpts,
+		request.OperatorAddress,
 		allocationmanager.IAllocationManagerTypesRegisterParams{
 			Avs:            request.AVSAddress,
 			OperatorSetIds: request.OperatorSetIds,
