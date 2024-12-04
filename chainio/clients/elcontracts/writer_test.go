@@ -129,7 +129,10 @@ func TestChainWriter(t *testing.T) {
 	})
 
 	t.Run("update metadata URI", func(t *testing.T) {
-		receipt, err := clients.ElChainWriter.UpdateMetadataURI(context.Background(), "https://0.0.0.0", true)
+		walletModified, err := crypto.HexToECDSA("2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+		assert.NoError(t, err)
+		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
+		receipt, err := clients.ElChainWriter.UpdateMetadataURI(context.Background(), walletModifiedAddress, "https://0.0.0.0", true)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
 	})
