@@ -159,7 +159,7 @@ func (r *ChainReader) GetOperatorDetails(
 		return types.Operator{}, errors.New("DelegationManager contract not provided")
 	}
 
-	operatorDetails, err := r.delegationManager.OperatorDetails(
+	delegationManagerAddress, err := r.delegationManager.DelegationApprover(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
 	)
@@ -186,8 +186,7 @@ func (r *ChainReader) GetOperatorDetails(
 
 	return types.Operator{
 		Address:                   operator.Address,
-		StakerOptOutWindowBlocks:  operatorDetails.DeprecatedStakerOptOutWindowBlocks,
-		DelegationApproverAddress: operatorDetails.DelegationApprover.Hex(),
+		DelegationApproverAddress: delegationManagerAddress.Hex(),
 		AllocationDelay:           allocationDelay,
 	}, nil
 }
