@@ -80,7 +80,10 @@ func NewBindingsFromConfig(
 		}
 	}
 
-	permissionController, err = permissioncontroller.NewContractPermissionController(cfg.PermissionsControllerAddress, client)
+	permissionController, err = permissioncontroller.NewContractPermissionController(
+		cfg.PermissionsControllerAddress,
+		client,
+	)
 	if err != nil {
 		return nil, utils.WrapError("Failed to fetch RewardsCoordinator contract", err)
 	}

@@ -179,7 +179,7 @@ func (r *ChainReader) GetOperatorDetails(
 		},
 		gethcommon.HexToAddress(operator.Address),
 	)
-	if err == nil {
+	if err != nil {
 		return types.Operator{}, err
 	}
 
@@ -655,7 +655,13 @@ func (r *ChainReader) UserCanCall(
 	target gethcommon.Address,
 	selector [4]byte,
 ) (bool, error) {
-	canCall, err := r.permissionController.CanCall(&bind.CallOpts{Context: ctx}, userAddress, callerAddress, target, selector)
+	canCall, err := r.permissionController.CanCall(
+		&bind.CallOpts{Context: ctx},
+		userAddress,
+		callerAddress,
+		target,
+		selector,
+	)
 	if err != nil {
 		return false, errors.New("call to permission controller failed: " + err.Error())
 	}

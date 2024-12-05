@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -17,6 +17,7 @@ import {BLSApkRegistry} from "eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IndexRegistry} from "eigenlayer-middleware/src/IndexRegistry.sol";
 import {StakeRegistry} from "eigenlayer-middleware/src/StakeRegistry.sol";
 import {OperatorStateRetriever} from "eigenlayer-middleware/src/OperatorStateRetriever.sol";
+import {StakeType} from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
 
 import {MockAvsContracts} from "./parsers/MockAvsContractsParser.sol";
 import {EigenlayerContracts, EigenlayerContractsParser} from "./parsers/EigenlayerContractsParser.sol";
@@ -145,7 +146,9 @@ contract DeployMockAvsRegistries is
         {
             stakeRegistryImplementation = new StakeRegistry(
                 registryCoordinator,
-                eigenlayerContracts.delegationManager
+                eigenlayerContracts.delegationManager,
+                eigenlayerContracts.avsDirectory,
+                IServiceManager(address(mockAvsServiceManager))
             );
 
             mockAvsProxyAdmin.upgrade(
@@ -158,7 +161,9 @@ contract DeployMockAvsRegistries is
             blsregcoord.IServiceManager(address(mockAvsServiceManager)),
             blsregcoord.IStakeRegistry(address(stakeRegistry)),
             blsregcoord.IBLSApkRegistry(address(blsApkRegistry)),
-            blsregcoord.IIndexRegistry(address(indexRegistry))
+            blsregcoord.IIndexRegistry(address(indexRegistry)),
+            blsregcoord.IAVSDirectory(eigenlayerContracts.avsDirectory),
+            PauserRegistry(address(mockAvsPauserReg))
         );
 
         {
@@ -200,6 +205,8 @@ contract DeployMockAvsRegistries is
             //         });
             //     }
             // }
+            uint32[] memory lookAhead = new uint32[](numQuorums);
+            StakeType[] memory stakeTypes = new StakeType[](numQuorums);
             mockAvsProxyAdmin.upgradeAndCall(
                 TransparentUpgradeableProxy(
                     payable(address(registryCoordinator))
@@ -210,11 +217,12 @@ contract DeployMockAvsRegistries is
                     addressConfig.communityMultisig,
                     addressConfig.churner,
                     addressConfig.ejector,
-                    addressConfig.pauser,
                     0, // 0 initialPausedStatus means everything unpaused
                     quorumsOperatorSetParams,
-                    quorumsMinimumStake,
-                    quorumsStrategyParams
+                    new uint96[](0),
+                    new IStakeRegistry.StrategyParams[][](0),
+                    new StakeType[](0),
+                    new uint32[](0)
                 )
             );
         }
