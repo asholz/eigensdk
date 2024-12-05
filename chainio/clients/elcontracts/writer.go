@@ -97,6 +97,7 @@ func BuildELChainWriter(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		ethClient,
 	)
@@ -136,6 +137,7 @@ func NewWriterFromConfig(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		ethClient,
 	)

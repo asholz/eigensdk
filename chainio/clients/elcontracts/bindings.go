@@ -3,6 +3,7 @@
 package elcontracts
 
 import (
+	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
@@ -31,6 +32,7 @@ type ContractBindings struct {
 	AvsDirectory              *avsdirectory.ContractAVSDirectory
 	RewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
 	AllocationManager         *allocationmanager.ContractAllocationManager
+	PermissionController      *permissioncontroller.ContractPermissionController
 }
 
 func NewBindingsFromConfig(
@@ -48,6 +50,7 @@ func NewBindingsFromConfig(
 		allocationManagerAddr     gethcommon.Address
 		avsDirectory              *avsdirectory.ContractAVSDirectory
 		rewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
+		permissionController      *permissioncontroller.ContractPermissionController
 	)
 
 	if isZeroAddress(cfg.DelegationManagerAddress) {
@@ -75,6 +78,11 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
 		}
+	}
+
+	permissionController, err = permissioncontroller.NewContractPermissionController(cfg.PermissionsControllerAddress, client)
+	if err != nil {
+		return nil, utils.WrapError("Failed to fetch RewardsCoordinator contract", err)
 	}
 
 	if isZeroAddress(cfg.AvsDirectoryAddress) {
@@ -106,6 +114,7 @@ func NewBindingsFromConfig(
 		RewardsCoordinator:        rewardsCoordinator,
 		AllocationManager:         contractAllocationManager,
 		AllocationManagerAddr:     allocationManagerAddr,
+		PermissionController:      permissionController,
 	}, nil
 }
 func isZeroAddress(address gethcommon.Address) bool {

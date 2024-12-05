@@ -23,10 +23,10 @@ import (
 )
 
 type Config struct {
-	DelegationManagerAddress  gethcommon.Address
-	AvsDirectoryAddress       gethcommon.Address
-	RewardsCoordinatorAddress gethcommon.Address
-	PermissionManagerAddress  gethcommon.Address
+	DelegationManagerAddress     gethcommon.Address
+	AvsDirectoryAddress          gethcommon.Address
+	RewardsCoordinatorAddress    gethcommon.Address
+	PermissionsControllerAddress gethcommon.Address
 }
 
 type ChainReader struct {
@@ -48,19 +48,21 @@ func NewChainReader(
 	avsDirectory *avsdirectory.ContractAVSDirectory,
 	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
 	allocationManager *allocationmanager.ContractAllocationManager,
+	permissionController *permissioncontroller.ContractPermissionController,
 	logger logging.Logger,
 	ethClient eth.HttpBackend,
 ) *ChainReader {
 	logger = logger.With(logging.ComponentKey, "elcontracts/reader")
 
 	return &ChainReader{
-		delegationManager:  delegationManager,
-		strategyManager:    strategyManager,
-		avsDirectory:       avsDirectory,
-		rewardsCoordinator: rewardsCoordinator,
-		allocationManager:  allocationManager,
-		logger:             logger,
-		ethClient:          ethClient,
+		delegationManager:    delegationManager,
+		strategyManager:      strategyManager,
+		avsDirectory:         avsDirectory,
+		rewardsCoordinator:   rewardsCoordinator,
+		allocationManager:    allocationManager,
+		permissionController: permissionController,
+		logger:               logger,
+		ethClient:            ethClient,
 	}
 }
 
@@ -87,6 +89,7 @@ func BuildELChainReader(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		ethClient,
 	), nil
@@ -111,6 +114,7 @@ func NewReaderFromConfig(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		ethClient,
 	), nil

@@ -30,6 +30,7 @@ func BuildReadClients(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		client,
 	)
@@ -59,6 +60,7 @@ func BuildClients(
 		elContractBindings.AvsDirectory,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AllocationManager,
+		elContractBindings.PermissionController,
 		logger,
 		client,
 	)
