@@ -41,9 +41,6 @@ CHAIN_ID=$(cast chain-id --rpc-url $ETH_HTTP_URL)
 # DEPLOY CONTRACT REGISTRY
 cd $root_dir/contracts
 forge create src/ContractsRegistry.sol:ContractsRegistry --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast
-#cast send 0x5FbDB2315678afecb367f032d93F642f64180aa3 "registerContract(string,address)" "test" "0x5FbDB2315678afecb367f032d93F642f64180aa3" --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY
-#sleep 10
-#cast call 0x5FbDB2315678afecb367f032d93F642f64180aa3 "contracts(string)" "test" --rpc-url $ETH_HTTP_URL
 
 # DEPLOY EIGENLAYER
 EIGEN_CONTRACTS_DIR=$root_dir/contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts
