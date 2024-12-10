@@ -686,7 +686,11 @@ func (r *ChainReader) ListUserPermissions(
 	appointed gethcommon.Address,
 	userAddress gethcommon.Address,
 ) ([]gethcommon.Address, [][4]byte, error) {
-	targets, selectors, err := r.permissionController.GetAppointeePermissions(&bind.CallOpts{Context: ctx}, appointed, userAddress)
+	targets, selectors, err := r.permissionController.GetAppointeePermissions(
+		&bind.CallOpts{Context: ctx},
+		appointed,
+		userAddress,
+	)
 	if err != nil {
 		return nil, nil, errors.New("call to permission controller failed: " + err.Error())
 	}
