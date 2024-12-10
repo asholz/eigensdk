@@ -661,3 +661,28 @@ func (r *ChainReader) UserCanCall(
 	}
 	return canCall, nil
 }
+
+func (r *ChainReader) ListUsers(
+	ctx context.Context,
+	userAddress gethcommon.Address,
+	target gethcommon.Address,
+	selector [4]byte,
+) ([]gethcommon.Address, error) {
+	appointees, err := r.permissionController.GetAppointees(&bind.CallOpts{Context: ctx}, userAddress, target, selector)
+	if err != nil {
+		return nil, errors.New("call to permission controller failed: " + err.Error())
+	}
+	return appointees, nil
+}
+
+func (r *ChainReader) ListUserPermissions(
+	ctx context.Context,
+	appointed gethcommon.Address,
+	userAddress gethcommon.Address,
+) ([]gethcommon.Address, [][4]byte, error) {
+	targets, selectors, err := r.permissionController.GetAppointeePermissions(&bind.CallOpts{Context: ctx}, appointed, userAddress)
+	if err != nil {
+		return nil, nil, errors.New("call to permission controller failed: " + err.Error())
+	}
+	return targets, selectors, nil
+}
