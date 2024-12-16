@@ -29,12 +29,6 @@ var (
 	_ = abi.ConvertType
 )
 
-// IAVSDirectoryOperatorSet is an auto generated low-level Go binding around an user-defined struct.
-type IAVSDirectoryOperatorSet struct {
-	Avs           common.Address
-	OperatorSetId uint32
-}
-
 // IRewardsCoordinatorDistributionRoot is an auto generated low-level Go binding around an user-defined struct.
 type IRewardsCoordinatorDistributionRoot struct {
 	Root                           [32]byte
@@ -139,8 +133,6 @@ type ContractIRewardsCoordinatorCalls interface {
 
 	OperatorCommissionBips(opts *bind.CallOpts, operator common.Address, avs common.Address) (uint16, error)
 
-	GlobalOperatorCommissionBips(opts *bind.CallOpts) (uint16, error)
-
 	RewardsUpdater(opts *bind.CallOpts) (common.Address, error)
 }
 
@@ -206,6 +198,10 @@ type ContractIRewardsCoordinatorFilters interface {
 	FilterRewardsSubmissionForAllCreated(opts *bind.FilterOpts, submitter []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorRewardsSubmissionForAllCreatedIterator, error)
 	WatchRewardsSubmissionForAllCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsSubmissionForAllCreated, submitter []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error)
 	ParseRewardsSubmissionForAllCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllCreated, error)
+
+	FilterRewardsSubmissionForAllEarnersCreated(opts *bind.FilterOpts, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator, error)
+	WatchRewardsSubmissionForAllEarnersCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error)
+	ParseRewardsSubmissionForAllEarnersCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, error)
 
 	FilterRewardsUpdaterSet(opts *bind.FilterOpts, oldRewardsUpdater []common.Address, newRewardsUpdater []common.Address) (*ContractIRewardsCoordinatorRewardsUpdaterSetIterator, error)
 	WatchRewardsUpdaterSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsUpdaterSet, oldRewardsUpdater []common.Address, newRewardsUpdater []common.Address) (event.Subscription, error)
@@ -932,10 +928,10 @@ func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorCaller) GlobalOpe
 	err := _ContractIRewardsCoordinator.contract.Call(opts, &out, "globalOperatorCommissionBips")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(uint16), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
 
 	return out0, err
 
@@ -984,37 +980,6 @@ func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorSession) Operator
 // Solidity: function operatorCommissionBips(address operator, address avs) view returns(uint16)
 func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorCallerSession) OperatorCommissionBips(operator common.Address, avs common.Address) (uint16, error) {
 	return _ContractIRewardsCoordinator.Contract.OperatorCommissionBips(&_ContractIRewardsCoordinator.CallOpts, operator, avs)
-}
-
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorCaller) GlobalOperatorCommissionBips(opts *bind.CallOpts) (uint16, error) {
-	var out []interface{}
-	err := _ContractIRewardsCoordinator.contract.Call(opts, &out, "globalOperatorCommissionBips")
-
-	if err != nil {
-		return *new(uint16), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
-
-	return out0, err
-
-}
-
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorSession) GlobalOperatorCommissionBips() (uint16, error) {
-	return _ContractIRewardsCoordinator.Contract.GlobalOperatorCommissionBips(&_ContractIRewardsCoordinator.CallOpts)
-}
-
-// GlobalOperatorCommissionBips is a free data retrieval call binding the contract method 0x092db007.
-//
-// Solidity: function globalOperatorCommissionBips() view returns(uint16)
-func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorCallerSession) GlobalOperatorCommissionBips() (uint16, error) {
-	return _ContractIRewardsCoordinator.Contract.GlobalOperatorCommissionBips(&_ContractIRewardsCoordinator.CallOpts)
 }
 
 // RewardsUpdater is a free data retrieval call binding the contract method 0xfbf1e2c1.
@@ -2665,6 +2630,169 @@ func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorFilterer) WatchRe
 func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorFilterer) ParseRewardsSubmissionForAllCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllCreated, error) {
 	event := new(ContractIRewardsCoordinatorRewardsSubmissionForAllCreated)
 	if err := _ContractIRewardsCoordinator.contract.UnpackLog(event, "RewardsSubmissionForAllCreated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator is returned from FilterRewardsSubmissionForAllEarnersCreated and is used to iterate over the raw logs and unpacked data for RewardsSubmissionForAllEarnersCreated events raised by the ContractIRewardsCoordinator contract.
+type ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator struct {
+	Event *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated represents a RewardsSubmissionForAllEarnersCreated event raised by the ContractIRewardsCoordinator contract.
+type ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated struct {
+	TokenHopper           common.Address
+	SubmissionNonce       *big.Int
+	RewardsSubmissionHash [32]byte
+	RewardsSubmission     IRewardsCoordinatorRewardsSubmission
+	Raw                   types.Log // Blockchain specific contextual infos
+}
+
+// FilterRewardsSubmissionForAllEarnersCreated is a free log retrieval operation binding the contract event 0x5251b6fdefcb5d81144e735f69ea4c695fd43b0289ca53dc075033f5fc80068b.
+//
+// Solidity: event RewardsSubmissionForAllEarnersCreated(address indexed tokenHopper, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, ((address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorFilterer) FilterRewardsSubmissionForAllEarnersCreated(opts *bind.FilterOpts, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator, error) {
+
+	var tokenHopperRule []interface{}
+	for _, tokenHopperItem := range tokenHopper {
+		tokenHopperRule = append(tokenHopperRule, tokenHopperItem)
+	}
+	var submissionNonceRule []interface{}
+	for _, submissionNonceItem := range submissionNonce {
+		submissionNonceRule = append(submissionNonceRule, submissionNonceItem)
+	}
+	var rewardsSubmissionHashRule []interface{}
+	for _, rewardsSubmissionHashItem := range rewardsSubmissionHash {
+		rewardsSubmissionHashRule = append(rewardsSubmissionHashRule, rewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _ContractIRewardsCoordinator.contract.FilterLogs(opts, "RewardsSubmissionForAllEarnersCreated", tokenHopperRule, submissionNonceRule, rewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return &ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator{contract: _ContractIRewardsCoordinator.contract, event: "RewardsSubmissionForAllEarnersCreated", logs: logs, sub: sub}, nil
+}
+
+// WatchRewardsSubmissionForAllEarnersCreated is a free log subscription operation binding the contract event 0x5251b6fdefcb5d81144e735f69ea4c695fd43b0289ca53dc075033f5fc80068b.
+//
+// Solidity: event RewardsSubmissionForAllEarnersCreated(address indexed tokenHopper, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, ((address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorFilterer) WatchRewardsSubmissionForAllEarnersCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error) {
+
+	var tokenHopperRule []interface{}
+	for _, tokenHopperItem := range tokenHopper {
+		tokenHopperRule = append(tokenHopperRule, tokenHopperItem)
+	}
+	var submissionNonceRule []interface{}
+	for _, submissionNonceItem := range submissionNonce {
+		submissionNonceRule = append(submissionNonceRule, submissionNonceItem)
+	}
+	var rewardsSubmissionHashRule []interface{}
+	for _, rewardsSubmissionHashItem := range rewardsSubmissionHash {
+		rewardsSubmissionHashRule = append(rewardsSubmissionHashRule, rewardsSubmissionHashItem)
+	}
+
+	logs, sub, err := _ContractIRewardsCoordinator.contract.WatchLogs(opts, "RewardsSubmissionForAllEarnersCreated", tokenHopperRule, submissionNonceRule, rewardsSubmissionHashRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated)
+				if err := _ContractIRewardsCoordinator.contract.UnpackLog(event, "RewardsSubmissionForAllEarnersCreated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRewardsSubmissionForAllEarnersCreated is a log parse operation binding the contract event 0x5251b6fdefcb5d81144e735f69ea4c695fd43b0289ca53dc075033f5fc80068b.
+//
+// Solidity: event RewardsSubmissionForAllEarnersCreated(address indexed tokenHopper, uint256 indexed submissionNonce, bytes32 indexed rewardsSubmissionHash, ((address,uint96)[],address,uint256,uint32,uint32) rewardsSubmission)
+func (_ContractIRewardsCoordinator *ContractIRewardsCoordinatorFilterer) ParseRewardsSubmissionForAllEarnersCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, error) {
+	event := new(ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated)
+	if err := _ContractIRewardsCoordinator.contract.UnpackLog(event, "RewardsSubmissionForAllEarnersCreated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
