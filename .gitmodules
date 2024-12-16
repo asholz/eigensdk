@@ -1,7 +1,7 @@
 [submodule "contracts/lib/eigenlayer-middleware"]
 	path = contracts/lib/eigenlayer-middleware
 	url = git@github.com:Layr-Labs/eigenlayer-middleware.git
-    branch = chore/mainnet-rewards-release-v0.4.3
+    commit = 512ce7326f35e8060b9d46e23f9c159c0000b546
 [submodule "contracts/lib/forge-std"]
     path = contracts/lib/forge-std
     url = git@github.com:foundry-rs/forge-std
