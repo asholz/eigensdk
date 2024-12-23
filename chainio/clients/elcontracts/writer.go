@@ -15,7 +15,6 @@ import (
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IAVSDirectory"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
-	slasher "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ISlasher"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -31,7 +30,6 @@ type Reader interface {
 }
 
 type ChainWriter struct {
-	slasher             *slasher.ContractISlasher
 	delegationManager   *delegationmanager.ContractDelegationManager
 	strategyManager     *strategymanager.ContractStrategyManager
 	rewardsCoordinator  *rewardscoordinator.ContractIRewardsCoordinator
@@ -44,7 +42,6 @@ type ChainWriter struct {
 }
 
 func NewChainWriter(
-	slasher *slasher.ContractISlasher,
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
 	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
@@ -59,7 +56,6 @@ func NewChainWriter(
 	logger = logger.With(logging.ComponentKey, "elcontracts/writer")
 
 	return &ChainWriter{
-		slasher:             slasher,
 		delegationManager:   delegationManager,
 		strategyManager:     strategyManager,
 		strategyManagerAddr: strategyManagerAddr,
@@ -92,7 +88,6 @@ func BuildELChainWriter(
 		return nil, err
 	}
 	elChainReader := NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
@@ -101,7 +96,6 @@ func BuildELChainWriter(
 		ethClient,
 	)
 	return NewChainWriter(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.RewardsCoordinator,
@@ -131,7 +125,6 @@ func NewWriterFromConfig(
 		return nil, err
 	}
 	elChainReader := NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
@@ -140,7 +133,6 @@ func NewWriterFromConfig(
 		ethClient,
 	)
 	return NewChainWriter(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.RewardsCoordinator,

@@ -210,17 +210,12 @@ func getEigenlayerContractAddrs(
 	if err != nil {
 		return nil, err
 	}
-	slasherAddr, err := delegationManagerC.Slasher(&bind.CallOpts{})
-	if err != nil {
-		return nil, err
-	}
 	strategyManagerAddr, err := delegationManagerC.StrategyManager(&bind.CallOpts{})
 	if err != nil {
 		return nil, err
 	}
 
 	addrsDict := map[string]string{
-		"slasher":            slasherAddr.Hex(),
 		"delegation-manager": delegationManagerAddr.Hex(),
 		"strategy-manager":   strategyManagerAddr.Hex(),
 	}

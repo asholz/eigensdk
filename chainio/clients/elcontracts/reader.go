@@ -15,7 +15,6 @@ import (
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IAVSDirectory"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
-	slasher "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ISlasher"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -31,7 +30,6 @@ type Config struct {
 
 type ChainReader struct {
 	logger             logging.Logger
-	slasher            slasher.ContractISlasherCalls
 	delegationManager  *delegationmanager.ContractDelegationManager
 	strategyManager    *strategymanager.ContractStrategyManager
 	avsDirectory       *avsdirectory.ContractIAVSDirectory
@@ -40,7 +38,6 @@ type ChainReader struct {
 }
 
 func NewChainReader(
-	slasher slasher.ContractISlasherCalls,
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
 	avsDirectory *avsdirectory.ContractIAVSDirectory,
@@ -51,7 +48,6 @@ func NewChainReader(
 	logger = logger.With(logging.ComponentKey, "elcontracts/reader")
 
 	return &ChainReader{
-		slasher:            slasher,
 		delegationManager:  delegationManager,
 		strategyManager:    strategyManager,
 		avsDirectory:       avsDirectory,
@@ -79,7 +75,6 @@ func BuildELChainReader(
 		return nil, err
 	}
 	return NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
@@ -103,7 +98,6 @@ func NewReaderFromConfig(
 		return nil, err
 	}
 	return NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
@@ -197,24 +191,29 @@ func (r *ChainReader) ServiceManagerCanSlashOperatorUntilBlock(
 	operatorAddr gethcommon.Address,
 	serviceManagerAddr gethcommon.Address,
 ) (uint32, error) {
-	if r.slasher == nil {
-		return uint32(0), errors.New("slasher contract not provided")
-	}
+	// TODO: Replace logic with new
+	// if r.slasher == nil {
+	// 	return uint32(0), errors.New("slasher contract not provided")
+	// }
 
-	return r.slasher.ContractCanSlashOperatorUntilBlock(
-		&bind.CallOpts{Context: ctx}, operatorAddr, serviceManagerAddr,
-	)
+	// return r.slasher.ContractCanSlashOperatorUntilBlock(
+	// 	&bind.CallOpts{Context: ctx}, operatorAddr, serviceManagerAddr,
+	// )
+	return uint32(0), nil
 }
 
 func (r *ChainReader) OperatorIsFrozen(
 	ctx context.Context,
 	operatorAddr gethcommon.Address,
 ) (bool, error) {
-	if r.slasher == nil {
-		return false, errors.New("slasher contract not provided")
-	}
 
-	return r.slasher.IsFrozen(&bind.CallOpts{Context: ctx}, operatorAddr)
+	// TODO: replace logic with new
+	// if r.slasher == nil {
+	// 	return false, errors.New("slasher contract not provided")
+	// }
+
+	// return r.slasher.IsFrozen(&bind.CallOpts{Context: ctx}, operatorAddr)
+	return false, nil
 }
 
 func (r *ChainReader) GetOperatorSharesInStrategy(
@@ -222,6 +221,7 @@ func (r *ChainReader) GetOperatorSharesInStrategy(
 	operatorAddr gethcommon.Address,
 	strategyAddr gethcommon.Address,
 ) (*big.Int, error) {
+	// todo: add the allocation manager stuff
 	if r.delegationManager == nil {
 		return &big.Int{}, errors.New("DelegationManager contract not provided")
 	}
