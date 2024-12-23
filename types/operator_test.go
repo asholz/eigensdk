@@ -23,7 +23,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			},
 			wantErr: false,
@@ -33,7 +33,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: ZeroAddress,
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			},
 			wantErr: false,
@@ -43,7 +43,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "",
 			},
 			wantErr:     true,
@@ -54,7 +54,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "http://localhost:8080/metadata.json",
 			},
 			wantErr:     true,
@@ -65,7 +65,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "http://127.0.0.1:8080/metadata.json",
 			},
 			wantErr:     true,
@@ -76,7 +76,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://example.com/metadata.json",
 			},
 			wantErr: true,
@@ -90,7 +90,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xa",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://example.com/metadata.json",
 			},
 			wantErr:     true,
@@ -101,7 +101,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0x12",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://example.com/metadata.json",
 			},
 			wantErr:     true,

@@ -71,7 +71,7 @@ func TestRegisterOperator(t *testing.T) {
 			types.Operator{
 				Address:                   fundedAccount,
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			}
 
@@ -98,7 +98,7 @@ func TestRegisterOperator(t *testing.T) {
 			types.Operator{
 				Address:                   operatorAddress,
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				StakerOptOutWindowBlocks:  100,
+				AllocationDelay:           100,
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			}
 
@@ -119,7 +119,7 @@ func TestChainWriter(t *testing.T) {
 		operatorModified := types.Operator{
 			Address:                   walletModifiedAddress.Hex(),
 			DelegationApproverAddress: walletModifiedAddress.Hex(),
-			StakerOptOutWindowBlocks:  101,
+			AllocationDelay:           101,
 			MetadataUrl:               "eigensdk-go",
 		}
 
@@ -129,7 +129,18 @@ func TestChainWriter(t *testing.T) {
 	})
 
 	t.Run("update metadata URI", func(t *testing.T) {
-		receipt, err := clients.ElChainWriter.UpdateMetadataURI(context.Background(), "https://0.0.0.0", true)
+		walletModified, err := crypto.HexToECDSA("2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+		assert.NoError(t, err)
+		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
+
+		operator := types.Operator{
+			Address:                   walletModifiedAddress.Hex(),
+			DelegationApproverAddress: walletModifiedAddress.Hex(),
+			AllocationDelay:           101,
+			MetadataUrl:               "eigensdk-go",
+		}
+
+		receipt, err := clients.ElChainWriter.UpdateMetadataURI(context.Background(), operator, "https://0.0.0.0", true)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
 	})
