@@ -11,6 +11,7 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
+	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IAVSDirectory"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
@@ -25,6 +26,7 @@ import (
 type Config struct {
 	DelegationManagerAddress  common.Address
 	AvsDirectoryAddress       common.Address
+	AllocationManagerAddress  common.Address
 	RewardsCoordinatorAddress common.Address
 }
 
@@ -33,6 +35,7 @@ type ChainReader struct {
 	delegationManager  *delegationmanager.ContractDelegationManager
 	strategyManager    *strategymanager.ContractStrategyManager
 	avsDirectory       *avsdirectory.ContractIAVSDirectory
+	allocationManager  *allocationmanager.ContractAllocationManager
 	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator
 	ethClient          eth.HttpBackend
 }
@@ -41,6 +44,7 @@ func NewChainReader(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
 	avsDirectory *avsdirectory.ContractIAVSDirectory,
+	allocationManager *allocationmanager.ContractAllocationManager,
 	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
 	logger logging.Logger,
 	ethClient eth.HttpBackend,
@@ -51,6 +55,7 @@ func NewChainReader(
 		delegationManager:  delegationManager,
 		strategyManager:    strategyManager,
 		avsDirectory:       avsDirectory,
+		allocationManager:  allocationManager,
 		rewardsCoordinator: rewardsCoordinator,
 		logger:             logger,
 		ethClient:          ethClient,
@@ -62,12 +67,14 @@ func NewChainReader(
 func BuildELChainReader(
 	delegationManagerAddr gethcommon.Address,
 	avsDirectoryAddr gethcommon.Address,
+	allocationManagerAddr gethcommon.Address,
 	ethClient eth.HttpBackend,
 	logger logging.Logger,
 ) (*ChainReader, error) {
 	elContractBindings, err := NewEigenlayerContractBindings(
 		delegationManagerAddr,
 		avsDirectoryAddr,
+		allocationManagerAddr,
 		ethClient,
 		logger,
 	)
@@ -78,6 +85,7 @@ func BuildELChainReader(
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.RewardsCoordinator,
 		logger,
 		ethClient,
@@ -101,6 +109,7 @@ func NewReaderFromConfig(
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.RewardsCoordinator,
 		logger,
 		ethClient,
@@ -134,7 +143,7 @@ func (r *ChainReader) GetOperatorDetails(
 		return types.Operator{}, errors.New("DelegationManager contract not provided")
 	}
 
-	operatorDetails, err := r.delegationManager.OperatorDetails(
+	delegationApproverAddr, err := r.delegationManager.DelegationApprover(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
 	)
@@ -142,10 +151,15 @@ func (r *ChainReader) GetOperatorDetails(
 		return types.Operator{}, err
 	}
 
+	_, operatorMagnitudeAllocationDelay, err := r.allocationManager.GetAllocationDelay(
+		&bind.CallOpts{Context: ctx},
+		gethcommon.HexToAddress(operator.Address),
+	)
+
 	return types.Operator{
 		Address:                   operator.Address,
-		StakerOptOutWindowBlocks:  operatorDetails.StakerOptOutWindowBlocks,
-		DelegationApproverAddress: operatorDetails.DelegationApprover.Hex(),
+		DelegationApproverAddress: delegationApproverAddr.Hex(),
+		AllocationDelay:           operatorMagnitudeAllocationDelay,
 	}, nil
 }
 
@@ -293,9 +307,9 @@ func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (u
 
 func (r *ChainReader) GetCurrentClaimableDistributionRoot(
 	ctx context.Context,
-) (rewardscoordinator.IRewardsCoordinatorDistributionRoot, error) {
+) (rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot, error) {
 	if r.rewardsCoordinator == nil {
-		return rewardscoordinator.IRewardsCoordinatorDistributionRoot{}, errors.New(
+		return rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot{}, errors.New(
 			"RewardsCoordinator contract not provided",
 		)
 	}
@@ -328,7 +342,7 @@ func (r *ChainReader) GetCumulativeClaimed(
 
 func (r *ChainReader) CheckClaim(
 	ctx context.Context,
-	claim rewardscoordinator.IRewardsCoordinatorRewardsMerkleClaim,
+	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
 		return false, errors.New("RewardsCoordinator contract not provided")

@@ -7,6 +7,7 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
+	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IAVSDirectory"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
@@ -23,10 +24,12 @@ type ContractBindings struct {
 	StrategyManagerAddr       gethcommon.Address
 	DelegationManagerAddr     gethcommon.Address
 	AvsDirectoryAddr          gethcommon.Address
+	AllocationManagerAddr     gethcommon.Address
 	RewardsCoordinatorAddress gethcommon.Address
 	DelegationManager         *delegationmanager.ContractDelegationManager
 	StrategyManager           *strategymanager.ContractStrategyManager
 	AvsDirectory              *avsdirectory.ContractIAVSDirectory
+	AllocationManager         *allocationmanager.ContractAllocationManager
 	RewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
 }
 
@@ -101,6 +104,7 @@ func isZeroAddress(address gethcommon.Address) bool {
 func NewEigenlayerContractBindings(
 	delegationManagerAddr gethcommon.Address,
 	avsDirectoryAddr gethcommon.Address,
+	allocationManagerAddr gethcommon.Address,
 	ethclient eth.HttpBackend,
 	logger logging.Logger,
 ) (*ContractBindings, error) {
@@ -123,12 +127,19 @@ func NewEigenlayerContractBindings(
 		return nil, utils.WrapError("Failed to fetch AVSDirectory contract", err)
 	}
 
+	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddr, ethclient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to fetch AllocationManager  contract", err)
+	}
+
 	return &ContractBindings{
 		StrategyManagerAddr:   strategyManagerAddr,
 		DelegationManagerAddr: delegationManagerAddr,
 		AvsDirectoryAddr:      avsDirectoryAddr,
+		AllocationManagerAddr: allocationManagerAddr,
 		StrategyManager:       contractStrategyManager,
 		DelegationManager:     contractDelegationManager,
 		AvsDirectory:          avsDirectory,
+		AllocationManager:     allocationManager,
 	}, nil
 }

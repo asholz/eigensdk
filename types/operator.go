@@ -26,7 +26,9 @@ type Operator struct {
 
 	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/delegation-redesign/src/contracts/interfaces/IDelegationManager.sol#L18
 	DelegationApproverAddress string `yaml:"delegation_approver_address"  json:"delegation_approver_address"`
-	StakerOptOutWindowBlocks  uint32 `yaml:"staker_opt_out_window_blocks" json:"staker_opt_out_window_blocks"`
+
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/3605cb791c296f7bc8d973018e03a53da15858a9/src/contracts/core/AllocationManager.sol#L420
+	AllocationDelay uint32 `yaml:"operator_magnitude_allocation_delay_blocks" json:"operator_magnitude_allocation_delay_blocks"`
 
 	// MetadataUrl URL where operator metadata is stored
 	MetadataUrl string `yaml:"metadata_url" json:"metadata_url"`
@@ -116,6 +118,22 @@ func OperatorIdFromKeyPair(keyPair *bls.KeyPair) OperatorId {
 
 func G1PubkeyFromContractG1Pubkey(pubkey apkreg.BN254G1Point) *bls.G1Point {
 	return bls.NewG1Point(pubkey.X, pubkey.Y)
+}
+
+type OperatorSetIds []OperatorSetId
+
+func (o OperatorSetIds) UnderlyingType() []uint32 {
+	underlying := make([]uint32, len(o))
+	for i, v := range o {
+		underlying[i] = v.UnderlyingType()
+	}
+	return underlying
+}
+
+type OperatorSetId uint32
+
+func (o OperatorSetId) UnderlyingType() uint32 {
+	return uint32(o)
 }
 
 type QuorumNums []QuorumNum

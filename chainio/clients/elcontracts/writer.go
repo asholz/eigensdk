@@ -11,6 +11,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
+	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IAVSDirectory"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
@@ -34,6 +35,7 @@ type ChainWriter struct {
 	strategyManager     *strategymanager.ContractStrategyManager
 	rewardsCoordinator  *rewardscoordinator.ContractIRewardsCoordinator
 	avsDirectory        *avsdirectory.ContractIAVSDirectory
+	allocationManager   *allocationmanager.ContractAllocationManager
 	strategyManagerAddr gethcommon.Address
 	elChainReader       Reader
 	ethClient           eth.HttpBackend
@@ -46,6 +48,7 @@ func NewChainWriter(
 	strategyManager *strategymanager.ContractStrategyManager,
 	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
 	avsDirectory *avsdirectory.ContractIAVSDirectory,
+	allocationManager *allocationmanager.ContractAllocationManager,
 	strategyManagerAddr gethcommon.Address,
 	elChainReader Reader,
 	ethClient eth.HttpBackend,
@@ -61,6 +64,7 @@ func NewChainWriter(
 		strategyManagerAddr: strategyManagerAddr,
 		rewardsCoordinator:  rewardsCoordinator,
 		avsDirectory:        avsDirectory,
+		allocationManager:   allocationManager,
 		elChainReader:       elChainReader,
 		logger:              logger,
 		ethClient:           ethClient,
@@ -73,6 +77,7 @@ func NewChainWriter(
 func BuildELChainWriter(
 	delegationManagerAddr gethcommon.Address,
 	avsDirectoryAddr gethcommon.Address,
+	allocationManagerAddr gethcommon.Address,
 	ethClient eth.HttpBackend,
 	logger logging.Logger,
 	eigenMetrics metrics.Metrics,
@@ -81,6 +86,7 @@ func BuildELChainWriter(
 	elContractBindings, err := NewEigenlayerContractBindings(
 		delegationManagerAddr,
 		avsDirectoryAddr,
+		allocationManagerAddr,
 		ethClient,
 		logger,
 	)
@@ -91,6 +97,7 @@ func BuildELChainWriter(
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.RewardsCoordinator,
 		logger,
 		ethClient,
@@ -100,6 +107,7 @@ func BuildELChainWriter(
 		elContractBindings.StrategyManager,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.StrategyManagerAddr,
 		elChainReader,
 		ethClient,
@@ -128,6 +136,7 @@ func NewWriterFromConfig(
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.RewardsCoordinator,
 		logger,
 		ethClient,
@@ -137,6 +146,7 @@ func NewWriterFromConfig(
 		elContractBindings.StrategyManager,
 		elContractBindings.RewardsCoordinator,
 		elContractBindings.AvsDirectory,
+		elContractBindings.AllocationManager,
 		elContractBindings.StrategyManagerAddr,
 		elChainReader,
 		ethClient,
@@ -156,19 +166,12 @@ func (w *ChainWriter) RegisterAsOperator(
 	}
 
 	w.logger.Infof("registering operator %s to EigenLayer", operator.Address)
-	opDetails := delegationmanager.IDelegationManagerOperatorDetails{
-		// Earning receiver has been deprecated, so we just use the operator address as a dummy value
-		// Any reward related setup is via RewardsCoordinator contract
-		DeprecatedEarningsReceiver: gethcommon.HexToAddress(operator.Address),
-		StakerOptOutWindowBlocks:   operator.StakerOptOutWindowBlocks,
-		DelegationApprover:         gethcommon.HexToAddress(operator.DelegationApproverAddress),
-	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, err
 	}
-	tx, err := w.delegationManager.RegisterAsOperator(noSendTxOpts, opDetails, operator.MetadataUrl)
+	tx, err := w.delegationManager.RegisterAsOperator(noSendTxOpts, gethcommon.HexToAddress(operator.DelegationApproverAddress), operator.AllocationDelay, operator.MetadataUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -191,20 +194,16 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	}
 
 	w.logger.Infof("updating operator details of operator %s to EigenLayer", operator.Address)
-	opDetails := delegationmanager.IDelegationManagerOperatorDetails{
-		// Earning receiver has been deprecated, so we just use the operator address as a dummy value
-		// Any reward related setup is via RewardsCoordinator contract
-		DeprecatedEarningsReceiver: gethcommon.HexToAddress(operator.Address),
-		DelegationApprover:         gethcommon.HexToAddress(operator.DelegationApproverAddress),
-		StakerOptOutWindowBlocks:   operator.StakerOptOutWindowBlocks,
-	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := w.delegationManager.ModifyOperatorDetails(noSendTxOpts, opDetails)
+	operatorAddress := gethcommon.HexToAddress(operator.Address)
+	delegationApprover := gethcommon.HexToAddress(operator.DelegationApproverAddress)
+
+	tx, err := w.delegationManager.ModifyOperatorDetails(noSendTxOpts, operatorAddress, delegationApprover)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +222,7 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	return receipt, nil
 }
 
-func (w *ChainWriter) UpdateMetadataURI(ctx context.Context, uri string, waitForReceipt bool,
+func (w *ChainWriter) UpdateMetadataURI(ctx context.Context, operator types.Operator, uri string, waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
@@ -234,7 +233,9 @@ func (w *ChainWriter) UpdateMetadataURI(ctx context.Context, uri string, waitFor
 		return nil, err
 	}
 
-	tx, err := w.delegationManager.UpdateOperatorMetadataURI(noSendTxOpts, uri)
+	operatorAddress := gethcommon.HexToAddress(operator.Address)
+
+	tx, err := w.delegationManager.UpdateOperatorMetadataURI(noSendTxOpts, operatorAddress, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +325,7 @@ func (w *ChainWriter) SetClaimerFor(
 
 func (w *ChainWriter) ProcessClaim(
 	ctx context.Context,
-	claim rewardscoordinator.IRewardsCoordinatorRewardsMerkleClaim,
+	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 	earnerAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
@@ -406,7 +407,7 @@ func (w *ChainWriter) SetOperatorPISplit(
 
 func (w *ChainWriter) ProcessClaims(
 	ctx context.Context,
-	claims []rewardscoordinator.IRewardsCoordinatorRewardsMerkleClaim,
+	claims []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 	earnerAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
