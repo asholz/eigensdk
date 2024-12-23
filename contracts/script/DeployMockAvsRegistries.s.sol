@@ -7,7 +7,6 @@ import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 
 import "eigenlayer-middleware/src/RegistryCoordinator.sol" as blsregcoord;
