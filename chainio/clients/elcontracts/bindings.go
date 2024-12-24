@@ -45,6 +45,7 @@ func NewBindingsFromConfig(
 		contractStrategyManager   *strategymanager.ContractStrategyManager
 		strategyManagerAddr       gethcommon.Address
 		avsDirectory              *avsdirectory.ContractIAVSDirectory
+		allocationManager         *allocationmanager.ContractAllocationManager
 		rewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
 	)
 
@@ -75,6 +76,15 @@ func NewBindingsFromConfig(
 		}
 	}
 
+	if isZeroAddress(cfg.AllocationManagerAddress) {
+		logger.Debug("AllocationManager address not provided, the calls made to the contract will not work")
+	} else {
+		allocationManager, err = allocationmanager.NewContractAllocationManager(cfg.AllocationManagerAddress, client)
+		if err != nil {
+			return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
+		}
+	}
+
 	if isZeroAddress(cfg.RewardsCoordinatorAddress) {
 		logger.Debug("RewardsCoordinator address not provided, the calls to the contract will not work")
 	} else {
@@ -88,10 +98,12 @@ func NewBindingsFromConfig(
 		StrategyManagerAddr:       strategyManagerAddr,
 		DelegationManagerAddr:     cfg.DelegationManagerAddress,
 		AvsDirectoryAddr:          cfg.AvsDirectoryAddress,
+		AllocationManagerAddr:     cfg.AllocationManagerAddress,
 		RewardsCoordinatorAddress: cfg.RewardsCoordinatorAddress,
 		StrategyManager:           contractStrategyManager,
 		DelegationManager:         contractDelegationManager,
 		AvsDirectory:              avsDirectory,
+		AllocationManager:         allocationManager,
 		RewardsCoordinator:        rewardsCoordinator,
 	}, nil
 }

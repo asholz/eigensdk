@@ -46,6 +46,7 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 		ecdsaPrivateKey,
 		logger,
 	)
+
 	require.NoError(t, err)
 	return clients, anvilHttpEndpoint
 }
