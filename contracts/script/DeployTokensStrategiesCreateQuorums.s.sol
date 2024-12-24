@@ -90,8 +90,7 @@ contract DeployTokensStrategiesCreateQuorums is
         bool[] memory thirdPartyTransfersForbiddenValues = new bool[](1);
         thirdPartyTransfersForbiddenValues[0] = false;
         strategyManager.addStrategiesToDepositWhitelist(
-            strats,
-            thirdPartyTransfersForbiddenValues
+            strats
         );
 
         // WRITE JSON DATA
@@ -147,7 +146,7 @@ contract DeployTokensStrategiesCreateQuorums is
             multiplier: 1 ether
         });
 
-        regcoord.RegistryCoordinator(address(mockAvsRegCoord)).createQuorum(
+        regcoord.RegistryCoordinator(address(mockAvsRegCoord)).createTotalDelegatedStakeQuorum(
             quorumOperatorSetParams,
             quorumMinimumStake,
             quorumStrategyParams

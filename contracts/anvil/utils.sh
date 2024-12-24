@@ -3,7 +3,7 @@
 set -e -o nounset
 
 parent_path=$(
-    cd "$(dirname "${BASH_SOURCE[0]}")"
+    cd "$(dirname "${0:A}")" || exit 1
     pwd -P
 )
 

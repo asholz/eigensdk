@@ -47,7 +47,8 @@ contract DeployMockAvs is DeployMockAvsRegistries {
         mockAvsServiceManagerImplementation = new MockAvsServiceManager(
             registryCoordinator,
             eigenlayerContracts.avsDirectory,
-            eigenlayerContracts.rewardsCoordinator
+            eigenlayerContracts.rewardsCoordinator,
+            eigenlayerContracts.allocationManager
         );
 
         mockAvsProxyAdmin.upgradeAndCall(

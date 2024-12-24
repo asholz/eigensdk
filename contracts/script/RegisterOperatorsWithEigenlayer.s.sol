@@ -67,7 +67,7 @@ contract RegisterOperators is
         // Register operators with EigenLayer
         for (uint256 i = 0; i < numberOfOperators; i++) {
             address delegationApprover = address(0); // anyone can delegate to this operator
-            uint32 stakerOptOutWindowBlocks = 100;
+            uint32 allocationDelayBlocks = 100;
             string memory metadataURI = string.concat(
                 "https://coolstuff.com/operator/",
                 vm.toString(i)
@@ -75,11 +75,8 @@ contract RegisterOperators is
             (, uint256 privateKey) = deriveRememberKey(mnemonic, uint32(i));
             vm.startBroadcast(privateKey);
             eigenlayerContracts.delegationManager.registerAsOperator(
-                IDelegationManager.OperatorDetails(
-                    operators[i],
-                    delegationApprover,
-                    stakerOptOutWindowBlocks
-                ),
+                delegationApprover,
+                allocationDelayBlocks,
                 metadataURI
             );
             eigenlayerContracts.strategyManager.depositIntoStrategy(
