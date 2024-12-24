@@ -25,7 +25,7 @@ type Operator struct {
 	Address string `yaml:"address" json:"address"`
 
 	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/delegation-redesign/src/contracts/interfaces/IDelegationManager.sol#L18
-	DelegationApproverAddress string `yaml:"delegation_approver_address"  json:"delegation_approver_address"`
+	DelegationApproverAddress string `yaml:"delegation_approver_address" json:"delegation_approver_address"`
 
 	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/3605cb791c296f7bc8d973018e03a53da15858a9/src/contracts/core/AllocationManager.sol#L420
 	AllocationDelay uint32 `yaml:"operator_magnitude_allocation_delay_blocks" json:"operator_magnitude_allocation_delay_blocks"`

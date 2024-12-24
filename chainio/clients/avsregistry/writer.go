@@ -131,7 +131,13 @@ func BuildAvsRegistryChainWriter(
 	if err != nil {
 		return nil, utils.WrapError("Failed to get AllocationManager address", err)
 	}
-	elReader, err := elcontracts.BuildELChainReader(delegationManagerAddr, avsDirectoryAddr, allocationManagerAddr, ethClient, logger)
+	elReader, err := elcontracts.BuildELChainReader(
+		delegationManagerAddr,
+		avsDirectoryAddr,
+		allocationManagerAddr,
+		ethClient,
+		logger,
+	)
 	if err != nil {
 		return nil, utils.WrapError("Failed to create ELChainReader", err)
 	}

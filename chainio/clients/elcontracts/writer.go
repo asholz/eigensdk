@@ -171,7 +171,12 @@ func (w *ChainWriter) RegisterAsOperator(
 	if err != nil {
 		return nil, err
 	}
-	tx, err := w.delegationManager.RegisterAsOperator(noSendTxOpts, gethcommon.HexToAddress(operator.DelegationApproverAddress), operator.AllocationDelay, operator.MetadataUrl)
+	tx, err := w.delegationManager.RegisterAsOperator(
+		noSendTxOpts,
+		gethcommon.HexToAddress(operator.DelegationApproverAddress),
+		operator.AllocationDelay,
+		operator.MetadataUrl,
+	)
 	if err != nil {
 		return nil, err
 	}
