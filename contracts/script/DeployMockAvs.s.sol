@@ -9,7 +9,11 @@ contract DeployMockAvs is DeployMockAvsRegistries {
     MockAvsServiceManager public mockAvsServiceManager;
     MockAvsServiceManager public mockAvsServiceManagerImplementation;
 
+    EmptyContract public emptyContract;
+    ProxyAdmin public mockAvsProxyAdmin;
+
     function run() public virtual {
+            
         // The ContractsRegistry contract should always be deployed at this address on anvil
         // it's the address of the contract created at nonce 0 by the first anvil account (0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266)
         ContractsRegistry contractsRegistry = ContractsRegistry(
@@ -44,12 +48,20 @@ contract DeployMockAvs is DeployMockAvsRegistries {
                 mockAvsServiceManager,
                 mockAvsServiceManagerImplementation
             );
+        
+         console.log("HERE16");
+         console.logAddress(address(mockAvsContracts.registryCoordinator));
+         console.logAddress(address(eigenlayerContracts.avsDirectory));
+         console.logAddress(address(eigenlayerContracts.rewardsCoordinator));
+         console.logAddress(address(eigenlayerContracts.allocationManager));
         mockAvsServiceManagerImplementation = new MockAvsServiceManager(
-            registryCoordinator,
+            mockAvsContracts.registryCoordinator,
             eigenlayerContracts.avsDirectory,
-            eigenlayerContracts.rewardsCoordinator,
+            eigenlayerContracts.rewardsCoordinator, 
             eigenlayerContracts.allocationManager
         );
+
+        console.log("HERE17");
 
         mockAvsProxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(

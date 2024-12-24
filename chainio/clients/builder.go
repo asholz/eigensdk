@@ -92,6 +92,7 @@ func BuildReadClients(
 		elcontracts.Config{
 			DelegationManagerAddress: avsRegistryContractBindings.DelegationManagerAddr,
 			AvsDirectoryAddress:      avsRegistryContractBindings.AvsDirectoryAddr,
+			AllocationManagerAddress: avsRegistryContractBindings.AllocationManagerAddr,
 		},
 		ethHttpClient,
 		logger,
@@ -181,6 +182,7 @@ func BuildAll(
 		elcontracts.Config{
 			DelegationManagerAddress: avsRegistryContractBindings.DelegationManagerAddr,
 			AvsDirectoryAddress:      avsRegistryContractBindings.AvsDirectoryAddr,
+			AllocationManagerAddress: avsRegistryContractBindings.AllocationManagerAddr,
 		},
 		ethHttpClient,
 		txMgr,

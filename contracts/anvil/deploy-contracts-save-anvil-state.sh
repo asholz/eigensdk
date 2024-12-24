@@ -28,7 +28,7 @@ root_dir=$(realpath $anvil_dir/../..)
 set -a
 source $anvil_dir/utils.sh
 # we overwrite some variables here because should always deploy to anvil (localhost)
-export ETH_HTTP_URL=http://localhost:8545
+export ETH_HTTP_URL=http://0.0.0.0:8545
 export DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 set +a
 
@@ -42,23 +42,24 @@ CHAIN_ID=$(cast chain-id)
 cd $root_dir/contracts
 echo "DIRECTORY: ${root_dir}/contracts"
 set -x
-forge create src/ContractsRegistry.sol:ContractsRegistry --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY
+forge create src/ContractsRegistry.sol:ContractsRegistry --broadcast --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY
 
 # DEPLOY EIGENLAYER
 export EIGEN_CONTRACTS_DIR=$root_dir/contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts
 export DEVNET_OUTPUT_DIR=$EIGEN_CONTRACTS_DIR/script/output/devnet
+export LOCAL_OUTPUT_DIR=$EIGEN_CONTRACTS_DIR/script/output/local
 # deployment overwrites this file, so we save it as backup, because we want that output in our local files, and not in the eigenlayer-contracts submodule files
-mv $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json.bak
+# mv $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json.bak
 cd $EIGEN_CONTRACTS_DIR
 forge script script/deploy/local/deploy_from_scratch.slashing.s.sol --rpc-url $ETH_HTTP_URL \
     --private-key $DEPLOYER_PRIVATE_KEY --broadcast \
     --sig "run(string memory configFileName)" --  local/deploy_from_scratch.slashing.anvil.config.json
-mv $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json $root_dir/contracts/script/output/${CHAIN_ID:?}/eigenlayer_deployment_output.json
-mv $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json
+mv $LOCAL_OUTPUT_DIR/slashing_output.json $root_dir/contracts/script/output/${CHAIN_ID:?}/eigenlayer_deployment_output.json
+# mv $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json.bak $DEVNET_OUTPUT_DIR/SLASHING_deploy_from_scratch_deployment_data.json
 
 # DEPLOY MOCKAVS
 cd $root_dir/contracts
-forge script script/DeployMockAvs.s.sol --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast
+forge script script/DeployMockAvs.s.sol --rpc-url $ETH_HTTP_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast --slow
 
 # DEPLOY TOKENS AND STRATEGIES
 cd $root_dir/contracts

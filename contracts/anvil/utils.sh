@@ -30,10 +30,10 @@ start_anvil_docker() {
 
     trap 'docker stop anvil 2>/dev/null || true' EXIT
     set -o xtrace
-    docker run --rm -d --name anvil -p 8545:8545 $LOAD_STATE_VOLUME_DOCKER_ARG $DUMP_STATE_VOLUME_DOCKER_ARG \
+    docker run --rm -d --name anvil --platform linux/amd64 -p 8545:8545 $LOAD_STATE_VOLUME_DOCKER_ARG $DUMP_STATE_VOLUME_DOCKER_ARG \
         --entrypoint anvil \
         $FOUNDRY_IMAGE \
         $LOAD_STATE_ANVIL_ARG $DUMP_STATE_ANVIL_ARG --host 0.0.0.0
     set +o xtrace
-    sleep 2
+    sleep 5
 }

@@ -143,6 +143,10 @@ func (r *ChainReader) GetOperatorDetails(
 		return types.Operator{}, errors.New("DelegationManager contract not provided")
 	}
 
+	if r.allocationManager == nil {
+		return types.Operator{}, errors.New("AllocationManager contract not provided")
+	}
+
 	delegationApproverAddr, err := r.delegationManager.DelegationApprover(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
