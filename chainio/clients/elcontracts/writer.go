@@ -198,6 +198,10 @@ func (w *ChainWriter) UpdateOperatorDetails(
 		return nil, errors.New("DelegationManager contract not provided")
 	}
 
+	if w.allocationManager == nil {
+		return nil, errors.New("AlocationManager contract not provided")
+	}
+
 	w.logger.Infof("updating operator details of operator %s to EigenLayer", operator.Address)
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
@@ -208,14 +212,22 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	operatorAddress := gethcommon.HexToAddress(operator.Address)
 	delegationApprover := gethcommon.HexToAddress(operator.DelegationApproverAddress)
 
+	println(operator.Address)
+	println(operator.DelegationApproverAddress)
+
 	tx, err := w.delegationManager.ModifyOperatorDetails(noSendTxOpts, operatorAddress, delegationApprover)
 	if err != nil {
 		return nil, err
 	}
+
+	println("HERE")
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, errors.New("failed to send tx with err: " + err.Error())
 	}
+
+	println("HERE")
+
 	w.logger.Info(
 		"successfully updated operator details",
 		"txHash",

@@ -117,7 +117,7 @@ func TestChainWriter(t *testing.T) {
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
 
 		operatorModified := types.Operator{
-			Address:                   walletModifiedAddress.Hex(),
+			Address:                   "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
 			DelegationApproverAddress: walletModifiedAddress.Hex(),
 			AllocationDelay:           101,
 			MetadataUrl:               "eigensdk-go",
@@ -132,14 +132,12 @@ func TestChainWriter(t *testing.T) {
 		walletModified, err := crypto.HexToECDSA("2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
 		assert.NoError(t, err)
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
-
 		operator := types.Operator{
-			Address:                   walletModifiedAddress.Hex(),
+			Address:                   "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
 			DelegationApproverAddress: walletModifiedAddress.Hex(),
 			AllocationDelay:           101,
 			MetadataUrl:               "eigensdk-go",
 		}
-
 		receipt, err := clients.ElChainWriter.UpdateMetadataURI(context.Background(), operator, "https://0.0.0.0", true)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
