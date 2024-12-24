@@ -155,6 +155,9 @@ func (r *ChainReader) GetOperatorDetails(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
 	)
+	if err != nil {
+		return types.Operator{}, err
+	}
 
 	return types.Operator{
 		Address:                   operator.Address,
