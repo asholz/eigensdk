@@ -151,3 +151,102 @@ func TestChainWriter(t *testing.T) {
 		assert.True(t, receipt.Status == 1)
 	})
 }
+
+func TestRegisterForOperatorSets(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
+	require.NoError(t, err)
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+
+	// code taken from Rust SDK test
+	/*
+			    async fn test_register_for_operator_sets() {
+		        // let (_container, http_endpoint, _ws_endpoint) = start_anvil_container().await;
+		        let http_endpoint = "http://localhost:8545".to_string();
+
+		        let avs_address = OPERATOR_ADDRESS;
+
+		        // set registrar - otherwise i dont know how to get permissions for registry coordinator address
+		        // check if this is needed (should be done on deploy) or is already set
+		        let allocation_manager_addr = get_allocation_manager_address(http_endpoint.clone()).await;
+		        let signer = get_signer(OPERATOR_PRIVATE_KEY, &http_endpoint);
+		        let allocation_manager = AllocationManager::new(allocation_manager_addr, signer.clone());
+		        let registry_coordinator_addr =
+		            get_registry_coordinator_address(http_endpoint.clone()).await;
+		        allocation_manager
+		            .setAVSRegistrar(avs_address, registry_coordinator_addr)
+		            .send()
+		            .await
+		            .unwrap()
+		            .get_receipt()
+		            .await
+		            .unwrap();
+
+		        // enable operator sets in Registry Coordinator
+		        let registry_coordinator =
+		            RegistryCoordinator::new(registry_coordinator_addr, signer.clone());
+		        registry_coordinator
+		            .enableOperatorSets()
+		            .send()
+		            .await
+		            .unwrap()
+		            .get_receipt()
+		            .await
+		            .unwrap();
+
+		        // create slashable quorum
+		        let contract_registry_coordinator =
+		            RegistryCoordinator::new(registry_coordinator_addr, signer.clone());
+		        let operator_set_params = OperatorSetParam {
+		            maxOperatorCount: 10,
+		            kickBIPsOfOperatorStake: 100,
+		            kickBIPsOfTotalStake: 1000,
+		        };
+		        let strategy_params = StrategyParams {
+		            strategy: get_erc20_mock_strategy(http_endpoint.to_string()).await,
+		            multiplier: U96::from(1),
+		        };
+		        contract_registry_coordinator
+		            .createSlashableStakeQuorum(operator_set_params, U96::from(0), vec![strategy_params], 0)
+		            .send()
+		            .await
+		            .unwrap()
+		            .get_receipt()
+		            .await
+		            .unwrap();
+
+		        // create operator set
+		        let operator_set_id = 1;
+		        let params = IAllocationManagerTypes::CreateSetParams {
+		            operatorSetId: operator_set_id,
+		            strategies: vec![get_erc20_mock_strategy(http_endpoint.clone()).await],
+		        };
+		        allocation_manager
+		            .createOperatorSets(avs_address, vec![params])
+		            .send()
+		            .await
+		            .unwrap()
+		            .get_receipt()
+		            .await
+		            .unwrap();
+
+		        // register to operator set
+		        let operator_addr = address!("70997970C51812dc3A010C7d01b50e0d17dc79C8");
+		        let operator_private_key =
+		            "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+		        let el_chain_writer =
+		            new_test_writer(http_endpoint.clone(), operator_private_key.to_string()).await;
+		        let tx_hash = el_chain_writer
+		            .register_for_operator_sets(operator_addr, avs_address, vec![operator_set_id])
+		            .await
+		            .unwrap();
+
+		        let receipt = wait_transaction(&http_endpoint, tx_hash).await.unwrap();
+		        assert!(receipt.status());
+		    }
+	*/
+}
