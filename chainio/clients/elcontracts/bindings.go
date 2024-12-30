@@ -42,9 +42,7 @@ func NewBindingsFromConfig(
 		err error
 
 		contractDelegationManager *delegationmanager.ContractDelegationManager
-		contractSlasher           *slasher.ContractISlasher
 		contractStrategyManager   *strategymanager.ContractStrategyManager
-		slasherAddr               gethcommon.Address
 		strategyManagerAddr       gethcommon.Address
 		avsDirectory              *avsdirectory.ContractIAVSDirectory
 		rewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
@@ -56,15 +54,6 @@ func NewBindingsFromConfig(
 		contractDelegationManager, err = delegationmanager.NewContractDelegationManager(cfg.DelegationManagerAddress, client)
 		if err != nil {
 			return nil, utils.WrapError("Failed to create DelegationManager contract", err)
-		}
-
-		slasherAddr, err = contractDelegationManager.Slasher(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch Slasher address", err)
-		}
-		contractSlasher, err = slasher.NewContractISlasher(slasherAddr, client)
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch Slasher contract", err)
 		}
 
 		strategyManagerAddr, err = contractDelegationManager.StrategyManager(&bind.CallOpts{})
@@ -96,12 +85,10 @@ func NewBindingsFromConfig(
 	}
 
 	return &ContractBindings{
-		SlasherAddr:               slasherAddr,
 		StrategyManagerAddr:       strategyManagerAddr,
 		DelegationManagerAddr:     cfg.DelegationManagerAddress,
 		AvsDirectoryAddr:          cfg.AvsDirectoryAddress,
 		RewardsCoordinatorAddress: cfg.RewardsCoordinatorAddress,
-		Slasher:                   contractSlasher,
 		StrategyManager:           contractStrategyManager,
 		DelegationManager:         contractDelegationManager,
 		AvsDirectory:              avsDirectory,
@@ -125,15 +112,6 @@ func NewEigenlayerContractBindings(
 		return nil, utils.WrapError("Failed to create DelegationManager contract", err)
 	}
 
-	slasherAddr, err := contractDelegationManager.Slasher(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch Slasher address", err)
-	}
-	contractSlasher, err := slasher.NewContractISlasher(slasherAddr, ethclient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch Slasher contract", err)
-	}
-
 	strategyManagerAddr, err := contractDelegationManager.StrategyManager(&bind.CallOpts{})
 	if err != nil {
 		return nil, utils.WrapError("Failed to fetch StrategyManager address", err)
@@ -149,11 +127,9 @@ func NewEigenlayerContractBindings(
 	}
 
 	return &ContractBindings{
-		SlasherAddr:           slasherAddr,
 		StrategyManagerAddr:   strategyManagerAddr,
 		DelegationManagerAddr: delegationManagerAddr,
 		AvsDirectoryAddr:      avsDirectoryAddr,
-		Slasher:               contractSlasher,
 		StrategyManager:       contractStrategyManager,
 		DelegationManager:     contractDelegationManager,
 		AvsDirectory:          avsDirectory,
