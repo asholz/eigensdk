@@ -196,3 +196,19 @@ type QuorumAvsState struct {
 	AggPubkeyG1  *bls.G1Point
 	BlockNumber  BlockNum
 }
+
+type OperatorSetIds []OperatorSetId
+
+func (o OperatorSetIds) UnderlyingType() []uint32 {
+	underlying := make([]uint32, len(o))
+	for i, v := range o {
+		underlying[i] = v.UnderlyingType()
+	}
+	return underlying
+}
+
+type OperatorSetId uint32
+
+func (o OperatorSetId) UnderlyingType() uint32 {
+	return uint32(o)
+}
