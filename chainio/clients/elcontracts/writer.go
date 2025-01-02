@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"math/big"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
