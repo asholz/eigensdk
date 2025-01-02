@@ -3,6 +3,7 @@ package elcontracts
 import (
 	"context"
 	"errors"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"math/big"
