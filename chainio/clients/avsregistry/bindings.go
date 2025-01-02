@@ -27,6 +27,7 @@ type ContractBindings struct {
 	IndexRegistryAddr          gethcommon.Address
 	DelegationManagerAddr      gethcommon.Address
 	AvsDirectoryAddr           gethcommon.Address
+	AllocationManagerAddr      gethcommon.Address
 	// contract bindings
 	ServiceManager         *servicemanager.ContractServiceManagerBase
 	RegistryCoordinator    *regcoordinator.ContractRegistryCoordinator
@@ -136,6 +137,7 @@ func NewBindingsFromConfig(
 		indexRegistryAddr     gethcommon.Address
 		delegationManagerAddr gethcommon.Address
 		avsDirectoryAddr      gethcommon.Address
+		allocationManagerAddr gethcommon.Address
 
 		contractBlsRegistryCoordinator *regcoordinator.ContractRegistryCoordinator
 		contractServiceManager         *servicemanager.ContractServiceManagerBase
@@ -209,6 +211,10 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
+		allocationManagerAddr, err = contractServiceManager.AllocationManager(&bind.CallOpts{})
+		if err != nil {
+			return nil, utils.WrapError("Failed to get AllocationManager address", err)
+		}
 	}
 
 	if isZeroAddress(cfg.OperatorStateRetrieverAddress) {
@@ -232,6 +238,7 @@ func NewBindingsFromConfig(
 		IndexRegistryAddr:          indexRegistryAddr,
 		OperatorStateRetrieverAddr: cfg.OperatorStateRetrieverAddress,
 		DelegationManagerAddr:      delegationManagerAddr,
+		AllocationManagerAddr:      allocationManagerAddr,
 		AvsDirectoryAddr:           avsDirectoryAddr,
 		ServiceManager:             contractServiceManager,
 		RegistryCoordinator:        contractBlsRegistryCoordinator,
