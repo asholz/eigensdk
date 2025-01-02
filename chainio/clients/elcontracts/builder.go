@@ -62,7 +62,6 @@ func BuildClients(
 	)
 
 	elChainWriter := NewChainWriter(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.RewardsCoordinator,
