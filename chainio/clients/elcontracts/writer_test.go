@@ -2,6 +2,7 @@ package elcontracts_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -11,9 +12,14 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
 )
 
 func TestRegisterOperator(t *testing.T) {
@@ -151,6 +157,29 @@ func TestChainWriter(t *testing.T) {
 		assert.True(t, receipt.Status == 1)
 	})
 }
+func getAllocationManagerAddress(ethHttpUrl string) common.Address {
+	ethHttpClient, err := ethclient.Dial(ethHttpUrl)
+	if err != nil {
+		// TODO: handle error
+		panic(err)
+	}
+	// The ContractsRegistry contract should always be deployed at this address on anvil
+	// it's the address of the contract created at nonce 0 by the first anvil account
+	// (0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266)
+	contractsRegistry, err := contractreg.NewContractContractsRegistry(
+		common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+		ethHttpClient,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	allocationManagerAddr, err := contractsRegistry.Contracts(&bind.CallOpts{}, "allocationManager")
+	if err != nil {
+		panic(err)
+	}
+	return allocationManagerAddr
+}
 
 func TestRegisterForOperatorSets(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
@@ -158,9 +187,11 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	require.NoError(t, err)
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
-	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
-	require.NoError(t, err)
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	allocationManagerAddress := getAllocationManagerAddress(anvilHttpEndpoint)
+	fmt.Println("getAllocationManagerAddress = ", allocationManagerAddress)
+	// // anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
+	// require.NoError(t, err)
+	// logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
 
 	// code taken from Rust SDK test
 	/*
