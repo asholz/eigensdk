@@ -1,6 +1,8 @@
 module github.com/Layr-Labs/eigensdk-go/signer
 
-go 1.21
+go 1.21.13
+
+toolchain go1.22.4
 
 replace github.com/Layr-Labs/eigensdk-go => ../../eigensdk-go
 
