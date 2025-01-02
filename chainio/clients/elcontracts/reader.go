@@ -186,6 +186,17 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	return contractStrategy, contractUnderlyingToken, underlyingTokenAddr, nil
 }
 
+// NOTE: this function is kept for backward compatibility and
+// should be removed in the future
+//
+// TODO: remove this function
+func (r *ChainReader) OperatorIsFrozen(
+	ctx context.Context,
+	operatorAddr gethcommon.Address,
+) (bool, error) {
+	return false, nil
+}
+
 func (r *ChainReader) GetOperatorSharesInStrategy(
 	ctx context.Context,
 	operatorAddr gethcommon.Address,
