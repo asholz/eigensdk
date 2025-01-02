@@ -92,7 +92,6 @@ func BuildELChainWriter(
 		return nil, err
 	}
 	elChainReader := NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
@@ -131,7 +130,6 @@ func NewWriterFromConfig(
 		return nil, err
 	}
 	elChainReader := NewChainReader(
-		elContractBindings.Slasher,
 		elContractBindings.DelegationManager,
 		elContractBindings.StrategyManager,
 		elContractBindings.AvsDirectory,
