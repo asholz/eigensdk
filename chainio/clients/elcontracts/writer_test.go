@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
 )
 
@@ -157,6 +158,7 @@ func TestChainWriter(t *testing.T) {
 		assert.True(t, receipt.Status == 1)
 	})
 }
+
 func getAllocationManagerAddress(ethHttpUrl string) common.Address {
 	ethHttpClient, err := ethclient.Dial(ethHttpUrl)
 	if err != nil {
@@ -173,7 +175,14 @@ func getAllocationManagerAddress(ethHttpUrl string) common.Address {
 	if err != nil {
 		panic(err)
 	}
-
+	for i := 0; i < 10; i++ {
+		contractNumber := big.NewInt(int64(i))
+		names, err := contractsRegistry.ContractNames(&bind.CallOpts{}, contractNumber)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("ContractNames(0) = ", names)
+	}
 	allocationManagerAddr, err := contractsRegistry.Contracts(&bind.CallOpts{}, "allocationManager")
 	if err != nil {
 		panic(err)
@@ -185,13 +194,66 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
 	require.NoError(t, err)
+
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
-	allocationManagerAddress := getAllocationManagerAddress(anvilHttpEndpoint)
+
+	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
+	require.NoError(t, err)
+
+	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+	require.NoError(t, err)
+
+	// allocationManagerAddress := getAllocationManagerAddress(anvilHttpEndpoint)
+	// fmt.Println("getAllocationManagerAddress = ", allocationManagerAddress)
+
+	// TODO: fetch this address using the auxiliary function
+	allocationManagerAddress := common.HexToAddress("0x8A791620dd6260079BF849Dc5567aDC3F2FdC318")
 	fmt.Println("getAllocationManagerAddress = ", allocationManagerAddress)
-	// // anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, ethHttpClient)
+	require.NoError(t, err)
+	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+
+	require.NoError(t, err)
+
+	require.NoError(t, err)
+
+	chainioConfig := clients.BuildAllConfig{
+		EthHttpUrl:                 anvilHttpEndpoint,
+		EthWsUrl:                   anvilWsEndpoint,
+		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
+		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
+		AvsName:                    "exampleAvs",
+		PromMetricsIpPortAddress:   ":9090",
+	}
+	fundedPrivateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+	ecdsaPrivateKey, err := crypto.HexToECDSA(fundedPrivateKeyHex)
+	require.NoError(t, err)
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+
+	clients, err := clients.BuildAll(
+		chainioConfig,
+		ecdsaPrivateKey,
+		logger,
+	)
+	require.NoError(t, err)
+
+	txOpts, err := clients.TxManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	tx, err := allocationManager.SetAVSRegistrar(txOpts, avsAddress, registryCoordinatorAddress)
+	require.NoError(t, err)
+
+	waitForReceipt := true
+
+	receipt, err := clients.TxManager.Send(context.TODO(), tx, waitForReceipt)
+	require.NoError(t, err)
+	fmt.Println("Receipt = ", receipt)
 	// require.NoError(t, err)
-	// logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
 
 	// code taken from Rust SDK test
 	/*
