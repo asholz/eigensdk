@@ -7,7 +7,6 @@ import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import {IAVSDirectory} from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import {IDelegationManager} from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
-import {ISlasher} from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 import {StrategyBaseTVLLimits} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces/IRewardsCoordinator.sol";
 
@@ -19,7 +18,6 @@ struct EigenlayerContracts {
     PauserRegistry eigenlayerPauserReg;
     IStrategyManager strategyManager;
     IDelegationManager delegationManager;
-    ISlasher slasher;
     IAVSDirectory avsDirectory;
     IRewardsCoordinator rewardsCoordinator;
     StrategyBaseTVLLimits baseStrategyImplementation;
@@ -63,12 +61,6 @@ contract EigenlayerContractsParser is ConfigsReadWriter {
             stdJson.readAddress(
                 eigenlayerDeployedContracts,
                 ".addresses.avsDirectory"
-            )
-        );
-        ISlasher slasher = ISlasher(
-            stdJson.readAddress(
-                eigenlayerDeployedContracts,
-                ".addresses.slasher"
             )
         );
         StrategyBaseTVLLimits baseStrategyImplementation = StrategyBaseTVLLimits(
