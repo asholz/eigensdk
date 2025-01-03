@@ -19,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
@@ -192,11 +193,34 @@ func getAllocationManagerAddress(ethHttpUrl string) common.Address {
 	return allocationManagerAddr
 }
 
+func fundAccount(anvilContainer testcontainers.Container, receiverAddress, richPrivateKey string) error {
+	_, _, err := anvilContainer.Exec(
+		context.Background(),
+		[]string{"cast",
+			"send",
+			receiverAddress,
+			"--value",
+			"5ether",
+			"--private-key",
+			richPrivateKey,
+		},
+	)
+	return err
+}
+
 func TestRegisterForOperatorSets(t *testing.T) {
 	const RECEIPT_SUCCESS_STATUS = uint64(1)
 	// TODO: consider replacing all this setup with testclients.BuildTestClients
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+
+	operatorAddressHex := "0x408EfD9C90d59298A9b32F4441aC9Df6A2d8C3E1"
+	operatorPrivateKeyHex := "3339854a8622364bcd5650fa92eac82d5dccf04089f5575a761c9b7d3c405b1c"
+	richPrivateKeyHex := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	err = fundAccount(anvilC, operatorAddressHex, richPrivateKeyHex)
+	assert.NoError(t, err)
+	// assert.Equal(t, 0, code)
+
 	require.NoError(t, err)
 
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
@@ -256,14 +280,14 @@ func TestRegisterForOperatorSets(t *testing.T) {
 
 	receipt, err := eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
 	require.NoError(t, err)
-	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 
 	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
 	require.NoError(t, err)
 
 	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
 	require.NoError(t, err)
-	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 
 	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
 		MaxOperatorCount:        10,
@@ -281,7 +305,7 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	require.NoError(t, err)
 
 	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
-	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 	require.NoError(t, err)
 
 	operatorSetId := uint32(1)
@@ -296,11 +320,12 @@ func TestRegisterForOperatorSets(t *testing.T) {
 
 	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
 	require.NoError(t, err)
-	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 
-	operatorAddress := common.HexToAddress("70997970C51812dc3A010C7d01b50e0d17dc79C8")
-	operatorPrivateKey, err := crypto.HexToECDSA("59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+	operatorAddress := common.HexToAddress(operatorAddressHex)
+	operatorPrivateKey, err := crypto.HexToECDSA(operatorPrivateKeyHex)
 	require.NoError(t, err)
+
 	request := elcontracts.RegistrationRequest{
 		OperatorAddress: operatorAddress,
 		AVSAddress:      avsAddress,
@@ -314,14 +339,15 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), request)
-	require.NoError(t, err)
-	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
-
 	operatorSet := allocationmanager.OperatorSet{
 		Avs: avsAddress,
 		Id:  operatorSetId,
 	}
+
+	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), request)
+	require.NoError(t, err)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
+
 	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(context.Background(), operatorAddress, operatorSet)
 	require.NoError(t, err)
 
