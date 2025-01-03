@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
@@ -21,6 +22,7 @@ import (
 
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 )
 
 func TestRegisterOperator(t *testing.T) {
@@ -191,6 +193,8 @@ func getAllocationManagerAddress(ethHttpUrl string) common.Address {
 }
 
 func TestRegisterForOperatorSets(t *testing.T) {
+	const RECEIPT_SUCCESS_STATUS = uint64(1)
+	// TODO: consider replacing all this setup with testclients.BuildTestClients
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
 	require.NoError(t, err)
@@ -215,11 +219,11 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
 	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, ethHttpClient)
 	require.NoError(t, err)
+
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddress, ethHttpClient)
+	require.NoError(t, err)
+
 	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-
-	require.NoError(t, err)
-
-	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
 		EthHttpUrl:                 anvilHttpEndpoint,
@@ -235,111 +239,91 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	require.NoError(t, err)
 	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
 
-	clients, err := clients.BuildAll(
+	eigenClients, err := clients.BuildAll(
 		chainioConfig,
 		ecdsaPrivateKey,
 		logger,
 	)
 	require.NoError(t, err)
 
-	txOpts, err := clients.TxManager.GetNoSendTxOpts()
+	noSendTxOpts, err := eigenClients.TxManager.GetNoSendTxOpts()
 	require.NoError(t, err)
 
-	tx, err := allocationManager.SetAVSRegistrar(txOpts, avsAddress, registryCoordinatorAddress)
+	tx, err := allocationManager.SetAVSRegistrar(noSendTxOpts, avsAddress, registryCoordinatorAddress)
 	require.NoError(t, err)
 
 	waitForReceipt := true
 
-	receipt, err := clients.TxManager.Send(context.TODO(), tx, waitForReceipt)
+	receipt, err := eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
 	require.NoError(t, err)
-	fmt.Println("Receipt = ", receipt)
-	// require.NoError(t, err)
+	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
 
-	// code taken from Rust SDK test
-	/*
-			    async fn test_register_for_operator_sets() {
-		        // let (_container, http_endpoint, _ws_endpoint) = start_anvil_container().await;
-		        let http_endpoint = "http://localhost:8545".to_string();
+	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	require.NoError(t, err)
 
-		        let avs_address = OPERATOR_ADDRESS;
+	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
 
-		        // set registrar - otherwise i dont know how to get permissions for registry coordinator address
-		        // check if this is needed (should be done on deploy) or is already set
-		        let allocation_manager_addr = get_allocation_manager_address(http_endpoint.clone()).await;
-		        let signer = get_signer(OPERATOR_PRIVATE_KEY, &http_endpoint);
-		        let allocation_manager = AllocationManager::new(allocation_manager_addr, signer.clone());
-		        let registry_coordinator_addr =
-		            get_registry_coordinator_address(http_endpoint.clone()).await;
-		        allocation_manager
-		            .setAVSRegistrar(avs_address, registry_coordinator_addr)
-		            .send()
-		            .await
-		            .unwrap()
-		            .get_receipt()
-		            .await
-		            .unwrap();
+	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
+		MaxOperatorCount:        10,
+		KickBIPsOfOperatorStake: 100,
+		KickBIPsOfTotalStake:    1000,
+	}
+	minimumStake := big.NewInt(0)
+	strategyParams := regcoord.IStakeRegistryStrategyParams{
+		Strategy:   contractAddrs.Erc20MockStrategy,
+		Multiplier: big.NewInt(1),
+	}
+	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
+	lookAheadPeriod := uint32(0)
+	tx, err = registryCoordinator.CreateSlashableStakeQuorum(noSendTxOpts, operatorSetParam, minimumStake, strategyParamsArray, lookAheadPeriod)
+	require.NoError(t, err)
 
-		        // enable operator sets in Registry Coordinator
-		        let registry_coordinator =
-		            RegistryCoordinator::new(registry_coordinator_addr, signer.clone());
-		        registry_coordinator
-		            .enableOperatorSets()
-		            .send()
-		            .await
-		            .unwrap()
-		            .get_receipt()
-		            .await
-		            .unwrap();
+	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
+	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+	require.NoError(t, err)
 
-		        // create slashable quorum
-		        let contract_registry_coordinator =
-		            RegistryCoordinator::new(registry_coordinator_addr, signer.clone());
-		        let operator_set_params = OperatorSetParam {
-		            maxOperatorCount: 10,
-		            kickBIPsOfOperatorStake: 100,
-		            kickBIPsOfTotalStake: 1000,
-		        };
-		        let strategy_params = StrategyParams {
-		            strategy: get_erc20_mock_strategy(http_endpoint.to_string()).await,
-		            multiplier: U96::from(1),
-		        };
-		        contract_registry_coordinator
-		            .createSlashableStakeQuorum(operator_set_params, U96::from(0), vec![strategy_params], 0)
-		            .send()
-		            .await
-		            .unwrap()
-		            .get_receipt()
-		            .await
-		            .unwrap();
+	operatorSetId := uint32(1)
+	strategies := []common.Address{contractAddrs.Erc20MockStrategy}
+	operatorSetParams := allocationmanager.IAllocationManagerTypesCreateSetParams{
+		OperatorSetId: operatorSetId,
+		Strategies:    strategies,
+	}
+	operatorSetParamsArray := []allocationmanager.IAllocationManagerTypesCreateSetParams{operatorSetParams}
+	tx, err = allocationManager.CreateOperatorSets(noSendTxOpts, avsAddress, operatorSetParamsArray)
+	require.NoError(t, err)
 
-		        // create operator set
-		        let operator_set_id = 1;
-		        let params = IAllocationManagerTypes::CreateSetParams {
-		            operatorSetId: operator_set_id,
-		            strategies: vec![get_erc20_mock_strategy(http_endpoint.clone()).await],
-		        };
-		        allocation_manager
-		            .createOperatorSets(avs_address, vec![params])
-		            .send()
-		            .await
-		            .unwrap()
-		            .get_receipt()
-		            .await
-		            .unwrap();
+	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
 
-		        // register to operator set
-		        let operator_addr = address!("70997970C51812dc3A010C7d01b50e0d17dc79C8");
-		        let operator_private_key =
-		            "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-		        let el_chain_writer =
-		            new_test_writer(http_endpoint.clone(), operator_private_key.to_string()).await;
-		        let tx_hash = el_chain_writer
-		            .register_for_operator_sets(operator_addr, avs_address, vec![operator_set_id])
-		            .await
-		            .unwrap();
+	operatorAddress := common.HexToAddress("70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	operatorPrivateKey, err := crypto.HexToECDSA("59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+	require.NoError(t, err)
+	request := elcontracts.RegistrationRequest{
+		OperatorAddress: operatorAddress,
+		AVSAddress:      avsAddress,
+		OperatorSetIds:  []uint32{operatorSetId},
+		WaitForReceipt:  true,
+	}
+	operatorClients, err := clients.BuildAll(
+		chainioConfig,
+		operatorPrivateKey,
+		logger,
+	)
+	require.NoError(t, err)
 
-		        let receipt = wait_transaction(&http_endpoint, tx_hash).await.unwrap();
-		        assert!(receipt.status());
-		    }
-	*/
+	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), request)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, RECEIPT_SUCCESS_STATUS)
+
+	operatorSet := allocationmanager.OperatorSet{
+		Avs: avsAddress,
+		Id:  operatorSetId,
+	}
+	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(context.Background(), operatorAddress, operatorSet)
+	require.NoError(t, err)
+
+	require.Equal(t, isRegistered, true)
 }
