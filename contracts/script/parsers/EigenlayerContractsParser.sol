@@ -82,7 +82,6 @@ contract EigenlayerContractsParser is ConfigsReadWriter {
                 eigenlayerPauserReg,
                 strategyManager,
                 delegationManager,
-                slasher,
                 avsDirectory,
                 rewardsCoordinator,
                 baseStrategyImplementation

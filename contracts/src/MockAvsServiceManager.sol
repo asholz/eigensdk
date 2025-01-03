@@ -6,7 +6,7 @@ import {IRewardsCoordinator} from "eigenlayer-contracts/src/contracts/interfaces
 
 import {IRegistryCoordinator} from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import {IBLSSignatureChecker} from "eigenlayer-middleware/src/interfaces/IBLSSignatureChecker.sol";
-import {ServiceManagerBase} from "eigenlayer-middleware/src/ServiceManagerBase.sol";
+import {ServiceManagerBase, IAllocationManager} from "eigenlayer-middleware/src/ServiceManagerBase.sol";
 import {BLSSignatureChecker} from "eigenlayer-middleware/src/BLSSignatureChecker.sol";
 
 contract MockAvsServiceManager is ServiceManagerBase, BLSSignatureChecker {
@@ -19,13 +19,14 @@ contract MockAvsServiceManager is ServiceManagerBase, BLSSignatureChecker {
             _avsDirectory,
             _rewardsCoordinator,
             _registryCoordinator,
-            _registryCoordinator.stakeRegistry()
+            _registryCoordinator.stakeRegistry(),
+            IAllocationManager(address(0))
         )
         BLSSignatureChecker(_registryCoordinator)
     {}
 
     function initialize(address _initialOwner) external initializer {
         // TODO: setting _rewardsInitializer to be _initialOwner for now.
-        __ServiceManagerBase_init(_initialOwner, _initialOwner);
+        __ServiceManagerBase_init(_initialOwner, _initialOwner, address(0));
     }
 }
