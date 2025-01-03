@@ -459,7 +459,7 @@ func (w *ChainWriter) ForceDeregisterFromOperatorSets(
 	operatorSetIds []uint32,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
-	if w.avsDirectory == nil {
+	if w.allocationManager == nil {
 		return nil, errors.New("AVSDirectory contract not provided")
 	}
 

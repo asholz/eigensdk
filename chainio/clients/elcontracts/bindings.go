@@ -80,12 +80,16 @@ func NewBindingsFromConfig(
 		}
 	}
 
-	permissionController, err = permissioncontroller.NewContractPermissionController(
-		cfg.PermissionsControllerAddress,
-		client,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch RewardsCoordinator contract", err)
+	if isZeroAddress(cfg.PermissionsControllerAddress) {
+		logger.Debug("PermissionController address not provided, the calls to the contract will not work")
+	} else {
+		permissionController, err = permissioncontroller.NewContractPermissionController(
+			cfg.PermissionsControllerAddress,
+			client,
+		)
+		if err != nil {
+			return nil, utils.WrapError("Failed to fetch PermissionController contract", err)
+		}
 	}
 
 	if isZeroAddress(cfg.AvsDirectoryAddress) {
