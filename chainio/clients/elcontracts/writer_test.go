@@ -9,6 +9,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
@@ -213,9 +214,9 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	// TODO: consider replacing all this setup with testclients.BuildTestClients
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-
-	operatorAddressHex := "0x408EfD9C90d59298A9b32F4441aC9Df6A2d8C3E1"
-	operatorPrivateKeyHex := "3339854a8622364bcd5650fa92eac82d5dccf04089f5575a761c9b7d3c405b1c"
+	require.NoError(t, err)
+	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
+	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 	richPrivateKeyHex := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 	err = fundAccount(anvilC, operatorAddressHex, richPrivateKeyHex)
 	assert.NoError(t, err)
@@ -325,12 +326,16 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	operatorAddress := common.HexToAddress(operatorAddressHex)
 	operatorPrivateKey, err := crypto.HexToECDSA(operatorPrivateKeyHex)
 	require.NoError(t, err)
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
 
 	request := elcontracts.RegistrationRequest{
 		OperatorAddress: operatorAddress,
 		AVSAddress:      avsAddress,
 		OperatorSetIds:  []uint32{operatorSetId},
 		WaitForReceipt:  true,
+		Socket:          "socket",
+		BlsKeyPair:      keypair,
 	}
 	operatorClients, err := clients.BuildAll(
 		chainioConfig,
@@ -341,10 +346,11 @@ func TestRegisterForOperatorSets(t *testing.T) {
 
 	operatorSet := allocationmanager.OperatorSet{
 		Avs: avsAddress,
-		Id:  operatorSetId,
+		Id:  uint32(operatorSetId),
 	}
 
-	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), request)
+	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), registryCoordinatorAddress, request)
+
 	require.NoError(t, err)
 	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 
