@@ -601,7 +601,10 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, utils.WrapError("failed to create registry coordinator", err)
 	}
 	// params to register bls pubkey with bls apk registry
-	g1HashedMsgToSign, err := registryCoordinator.PubkeyRegistrationMessageHash(&bind.CallOpts{}, request.OperatorAddress)
+	g1HashedMsgToSign, err := registryCoordinator.PubkeyRegistrationMessageHash(
+		&bind.CallOpts{},
+		request.OperatorAddress,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -641,7 +644,10 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	return receipt, nil
 }
 
-func abiEncodeRegistrationParams(socket string, pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams) ([]byte, error) {
+func abiEncodeRegistrationParams(
+	socket string,
+	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
+) ([]byte, error) {
 	registrationParams, _ := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
 		{Name: "Socket", Type: "string"},
 		{Name: "PubkeyRegParams", Type: "tuple", Components: []abi.ArgumentMarshaling{

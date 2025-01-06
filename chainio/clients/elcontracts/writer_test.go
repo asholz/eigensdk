@@ -302,7 +302,13 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	}
 	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
 	lookAheadPeriod := uint32(0)
-	tx, err = registryCoordinator.CreateSlashableStakeQuorum(noSendTxOpts, operatorSetParam, minimumStake, strategyParamsArray, lookAheadPeriod)
+	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
+		noSendTxOpts,
+		operatorSetParam,
+		minimumStake,
+		strategyParamsArray,
+		lookAheadPeriod,
+	)
 	require.NoError(t, err)
 
 	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
@@ -349,12 +355,20 @@ func TestRegisterForOperatorSets(t *testing.T) {
 		Id:  uint32(operatorSetId),
 	}
 
-	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(context.Background(), registryCoordinatorAddress, request)
+	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(
+		context.Background(),
+		registryCoordinatorAddress,
+		request,
+	)
 
 	require.NoError(t, err)
 	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
 
-	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(context.Background(), operatorAddress, operatorSet)
+	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(
+		context.Background(),
+		operatorAddress,
+		operatorSet,
+	)
 	require.NoError(t, err)
 
 	require.Equal(t, isRegistered, true)
