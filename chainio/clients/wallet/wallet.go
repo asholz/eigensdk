@@ -20,4 +20,8 @@ type Wallet interface {
 	GetTransactionReceipt(ctx context.Context, txID TxID) (*types.Receipt, error)
 	// SenderAddress returns the address of the wallet
 	SenderAddress(ctx context.Context) (common.Address, error)
+
+	// IsHexTxID returns true if the transaction ID (TxID) is represented as a hexadecimal string; otherwise, false.
+	// Some wallets use custom formats like uuid for representing the TxID instead of raw hex
+	IsHexTxID() bool
 }

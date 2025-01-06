@@ -39,6 +39,10 @@ func NewPrivateKeyWallet(
 	}, nil
 }
 
+func (t *privateKeyWallet) IsHexTxID() bool {
+	return true
+}
+
 func (t *privateKeyWallet) SendTransaction(ctx context.Context, tx *types.Transaction) (TxID, error) {
 
 	t.logger.Debug("Getting signer for tx")

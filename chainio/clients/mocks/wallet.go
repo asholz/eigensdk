@@ -36,6 +36,10 @@ func NewMockWallet(ctrl *gomock.Controller) *MockWallet {
 	return mock
 }
 
+func (m *MockWallet) IsHexTxID() bool {
+	return true
+}
+
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockWallet) EXPECT() *MockWalletMockRecorder {
 	return m.recorder
