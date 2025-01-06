@@ -91,6 +91,10 @@ func NewFireblocksWallet(
 	}, nil
 }
 
+func (t *fireblocksWallet) IsHexTxID() bool {
+	return false
+}
+
 func (t *fireblocksWallet) getAccount(ctx context.Context) (*fireblocks.VaultAccount, error) {
 	if t.account == nil {
 		accounts, err := t.fireblocksClient.ListVaultAccounts(ctx)

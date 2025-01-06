@@ -74,7 +74,7 @@ func (m *SimpleTxManager) Send(
 	waitForReceipt bool,
 ) (*types.Receipt, error) {
 
-	r, err := m.send(ctx, tx)
+	r, txID, err := m.send(ctx, tx)
 	if err != nil {
 		return nil, errors.Join(errors.New("send: failed to estimate gas and nonce"), err)
 	}
@@ -82,7 +82,13 @@ func (m *SimpleTxManager) Send(
 		return r, nil
 	}
 
-	receipt, err := m.waitForReceipt(ctx, r.TxHash.Hex())
+	var receipt *types.Receipt
+	if m.wallet.IsHexTxID() {
+		receipt, err = m.waitForReceipt(ctx, r.TxHash.Hex())
+	} else {
+		receipt, err = m.waitForReceipt(ctx, txID)
+	}
+
 	if err != nil {
 		log.Info("Transaction receipt not found", "err", err)
 		return nil, err
@@ -91,14 +97,14 @@ func (m *SimpleTxManager) Send(
 	return receipt, nil
 }
 
-func (m *SimpleTxManager) send(ctx context.Context, tx *types.Transaction) (*types.Receipt, error) {
+func (m *SimpleTxManager) send(ctx context.Context, tx *types.Transaction) (*types.Receipt, string, error) {
 	// Estimate gas and nonce
 	// can't print tx hash in logs because the tx changes below when we complete and sign it
 	// so the txHash is meaningless at this point
 	m.logger.Debug("Estimating gas and nonce")
 	tx, err := m.estimateGasAndNonce(ctx, tx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	bumpedGasTx := &types.DynamicFeeTx{
 		To:        tx.To(),
@@ -111,11 +117,11 @@ func (m *SimpleTxManager) send(ctx context.Context, tx *types.Transaction) (*typ
 	}
 	txID, err := m.wallet.SendTransaction(ctx, types.NewTx(bumpedGasTx))
 	if err != nil {
-		return nil, errors.Join(errors.New("send: failed to estimate gas and nonce"), err)
+		return nil, "", errors.Join(errors.New("send: failed to estimate gas and nonce"), err)
 	}
 	return &types.Receipt{
 		TxHash: common.HexToHash(txID),
-	}, nil
+	}, txID, nil
 }
 
 func NoopSigner(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
