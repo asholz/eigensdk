@@ -654,7 +654,7 @@ func abiEncodeRegistrationParams(
 	socket string,
 	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
 ) ([]byte, error) {
-	registrationParams, _ := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+	registrationParamsType, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
 		{Name: "Socket", Type: "string"},
 		{Name: "PubkeyRegParams", Type: "tuple", Components: []abi.ArgumentMarshaling{
 			{Name: "PubkeyRegistrationSignature", Type: "tuple", Components: []abi.ArgumentMarshaling{
@@ -671,8 +671,11 @@ func abiEncodeRegistrationParams(
 			}},
 		}},
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	regParams := struct {
+	registrationParams := struct {
 		Socket          string
 		PubkeyRegParams regcoord.IBLSApkRegistryPubkeyRegistrationParams
 	}{
@@ -681,10 +684,10 @@ func abiEncodeRegistrationParams(
 	}
 
 	args := abi.Arguments{
-		{Type: registrationParams, Name: "registrationParams"},
+		{Type: registrationParamsType, Name: "registrationParams"},
 	}
 
-	data, err := args.Pack(&regParams)
+	data, err := args.Pack(&registrationParams)
 	if err != nil {
 		return nil, err
 	}
