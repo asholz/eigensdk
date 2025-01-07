@@ -15,7 +15,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -159,6 +158,89 @@ func TestChainWriter(t *testing.T) {
 	})
 }
 
+func createOperatorSet(client *clients.Clients, avsAddress common.Address, operatorSetId uint32, erc20MockStrategyAddr common.Address) error {
+	allocationManagerAddress := client.EigenlayerContractBindings.AllocationManagerAddr
+	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, client.EthHttpClient)
+	if err != nil {
+		return err
+	}
+	registryCoordinatorAddress := client.AvsRegistryContractBindings.RegistryCoordinatorAddr
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddress, client.EthHttpClient)
+	if err != nil {
+		return err
+	}
+
+	noSendTxOpts, err := client.TxManager.GetNoSendTxOpts()
+	if err != nil {
+		return err
+	}
+
+	tx, err := allocationManager.SetAVSRegistrar(noSendTxOpts, avsAddress, registryCoordinatorAddress)
+	if err != nil {
+		return err
+	}
+
+	waitForReceipt := true
+
+	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
+		MaxOperatorCount:        10,
+		KickBIPsOfOperatorStake: 100,
+		KickBIPsOfTotalStake:    1000,
+	}
+	minimumStake := big.NewInt(0)
+
+	strategyParams := regcoord.IStakeRegistryStrategyParams{
+		Strategy:   erc20MockStrategyAddr,
+		Multiplier: big.NewInt(1),
+	}
+	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
+	lookAheadPeriod := uint32(0)
+	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
+		noSendTxOpts,
+		operatorSetParam,
+		minimumStake,
+		strategyParamsArray,
+		lookAheadPeriod,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	strategies := []common.Address{erc20MockStrategyAddr}
+	operatorSetParams := allocationmanager.IAllocationManagerTypesCreateSetParams{
+		OperatorSetId: operatorSetId,
+		Strategies:    strategies,
+	}
+	operatorSetParamsArray := []allocationmanager.IAllocationManagerTypesCreateSetParams{operatorSetParams}
+	tx, err = allocationManager.CreateOperatorSets(noSendTxOpts, avsAddress, operatorSetParamsArray)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	return err
+}
+
 func TestRegisterForOperatorSets(t *testing.T) {
 	const RECEIPT_SUCCESS_STATUS = uint64(1)
 	// TODO: consider replacing all this setup with testclients.BuildTestClients
@@ -166,23 +248,14 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
 	require.NoError(t, err)
 
-	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
-	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 
 	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
 	require.NoError(t, err)
 
-	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
-	require.NoError(t, err)
-
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-
-	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddress, ethHttpClient)
-	require.NoError(t, err)
 
 	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 
@@ -207,67 +280,14 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	allocationManagerAddress := eigenClients.EigenlayerContractBindings.AllocationManagerAddr
-	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, ethHttpClient)
-	require.NoError(t, err)
-
-	noSendTxOpts, err := eigenClients.TxManager.GetNoSendTxOpts()
-	require.NoError(t, err)
-
-	tx, err := allocationManager.SetAVSRegistrar(noSendTxOpts, avsAddress, registryCoordinatorAddress)
-	require.NoError(t, err)
-
-	waitForReceipt := true
-
-	receipt, err := eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
-
-	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
-	require.NoError(t, err)
-
-	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
-
-	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
-		MaxOperatorCount:        10,
-		KickBIPsOfOperatorStake: 100,
-		KickBIPsOfTotalStake:    1000,
-	}
-	minimumStake := big.NewInt(0)
-	strategyParams := regcoord.IStakeRegistryStrategyParams{
-		Strategy:   contractAddrs.Erc20MockStrategy,
-		Multiplier: big.NewInt(1),
-	}
-	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
-	lookAheadPeriod := uint32(0)
-	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
-		noSendTxOpts,
-		operatorSetParam,
-		minimumStake,
-		strategyParamsArray,
-		lookAheadPeriod,
-	)
-	require.NoError(t, err)
-
-	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
-	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
-	require.NoError(t, err)
-
 	operatorSetId := uint32(1)
-	strategies := []common.Address{contractAddrs.Erc20MockStrategy}
-	operatorSetParams := allocationmanager.IAllocationManagerTypesCreateSetParams{
-		OperatorSetId: operatorSetId,
-		Strategies:    strategies,
-	}
-	operatorSetParamsArray := []allocationmanager.IAllocationManagerTypesCreateSetParams{operatorSetParams}
-	tx, err = allocationManager.CreateOperatorSets(noSendTxOpts, avsAddress, operatorSetParamsArray)
+	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
+
+	err = createOperatorSet(eigenClients, avsAddress, operatorSetId, erc20MockStrategyAddr)
 	require.NoError(t, err)
 
-	receipt, err = eigenClients.TxManager.Send(context.Background(), tx, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
+	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
+	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
 	operatorAddress := common.HexToAddress(operatorAddressHex)
 	operatorPrivateKey, err := crypto.HexToECDSA(operatorPrivateKeyHex)
@@ -295,7 +315,7 @@ func TestRegisterForOperatorSets(t *testing.T) {
 		Id:  uint32(operatorSetId),
 	}
 
-	receipt, err = operatorClients.ElChainWriter.RegisterForOperatorSets(
+	receipt, err := operatorClients.ElChainWriter.RegisterForOperatorSets(
 		context.Background(),
 		registryCoordinatorAddress,
 		request,
