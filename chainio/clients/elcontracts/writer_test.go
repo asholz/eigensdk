@@ -214,14 +214,25 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	require.Equal(t, isRegistered, true)
 }
 
-func createOperatorSet(client *clients.Clients, avsAddress common.Address, operatorSetId uint32, erc20MockStrategyAddr common.Address) error {
+func createOperatorSet(
+	client *clients.Clients,
+	avsAddress common.Address,
+	operatorSetId uint32,
+	erc20MockStrategyAddr common.Address,
+) error {
 	allocationManagerAddress := client.EigenlayerContractBindings.AllocationManagerAddr
-	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, client.EthHttpClient)
+	allocationManager, err := allocationmanager.NewContractAllocationManager(
+		allocationManagerAddress,
+		client.EthHttpClient,
+	)
 	if err != nil {
 		return err
 	}
 	registryCoordinatorAddress := client.AvsRegistryContractBindings.RegistryCoordinatorAddr
-	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddress, client.EthHttpClient)
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		client.EthHttpClient,
+	)
 	if err != nil {
 		return err
 	}

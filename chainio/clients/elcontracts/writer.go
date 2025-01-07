@@ -595,7 +595,12 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	pubkeyRegParams, err := getPubkeyRegistrationParams(w.ethClient, registryCoordinatorAddr, request.OperatorAddress, request.BlsKeyPair)
+	pubkeyRegParams, err := getPubkeyRegistrationParams(
+		w.ethClient,
+		registryCoordinatorAddr,
+		request.OperatorAddress,
+		request.BlsKeyPair,
+	)
 	if err != nil {
 		return nil, utils.WrapError("failed to get public key registration params", err)
 	}
@@ -624,7 +629,11 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	return receipt, nil
 }
 
-func getPubkeyRegistrationParams(ethClient bind.ContractBackend, registryCoordinatorAddr, operatorAddress gethcommon.Address, blsKeyPair *bls.KeyPair) (*regcoord.IBLSApkRegistryPubkeyRegistrationParams, error) {
+func getPubkeyRegistrationParams(
+	ethClient bind.ContractBackend,
+	registryCoordinatorAddr, operatorAddress gethcommon.Address,
+	blsKeyPair *bls.KeyPair,
+) (*regcoord.IBLSApkRegistryPubkeyRegistrationParams, error) {
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
 	if err != nil {
 		return nil, utils.WrapError("failed to create registry coordinator", err)
