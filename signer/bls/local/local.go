@@ -42,6 +42,10 @@ func (s Signer) GetOperatorId() (string, error) {
 	return s.key.PubKey.GetOperatorID(), nil
 }
 
-func (s Signer) GetPublicKeyHex() string {
+func (s Signer) GetPublicKeyG1() string {
 	return hex.EncodeToString(s.key.PubKey.Serialize())
+}
+
+func (s Signer) GetPublicKeyG2() string {
+	return hex.EncodeToString(s.key.GetPubKeyG2().Serialize())
 }

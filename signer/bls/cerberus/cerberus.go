@@ -30,9 +30,10 @@ type Config struct {
 }
 
 type Signer struct {
-	client    v1.SignerClient
-	pubKeyHex string
-	password  string
+	signerClient v1.SignerClient
+	kmsClient    v1.KeyManagerClient
+	pubKeyHex    string
+	password     string
 }
 
 func New(cfg Config) (Signer, error) {
@@ -50,11 +51,13 @@ func New(cfg Config) (Signer, error) {
 		log.Fatalf("did not connect: %v", err)
 	}
 
-	client := v1.NewSignerClient(conn)
+	signerClient := v1.NewSignerClient(conn)
+	kmsClient := v1.NewKeyManagerClient(conn)
 	return Signer{
-		client:    client,
-		pubKeyHex: cfg.PublicKeyHex,
-		password:  cfg.Password,
+		signerClient: signerClient,
+		kmsClient:    kmsClient,
+		pubKeyHex:    cfg.PublicKeyHex,
+		password:     cfg.Password,
 	}, nil
 }
 
@@ -66,10 +69,10 @@ func (s Signer) Sign(ctx context.Context, msg []byte) ([]byte, error) {
 	var data [32]byte
 	copy(data[:], msg)
 
-	resp, err := s.client.SignGeneric(ctx, &v1.SignGenericRequest{
-		Data:      data[:],
-		PublicKey: s.pubKeyHex,
-		Password:  s.password,
+	resp, err := s.signerClient.SignGeneric(ctx, &v1.SignGenericRequest{
+		Data:        data[:],
+		PublicKeyG1: s.pubKeyHex,
+		Password:    s.password,
 	})
 	if err != nil {
 		return nil, err
@@ -88,6 +91,17 @@ func (s Signer) GetOperatorId() (string, error) {
 	return publicKey.GetOperatorID(), nil
 }
 
-func (s Signer) GetPublicKeyHex() string {
+func (s Signer) GetPublicKeyG1() string {
 	return s.pubKeyHex
+}
+
+func (s Signer) GetPublicKeyG2() string {
+	resp, err := s.kmsClient.GetKeyMetadata(context.Background(), &v1.GetKeyMetadataRequest{
+		PublicKeyG1: s.pubKeyHex,
+	})
+	if err != nil {
+		log.Fatalf("could not get key metadata from cerberus: %v", err)
+	}
+
+	return resp.PublicKeyG2
 }
