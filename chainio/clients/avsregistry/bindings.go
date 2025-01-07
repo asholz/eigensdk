@@ -3,6 +3,7 @@ package avsregistry
 import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	blsapkregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
+	contractDelegationManager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	indexregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IndexRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
@@ -211,7 +212,14 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
-		allocationManagerAddr, err = contractServiceManager.AllocationManager(&bind.CallOpts{})
+
+		delegationManager, err := contractDelegationManager.NewContractDelegationManager(
+			delegationManagerAddr,
+			client)
+		if err != nil {
+			return nil, utils.WrapError("Failed to get DelegationManager contract", err)
+		}
+		allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AllocationManager address", err)
 		}
