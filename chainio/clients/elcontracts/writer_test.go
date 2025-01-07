@@ -2,7 +2,6 @@ package elcontracts_test
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -14,7 +13,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -23,7 +21,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
-	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 )
 
@@ -163,37 +160,6 @@ func TestChainWriter(t *testing.T) {
 	})
 }
 
-func getAllocationManagerAddress(ethHttpUrl string) common.Address {
-	ethHttpClient, err := ethclient.Dial(ethHttpUrl)
-	if err != nil {
-		// TODO: handle error
-		panic(err)
-	}
-	// The ContractsRegistry contract should always be deployed at this address on anvil
-	// it's the address of the contract created at nonce 0 by the first anvil account
-	// (0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266)
-	contractsRegistry, err := contractreg.NewContractContractsRegistry(
-		common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
-		ethHttpClient,
-	)
-	if err != nil {
-		panic(err)
-	}
-	for i := 0; i < 10; i++ {
-		contractNumber := big.NewInt(int64(i))
-		names, err := contractsRegistry.ContractNames(&bind.CallOpts{}, contractNumber)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("ContractNames(0) = ", names)
-	}
-	allocationManagerAddr, err := contractsRegistry.Contracts(&bind.CallOpts{}, "allocationManager")
-	if err != nil {
-		panic(err)
-	}
-	return allocationManagerAddr
-}
-
 func fundAccount(anvilContainer testcontainers.Container, receiverAddress, richPrivateKey string) error {
 	_, _, err := anvilContainer.Exec(
 		context.Background(),
@@ -218,9 +184,9 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
 	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 	richPrivateKeyHex := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
 	err = fundAccount(anvilC, operatorAddressHex, richPrivateKeyHex)
 	assert.NoError(t, err)
-	// assert.Equal(t, 0, code)
 
 	require.NoError(t, err)
 
@@ -233,17 +199,8 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
 	require.NoError(t, err)
 
-	// allocationManagerAddress := getAllocationManagerAddress(anvilHttpEndpoint)
-	// fmt.Println("getAllocationManagerAddress = ", allocationManagerAddress)
-
-	// TODO: fetch this address using the auxiliary function
-	allocationManagerAddress := common.HexToAddress("0x8A791620dd6260079BF849Dc5567aDC3F2FdC318")
-	fmt.Println("getAllocationManagerAddress = ", allocationManagerAddress)
-
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, ethHttpClient)
-	require.NoError(t, err)
 
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddress, ethHttpClient)
 	require.NoError(t, err)
@@ -269,6 +226,10 @@ func TestRegisterForOperatorSets(t *testing.T) {
 		ecdsaPrivateKey,
 		logger,
 	)
+	require.NoError(t, err)
+
+	allocationManagerAddress := eigenClients.EigenlayerContractBindings.AllocationManagerAddr
+	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, ethHttpClient)
 	require.NoError(t, err)
 
 	noSendTxOpts, err := eigenClients.TxManager.GetNoSendTxOpts()
