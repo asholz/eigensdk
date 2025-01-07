@@ -11,6 +11,7 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,4 +151,15 @@ func TestChainWriter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
 	})
+}
+
+const SUCCESS_STATUS = uint64(1)
+
+func TestSetClaimerFor(t *testing.T) {
+	testClients, _ := testclients.BuildTestClients(t)
+	claimerAddress := common.HexToAddress("5eb15C0992734B5e77c888D713b4FC67b3D679A2")
+	waitForReceipt := true
+	receipt, err := testClients.ElChainWriter.SetClaimerFor(context.Background(), claimerAddress, waitForReceipt)
+	assert.NoError(t, err)
+	assert.True(t, receipt.Status == SUCCESS_STATUS)
 }
