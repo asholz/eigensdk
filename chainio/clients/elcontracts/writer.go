@@ -3,7 +3,6 @@ package elcontracts
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -25,6 +24,7 @@ import (
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -595,15 +595,44 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, w.ethClient)
-	blsKeyPair := request.BlsKeyPair
+	pubkeyRegParams, err := getPubkeyRegistrationParams(w.ethClient, registryCoordinatorAddr, request.OperatorAddress, request.BlsKeyPair)
+	if err != nil {
+		return nil, utils.WrapError("failed to get public key registration params", err)
+	}
+
+	data, err := abiEncodeRegistrationParams(request.Socket, *pubkeyRegParams)
+	if err != nil {
+		return nil, utils.WrapError("failed to encode registration params", err)
+	}
+	tx, err := w.allocationManager.RegisterForOperatorSets(
+		noSendTxOpts,
+		request.OperatorAddress,
+		allocationmanager.IAllocationManagerTypesRegisterParams{
+			Avs:            request.AVSAddress,
+			OperatorSetIds: request.OperatorSetIds,
+			Data:           data,
+		})
+	if err != nil {
+		return nil, utils.WrapError("failed to create RegisterForOperatorSets tx", err)
+	}
+
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
+func getPubkeyRegistrationParams(ethClient bind.ContractBackend, registryCoordinatorAddr, operatorAddress gethcommon.Address, blsKeyPair *bls.KeyPair) (*regcoord.IBLSApkRegistryPubkeyRegistrationParams, error) {
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
 	if err != nil {
 		return nil, utils.WrapError("failed to create registry coordinator", err)
 	}
 	// params to register bls pubkey with bls apk registry
 	g1HashedMsgToSign, err := registryCoordinator.PubkeyRegistrationMessageHash(
 		&bind.CallOpts{},
-		request.OperatorAddress,
+		operatorAddress,
 	)
 	if err != nil {
 		return nil, err
@@ -618,30 +647,7 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		PubkeyG1:                    G1pubkeyBN254,
 		PubkeyG2:                    G2pubkeyBN254,
 	}
-	socket := "socket"
-	data, err := abiEncodeRegistrationParams(socket, pubkeyRegParams)
-	if err != nil {
-		return nil, utils.WrapError("failed to encode registration params", err)
-	}
-	tx, err := w.allocationManager.RegisterForOperatorSets(
-		noSendTxOpts,
-		request.OperatorAddress,
-		allocationmanager.IAllocationManagerTypesRegisterParams{
-			Avs:            request.AVSAddress,
-			OperatorSetIds: request.OperatorSetIds,
-			Data:           data,
-		})
-	if err != nil {
-		fmt.Println("error = ", err)
-		return nil, utils.WrapError("failed to create RegisterForOperatorSets tx", err)
-	}
-
-	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
-	}
-
-	return receipt, nil
+	return &pubkeyRegParams, nil
 }
 
 func abiEncodeRegistrationParams(
@@ -682,6 +688,8 @@ func abiEncodeRegistrationParams(
 	if err != nil {
 		return nil, err
 	}
+	// The encoder is prepending 32 bytes to the data as if it was used in a dynamic function parameter.
+	// This is not used when decoding the bytes directly, so we need to remove it.
 	return data[32:], nil
 }
 
