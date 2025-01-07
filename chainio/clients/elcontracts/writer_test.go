@@ -158,6 +158,62 @@ func TestChainWriter(t *testing.T) {
 	})
 }
 
+func TestRegisterForOperatorSets(t *testing.T) {
+	eigenClients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	operatorSetId := uint32(1)
+	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
+
+	err := createOperatorSet(eigenClients, avsAddress, operatorSetId, erc20MockStrategyAddr)
+	require.NoError(t, err)
+
+	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
+	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+
+	// Create operator clients
+	operatorClients, err := newTestClients(anvilHttpEndpoint, operatorPrivateKeyHex)
+	require.NoError(t, err)
+
+	operatorAddress := common.HexToAddress(operatorAddressHex)
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	request := elcontracts.RegistrationRequest{
+		OperatorAddress: operatorAddress,
+		AVSAddress:      avsAddress,
+		OperatorSetIds:  []uint32{operatorSetId},
+		WaitForReceipt:  true,
+		Socket:          "socket",
+		BlsKeyPair:      keypair,
+	}
+
+	operatorSet := allocationmanager.OperatorSet{
+		Avs: avsAddress,
+		Id:  uint32(operatorSetId),
+	}
+
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	receipt, err := operatorClients.ElChainWriter.RegisterForOperatorSets(
+		context.Background(),
+		registryCoordinatorAddress,
+		request,
+	)
+
+	require.NoError(t, err)
+	const RECEIPT_SUCCESS_STATUS = uint64(1)
+	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
+
+	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(
+		context.Background(),
+		operatorAddress,
+		operatorSet,
+	)
+	require.NoError(t, err)
+	require.Equal(t, isRegistered, true)
+}
+
 func createOperatorSet(client *clients.Clients, avsAddress common.Address, operatorSetId uint32, erc20MockStrategyAddr common.Address) error {
 	allocationManagerAddress := client.EigenlayerContractBindings.AllocationManagerAddr
 	allocationManager, err := allocationmanager.NewContractAllocationManager(allocationManagerAddress, client.EthHttpClient)
@@ -241,95 +297,30 @@ func createOperatorSet(client *clients.Clients, avsAddress common.Address, opera
 	return err
 }
 
-func TestRegisterForOperatorSets(t *testing.T) {
-	const RECEIPT_SUCCESS_STATUS = uint64(1)
-	// TODO: consider replacing all this setup with testclients.BuildTestClients
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
-	require.NoError(t, err)
-
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-
-	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-
+func newTestClients(httpEndpoint string, privateKeyHex string) (*clients.Clients, error) {
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
 	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 anvilHttpEndpoint,
-		EthWsUrl:                   anvilWsEndpoint,
+		EthHttpUrl:                 httpEndpoint,
+		EthWsUrl:                   httpEndpoint,
 		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
 	}
-	fundedPrivateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-
-	ecdsaPrivateKey, err := crypto.HexToECDSA(fundedPrivateKeyHex)
-	require.NoError(t, err)
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, err
+	}
+	testConfig := testutils.GetDefaultTestConfig()
 	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
 
-	eigenClients, err := clients.BuildAll(
+	testClients, err := clients.BuildAll(
 		chainioConfig,
-		ecdsaPrivateKey,
+		privateKey,
 		logger,
 	)
-	require.NoError(t, err)
-
-	operatorSetId := uint32(1)
-	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
-
-	err = createOperatorSet(eigenClients, avsAddress, operatorSetId, erc20MockStrategyAddr)
-	require.NoError(t, err)
-
-	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
-	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-
-	operatorAddress := common.HexToAddress(operatorAddressHex)
-	operatorPrivateKey, err := crypto.HexToECDSA(operatorPrivateKeyHex)
-	require.NoError(t, err)
-	keypair, err := bls.NewKeyPairFromString("0x01")
-	require.NoError(t, err)
-
-	request := elcontracts.RegistrationRequest{
-		OperatorAddress: operatorAddress,
-		AVSAddress:      avsAddress,
-		OperatorSetIds:  []uint32{operatorSetId},
-		WaitForReceipt:  true,
-		Socket:          "socket",
-		BlsKeyPair:      keypair,
+	if err != nil {
+		return nil, err
 	}
-	operatorClients, err := clients.BuildAll(
-		chainioConfig,
-		operatorPrivateKey,
-		logger,
-	)
-	require.NoError(t, err)
-
-	operatorSet := allocationmanager.OperatorSet{
-		Avs: avsAddress,
-		Id:  uint32(operatorSetId),
-	}
-
-	receipt, err := operatorClients.ElChainWriter.RegisterForOperatorSets(
-		context.Background(),
-		registryCoordinatorAddress,
-		request,
-	)
-
-	require.NoError(t, err)
-	require.Equal(t, RECEIPT_SUCCESS_STATUS, receipt.Status)
-
-	isRegistered, err := operatorClients.ElChainReader.IsOperatorRegisteredWithOperatorSet(
-		context.Background(),
-		operatorAddress,
-		operatorSet,
-	)
-	require.NoError(t, err)
-
-	require.Equal(t, isRegistered, true)
+	return testClients, nil
 }
