@@ -18,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
@@ -160,35 +159,15 @@ func TestChainWriter(t *testing.T) {
 	})
 }
 
-func fundAccount(anvilContainer testcontainers.Container, receiverAddress, richPrivateKey string) error {
-	_, _, err := anvilContainer.Exec(
-		context.Background(),
-		[]string{"cast",
-			"send",
-			receiverAddress,
-			"--value",
-			"5ether",
-			"--private-key",
-			richPrivateKey,
-		},
-	)
-	return err
-}
-
 func TestRegisterForOperatorSets(t *testing.T) {
 	const RECEIPT_SUCCESS_STATUS = uint64(1)
 	// TODO: consider replacing all this setup with testclients.BuildTestClients
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
 	require.NoError(t, err)
+
 	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
 	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-	richPrivateKeyHex := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-
-	err = fundAccount(anvilC, operatorAddressHex, richPrivateKeyHex)
-	assert.NoError(t, err)
-
-	require.NoError(t, err)
 
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
