@@ -5,7 +5,7 @@ go 1.21.13
 replace github.com/Layr-Labs/eigensdk-go => ../../eigensdk-go
 
 require (
-	github.com/Layr-Labs/cerberus-api v0.0.2-0.20250107174124-05df6050f723
+	github.com/Layr-Labs/cerberus-api v0.0.2-0.20250108174619-d5e1eb03fbd5
 	github.com/Layr-Labs/eigensdk-go v0.1.13
 	google.golang.org/grpc v1.64.1
 )

@@ -37,6 +37,16 @@ func (s Signer) Sign(ctx context.Context, msg []byte) ([]byte, error) {
 	return s.key.SignMessage(data).Serialize(), nil
 }
 
+func (s Signer) SignG1(ctx context.Context, msg []byte) ([]byte, error) {
+	if len(msg) != 64 {
+		return nil, types.ErrInvalidMessageLength
+	}
+
+	msgG1 := new(sdkBls.G1Point)
+	msgG1 = msgG1.Deserialize(msg)
+	return s.key.SignHashedToCurveMessage(msgG1.G1Affine).Serialize(), nil
+}
+
 func (s Signer) GetOperatorId() (string, error) {
 	return s.key.PubKey.GetOperatorID(), nil
 }

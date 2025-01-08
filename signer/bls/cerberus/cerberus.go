@@ -66,11 +66,25 @@ func (s Signer) Sign(ctx context.Context, msg []byte) ([]byte, error) {
 		return nil, types.ErrInvalidMessageLength
 	}
 
-	var data [32]byte
-	copy(data[:], msg)
-
 	resp, err := s.signerClient.SignGeneric(ctx, &v1.SignGenericRequest{
-		Data:        data[:],
+		Data:        msg,
+		PublicKeyG1: s.pubKeyHex,
+		Password:    s.password,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Signature, nil
+}
+
+func (s Signer) SignG1(ctx context.Context, msg []byte) ([]byte, error) {
+	if len(msg) != 64 {
+		return nil, types.ErrInvalidMessageLength
+	}
+
+	resp, err := s.signerClient.SignG1(ctx, &v1.SignG1Request{
+		Data:        msg,
 		PublicKeyG1: s.pubKeyHex,
 		Password:    s.password,
 	})
