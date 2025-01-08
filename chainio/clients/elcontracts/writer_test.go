@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
@@ -14,13 +13,14 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/signerv2"
+	"github.com/Layr-Labs/eigensdk-go/types"
 
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
-	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/Layr-Labs/eigensdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -215,26 +215,10 @@ func TestSetOperatorPISplit(t *testing.T) {
 	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	waitForReceipt := true
-	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
-	require.NoError(t, err)
-
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
-	require.NoError(t, err)
-
-	txManager, err := newTestTxManager(anvilHttpEndpoint, privateKeyHex)
-	require.NoError(t, err)
-
-	noSendOpts, err := txManager.GetNoSendTxOpts()
-	require.NoError(t, err)
 
 	activationDelay := uint32(0)
 	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
-	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
-	require.NoError(t, err)
-
-	receipt, err := txManager.Send(context.Background(), tx, true)
-	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 
 	// Create ChainWriter
 	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
@@ -243,22 +227,103 @@ func TestSetOperatorPISplit(t *testing.T) {
 	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	newSplit := uint16(5)
-	startingSplit := uint16(1000)
-
-	split, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
+	startingSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
-	require.Equal(t, startingSplit, split)
 
-	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
+	newSplit := startingSplit * 2
+	// Set a new operator PI split
+	receipt, err := chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
 	require.NoError(t, err)
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 
-	time.Sleep(5 * time.Second)
-
+	// Retrieve the operator PI split to check it has been set
 	updatedSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
 	require.Equal(t, newSplit, updatedSplit)
+}
+
+func TestSetOperatorAVSSplit(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	avsAddr := contractAddrs.ServiceManager
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	waitForReceipt := true
+	activationDelay := uint32(0)
+
+	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
+	setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+
+	// Create ChainWriter
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	startingSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
+	require.NoError(t, err)
+
+	newSplit := startingSplit * 2
+	// Set a new operator AVS split
+	receipt, err := chainWriter.SetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr, newSplit, waitForReceipt)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	// Retrieve the operator AVS split to check it has been set
+	updatedSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
+	require.NoError(t, err)
+	require.Equal(t, newSplit, updatedSplit)
+}
+
+// Sets the testing RewardsCoordinator contract's activationDelay.
+// This is useful to test ChainWriter setter functions that depend on activationDelay.
+func setTestRewardsCoordinatorActivationDelay(httpEndpoint string, privateKeyHex string, activationDelay uint32) (*gethtypes.Receipt, error) {
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create rewards coordinator", err)
+	}
+
+	txManager, err := newTestTxManager(httpEndpoint, privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create tx manager", err)
+	}
+
+	noSendOpts, err := txManager.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
+	}
+
+	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create SetActivationDelay tx", err)
+	}
+
+	receipt, err := txManager.Send(context.Background(), tx, true)
+	if err != nil {
+		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
+	}
+	return receipt, err
 }
 
 // TODO: consider moving this and the other utilities below to testutils
