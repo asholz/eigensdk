@@ -33,19 +33,10 @@ jobs:
       - name: run make bindings and check for diffs
         run: |
           make bindings
-          # debug
-          echo "ls -la contracts/bindings/AVSDirectory/binding.go"
-          ls -la contracts/bindings/AVSDirectory/binding.go
-          echo "ls -la chainio/clients/eigenpod/bindings/IEigenPodManager.go"
-          ls -la chainio/clients/eigenpod/bindings/IEigenPodManager.go
-          echo "whoami"
-          whoami
-          echo "umask"
-          umask
-          # end debug
-          if [ ! -z "$(git status --porcelain)" ]; then
+          # sudo required due to bindings being owned by root
+          if [ ! -z "$(sudo git status --porcelain)" ]; then
             printf "Current generated bindings not up to date\n"
-            git diff
-            git status
+            sudo git diff
+            sudo git status
             exit 1
           fi
