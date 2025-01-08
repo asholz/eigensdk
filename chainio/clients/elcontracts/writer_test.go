@@ -218,7 +218,9 @@ func TestSetOperatorPISplit(t *testing.T) {
 
 	activationDelay := uint32(0)
 	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
-	setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
 
 	// Create ChainWriter
 	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
@@ -232,7 +234,7 @@ func TestSetOperatorPISplit(t *testing.T) {
 
 	newSplit := startingSplit * 2
 	// Set a new operator PI split
-	receipt, err := chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
+	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
 	require.NoError(t, err)
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 
@@ -265,7 +267,9 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	activationDelay := uint32(0)
 
 	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
-	setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
 
 	// Create ChainWriter
 	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
@@ -279,7 +283,7 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 
 	newSplit := startingSplit * 2
 	// Set a new operator AVS split
-	receipt, err := chainWriter.SetOperatorAVSSplit(
+	receipt, err = chainWriter.SetOperatorAVSSplit(
 		context.Background(),
 		operatorAddr,
 		avsAddr,
