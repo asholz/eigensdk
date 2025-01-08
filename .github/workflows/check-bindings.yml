@@ -27,6 +27,9 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Install abigen
+        run: go install github.com/ethereum/go-ethereum/cmd/abigen@latest
+
       - name: run make bindings and check for diffs
         run: |
           make bindings
