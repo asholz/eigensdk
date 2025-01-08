@@ -109,7 +109,7 @@ endif
 
 .PHONY: eigenpod-bindings
 eigenpod-bindings: ## generates contract bindings for eigenpod
-	cd chainio/clients/eigenpod && ./generate.sh
+	cd chainio/clients/eigenpod && ./generate-bindings.sh
 
 .PHONY: bindings
 bindings: ## generates all contract bindings
