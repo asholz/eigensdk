@@ -289,6 +289,36 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	require.Equal(t, newSplit, updatedSplit)
 }
 
+func TestSetAllocationDelay(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	waitForReceipt := true
+
+	// Create ChainWriter
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	delay := uint32(10)
+	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+}
+
 // Sets the testing RewardsCoordinator contract's activationDelay.
 // This is useful to test ChainWriter setter functions that depend on activationDelay.
 func setTestRewardsCoordinatorActivationDelay(httpEndpoint string, privateKeyHex string, activationDelay uint32) (*gethtypes.Receipt, error) {
