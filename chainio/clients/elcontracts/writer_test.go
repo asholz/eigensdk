@@ -195,7 +195,11 @@ func TestSetClaimerFor(t *testing.T) {
 // Creates a testing ChainWriter from an httpEndpoint, private key and config.
 // This is needed because the existing testclients.BuildTestClients returns a
 // ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
-func newTestChainWriterFromConfig(httpEndpoint string, privateKeyHex string, config elcontracts.Config) (*elcontracts.ChainWriter, error) {
+func newTestChainWriterFromConfig(
+	httpEndpoint string,
+	privateKeyHex string,
+	config elcontracts.Config,
+) (*elcontracts.ChainWriter, error) {
 	privateKey, err := crypto.HexToECDSA(privateKeyHex)
 	if err != nil {
 		return nil, utils.WrapError("Failed convert hex string to ecdsa private key", err)
