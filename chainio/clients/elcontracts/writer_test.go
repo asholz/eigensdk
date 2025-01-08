@@ -172,9 +172,8 @@ func TestSetClaimerFor(t *testing.T) {
 
 	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: fetch this address from ContractRegistry (currently returns zero address)
-	rewardsCoordinatorAddr := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
 
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
 	config := elcontracts.Config{
 		DelegationManagerAddress:  contractAddrs.DelegationManager,
 		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
