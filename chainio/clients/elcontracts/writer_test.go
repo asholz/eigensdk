@@ -7,12 +7,20 @@ import (
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/wallet"
+	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
 	"github.com/Layr-Labs/eigensdk-go/logging"
+	"github.com/Layr-Labs/eigensdk-go/metrics"
+	"github.com/Layr-Labs/eigensdk-go/signerv2"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/Layr-Labs/eigensdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -156,10 +164,74 @@ func TestChainWriter(t *testing.T) {
 const SUCCESS_STATUS = uint64(1)
 
 func TestSetClaimerFor(t *testing.T) {
-	testClients, _ := testclients.BuildTestClients(t)
-	claimerAddress := common.HexToAddress("5eb15C0992734B5e77c888D713b4FC67b3D679A2")
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	// TODO: fetch this address from ContractRegistry (currently returns zero address)
+	rewardsCoordinatorAddr := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
+
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
 	waitForReceipt := true
-	receipt, err := testClients.ElChainWriter.SetClaimerFor(context.Background(), claimerAddress, waitForReceipt)
-	assert.NoError(t, err)
-	assert.True(t, receipt.Status == SUCCESS_STATUS)
+	claimer := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
+
+	// call SetClaimerFor
+	receipt, err := chainWriter.SetClaimerFor(context.Background(), claimer, waitForReceipt)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+}
+
+// Creates a testing ChainWriter from an httpEndpoint, private key and config.
+// This is needed because the existing testclients.BuildTestClients returns a
+// ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
+func newTestChainWriterFromConfig(httpEndpoint string, privateKeyHex string, config elcontracts.Config) (*elcontracts.ChainWriter, error) {
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed convert hex string to ecdsa private key", err)
+	}
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+	chainid, err := ethHttpClient.ChainID(context.Background())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get chain id", err)
+	}
+	promReg := prometheus.NewRegistry()
+	eigenMetrics := metrics.NewEigenMetrics("", "", promReg, logger)
+	signerV2, addr, err := signerv2.SignerFromConfig(signerv2.Config{PrivateKey: privateKey}, chainid)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create the signer from the given config", err)
+	}
+
+	pkWallet, err := wallet.NewPrivateKeyWallet(ethHttpClient, signerV2, addr, logger)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create wallet", err)
+	}
+	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
+	testWriter, err := elcontracts.NewWriterFromConfig(
+		config,
+		ethHttpClient,
+		logger,
+		eigenMetrics,
+		txManager,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return testWriter, nil
 }
