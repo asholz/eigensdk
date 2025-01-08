@@ -29,7 +29,7 @@ function create_binding {
     echo ${solc_bin} >data/tmp.bin
 
     rm -f $binding_dir/${contract}/binding.go
-    docker run -v $(realpath $binding_dir):/home/binding_dir -v .:/home/repo abigen-with-interfaces --bin=/home/repo/data/tmp.bin --abi=/home/repo/data/tmp.abi --pkg=contract${contract} --out=/home/binding_dir/${contract}/binding.go
+    docker run --rm -v $(realpath $binding_dir):/home/binding_dir -v .:/home/repo abigen-with-interfaces --bin=/home/repo/data/tmp.bin --abi=/home/repo/data/tmp.abi --pkg=contract${contract} --out=/home/binding_dir/${contract}/binding.go
     rm -rf data/tmp.abi data/tmp.bin
 }
 
