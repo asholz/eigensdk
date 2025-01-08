@@ -329,6 +329,64 @@ func TestSetAllocationDelay(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 }
 
+func TestSetAndRemovePermission(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	config := elcontracts.Config{
+		DelegationManagerAddress:     contractAddrs.DelegationManager,
+		PermissionsControllerAddress: permissionControllerAddr,
+	}
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	accountAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	appointeeAddress := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
+	target := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	selector := [4]byte{0, 1, 2, 3}
+	waitForReceipt := true
+
+	setPermissionRequest := elcontracts.SetPermissionRequest{
+		AccountAddress:   accountAddress,
+		AppointeeAddress: appointeeAddress,
+		Target:           target,
+		Selector:         selector,
+		WaitForReceipt:   waitForReceipt,
+	}
+
+	removePermissionRequest := elcontracts.RemovePermissionRequest{
+		AccountAddress:   accountAddress,
+		AppointeeAddress: appointeeAddress,
+		Target:           target,
+		Selector:         selector,
+		WaitForReceipt:   waitForReceipt,
+	}
+	receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+	require.NoError(t, err)
+	require.True(t, canCall)
+
+	receipt, err = chainWriter.RemovePermission(context.Background(), removePermissionRequest)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	canCall, err = chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+	require.NoError(t, err)
+	require.False(t, canCall)
+}
+
 // Sets the testing RewardsCoordinator contract's activationDelay.
 // This is useful to test ChainWriter setter functions that depend on activationDelay.
 func setTestRewardsCoordinatorActivationDelay(
