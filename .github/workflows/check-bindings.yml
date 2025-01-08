@@ -19,6 +19,10 @@ jobs:
         with:
           submodules: recursive
 
+      - run: cd contracts/lib/eigenlayer-middleware/ && git status
+
+      - run: cd contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts && git status
+
       - name: install go1.22
         uses: actions/setup-go@v5
         with:
