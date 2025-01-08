@@ -5,6 +5,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/signer/bls/cerberus"
 	"github.com/Layr-Labs/eigensdk-go/signer/bls/local"
+	"github.com/Layr-Labs/eigensdk-go/signer/bls/privatekey"
 	"github.com/Layr-Labs/eigensdk-go/signer/bls/types"
 )
 
@@ -44,6 +45,10 @@ func NewSigner(cfg types.SignerConfig) (Signer, error) {
 			Password:        cfg.CerberusPassword,
 			EnableTLS:       cfg.EnableTLS,
 			TLSCertFilePath: cfg.TLSCertFilePath,
+		})
+	case types.PrivateKey:
+		return privatekey.New(privatekey.Config{
+			PrivateKey: cfg.PrivateKey,
 		})
 	default:
 		return nil, types.ErrInvalidSignerType

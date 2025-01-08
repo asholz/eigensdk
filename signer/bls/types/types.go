@@ -7,9 +7,14 @@ const (
 	Local SignerType = "local"
 	// Cerberus signer type
 	Cerberus SignerType = "cerberus"
+	// PrivateKey signer type
+	PrivateKey SignerType = "privatekey"
 )
 
 type SignerConfig struct {
+	// PrivateKey is the private key of the signer
+	PrivateKey string
+
 	// Type of the signer
 	SignerType SignerType
 
