@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
@@ -13,11 +14,14 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/signerv2"
+
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/Layr-Labs/eigensdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus"
@@ -192,6 +196,103 @@ func TestSetClaimerFor(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 }
 
+func TestSetOperatorPISplit(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	waitForReceipt := true
+	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+	require.NoError(t, err)
+
+	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
+	require.NoError(t, err)
+
+	txManager, err := newTestTxManager(anvilHttpEndpoint, privateKeyHex)
+	require.NoError(t, err)
+
+	noSendOpts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
+	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
+	require.NoError(t, err)
+
+	receipt, err := txManager.Send(context.Background(), tx, true)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	// Create ChainWriter
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	newSplit := uint16(5)
+	startingSplit := uint16(1000)
+
+	split, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
+	require.NoError(t, err)
+	require.Equal(t, startingSplit, split)
+
+	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	time.Sleep(5 * time.Second)
+
+	updatedSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
+	require.NoError(t, err)
+	require.Equal(t, newSplit, updatedSplit)
+}
+
+// TODO: consider moving this and the other utilities below to testutils
+func newTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleTxManager, error) {
+	testConfig := testutils.GetDefaultTestConfig()
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	chainid, err := ethHttpClient.ChainID(context.Background())
+	if err != nil {
+		return nil, utils.WrapError("Failed to retrieve chain id", err)
+	}
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed to convert hex string to private key", err)
+	}
+	signerV2, addr, err := signerv2.SignerFromConfig(signerv2.Config{PrivateKey: privateKey}, chainid)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create signer", err)
+	}
+
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+
+	pkWallet, err := wallet.NewPrivateKeyWallet(ethHttpClient, signerV2, addr, logger)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create wallet", err)
+	}
+
+	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
+	return txManager, nil
+}
+
 // Creates a testing ChainWriter from an httpEndpoint, private key and config.
 // This is needed because the existing testclients.BuildTestClients returns a
 // ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
@@ -237,4 +338,26 @@ func newTestChainWriterFromConfig(
 		return nil, err
 	}
 	return testWriter, nil
+}
+
+func newTestChainReaderFromConfig(
+	httpEndpoint string,
+	config elcontracts.Config,
+) (*elcontracts.ChainReader, error) {
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	testReader, err := elcontracts.NewReaderFromConfig(
+		config,
+		ethHttpClient,
+		logger,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create chain reader from config", err)
+	}
+	return testReader, nil
 }
