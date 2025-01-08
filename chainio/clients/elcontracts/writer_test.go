@@ -279,7 +279,13 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 
 	newSplit := startingSplit * 2
 	// Set a new operator AVS split
-	receipt, err := chainWriter.SetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr, newSplit, waitForReceipt)
+	receipt, err := chainWriter.SetOperatorAVSSplit(
+		context.Background(),
+		operatorAddr,
+		avsAddr,
+		newSplit,
+		waitForReceipt,
+	)
 	require.NoError(t, err)
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 
@@ -321,7 +327,11 @@ func TestSetAllocationDelay(t *testing.T) {
 
 // Sets the testing RewardsCoordinator contract's activationDelay.
 // This is useful to test ChainWriter setter functions that depend on activationDelay.
-func setTestRewardsCoordinatorActivationDelay(httpEndpoint string, privateKeyHex string, activationDelay uint32) (*gethtypes.Receipt, error) {
+func setTestRewardsCoordinatorActivationDelay(
+	httpEndpoint string,
+	privateKeyHex string,
+	activationDelay uint32,
+) (*gethtypes.Receipt, error) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
 	ethHttpClient, err := ethclient.Dial(httpEndpoint)
