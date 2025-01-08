@@ -19,10 +19,6 @@ jobs:
         with:
           submodules: recursive
 
-      - run: cd contracts/lib/eigenlayer-middleware/ && git status
-
-      - run: cd contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts && git status
-
       - name: install go1.22
         uses: actions/setup-go@v5
         with:
@@ -33,6 +29,12 @@ jobs:
 
       - name: Install abigen
         run: go install github.com/ethereum/go-ethereum/cmd/abigen@latest
+      
+      - name: Print versions used
+        run: |
+          go version
+          abigen --version
+          forge --version
 
       - name: run make bindings and check for diffs
         run: |
