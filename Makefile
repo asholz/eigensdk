@@ -113,7 +113,7 @@ eigenpod-bindings: ## generates contract bindings for eigenpod
 
 .PHONY: bindings
 bindings: ## generates all contract bindings
-	rm -rf bindings/* && make core-bindings middleware-bindings sdk-bindings eigenpod-bindings
+	rm -rf contracts/bindings/* && make core-bindings middleware-bindings sdk-bindings eigenpod-bindings
 
 
 ___CONTRACTS___: ## 
