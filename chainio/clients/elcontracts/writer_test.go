@@ -822,7 +822,12 @@ func TestProcessClaim(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 }
 
-func newTestClaim(chainReader *elcontracts.ChainReader, httpEndpoint string, cumulativeEarnings int64, privateKeyHex string) ([32]byte, *rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
+func newTestClaim(
+	chainReader *elcontracts.ChainReader,
+	httpEndpoint string,
+	cumulativeEarnings int64,
+	privateKeyHex string,
+) ([32]byte, *rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
 	mockStrategyAddr := contractAddrs.Erc20MockStrategy
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
@@ -866,7 +871,8 @@ func newTestClaim(chainReader *elcontracts.ChainReader, httpEndpoint string, cum
 	}
 
 	// Generate token tree leaf
-	// For the tree structure, see https://github.com/Layr-Labs/eigenlayer-contracts/blob/a888a1cd1479438dda4b138245a69177b125a973/docs/core/RewardsCoordinator.md#rewards-merkle-tree-structure
+	// For the tree structure, see
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/a888a1cd1479438dda4b138245a69177b125a973/docs/core/RewardsCoordinator.md#rewards-merkle-tree-structure
 	earnerAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	tokenLeaf := rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{
 		Token:              tokenAddr,
