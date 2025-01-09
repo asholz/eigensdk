@@ -552,8 +552,7 @@ func TestModifyAllocations(t *testing.T) {
 	_, err = chainReader.GetAllocationDelay(context.Background(), operatorAddr)
 	require.NoError(t, err)
 
-	clients, _ := newTestClients(anvilHttpEndpoint, privateKeyHex)
-	err = createOperatorSet(clients, avsAddr, operatorSetId, strategyAddr)
+	err = createOperatorSet(anvilHttpEndpoint, privateKeyHex, avsAddr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
 
 	operatorSet := allocationmanager.OperatorSet{
@@ -1012,29 +1011,42 @@ func newTestClaim(
 }
 
 func createOperatorSet(
-	client *clients.Clients,
+	anvilHttpEndpoint string,
+	privateKeyHex string,
 	avsAddress common.Address,
 	operatorSetId uint32,
 	erc20MockStrategyAddr common.Address,
 ) error {
-	allocationManagerAddress := client.EigenlayerContractBindings.AllocationManagerAddr
-	allocationManager, err := allocationmanager.NewContractAllocationManager(
-		allocationManagerAddress,
-		client.EthHttpClient,
-	)
-	if err != nil {
-		return err
+	testConfig := testutils.GetDefaultTestConfig()
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	config := elcontracts.Config{
+		DelegationManagerAddress: contractAddrs.DelegationManager,
 	}
-	registryCoordinatorAddress := client.AvsRegistryContractBindings.RegistryCoordinatorAddr
-	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
-		registryCoordinatorAddress,
-		client.EthHttpClient,
-	)
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
 	if err != nil {
 		return err
 	}
 
-	noSendTxOpts, err := client.TxManager.GetNoSendTxOpts()
+	elBindings, err := elcontracts.NewBindingsFromConfig(config, ethHttpClient, logger)
+	if err != nil {
+		return err
+	}
+
+	allocationManager := elBindings.AllocationManager
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		ethHttpClient,
+	)
+	if err != nil {
+		return err
+	}
+	txManager, err := newTestTxManager(anvilHttpEndpoint, privateKeyHex)
+	if err != nil {
+		return err
+	}
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
 	if err != nil {
 		return err
 	}
@@ -1046,7 +1058,7 @@ func createOperatorSet(
 
 	waitForReceipt := true
 
-	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
 		return err
 	}
@@ -1056,7 +1068,7 @@ func createOperatorSet(
 		return err
 	}
 
-	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
 		return err
 	}
@@ -1085,7 +1097,7 @@ func createOperatorSet(
 		return err
 	}
 
-	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
 		return err
 	}
@@ -1101,36 +1113,8 @@ func createOperatorSet(
 		return err
 	}
 
-	_, err = client.TxManager.Send(context.Background(), tx, waitForReceipt)
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	return err
-}
-
-func newTestClients(httpEndpoint string, privateKeyHex string) (*clients.Clients, error) {
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
-	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 httpEndpoint,
-		EthWsUrl:                   httpEndpoint,
-		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
-		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
-		AvsName:                    "exampleAvs",
-		PromMetricsIpPortAddress:   ":9090",
-	}
-	privateKey, err := crypto.HexToECDSA(privateKeyHex)
-	if err != nil {
-		return nil, err
-	}
-	testConfig := testutils.GetDefaultTestConfig()
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-
-	testClients, err := clients.BuildAll(
-		chainioConfig,
-		privateKey,
-		logger,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return testClients, nil
 }
 
 func newTestChainReaderFromConfig(
