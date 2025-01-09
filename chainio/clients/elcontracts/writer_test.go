@@ -583,7 +583,11 @@ func TestAcceptAdmin(t *testing.T) {
 	require.NoError(t, err)
 
 	pendingAdminPrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
-	adminChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, pendingAdminPrivateKeyHex, config)
+	adminChainWriter, err := testclients.NewTestChainWriterFromConfig(
+		anvilHttpEndpoint,
+		pendingAdminPrivateKeyHex,
+		config,
+	)
 	require.NoError(t, err)
 
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
