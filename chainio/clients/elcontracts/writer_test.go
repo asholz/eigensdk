@@ -822,6 +822,55 @@ func TestProcessClaim(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 }
 
+func TestProcessClaims(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+
+	earner := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
+
+	waitForReceipt := true
+	cumulativeEarnings1 := int64(42)
+	cumulativeEarnings2 := int64(4256)
+
+	// Generate 2 claims
+	_, claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
+	require.NoError(t, err)
+
+	_, claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
+	require.NoError(t, err)
+	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
+		*claim1, *claim2,
+	}
+	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, earner, waitForReceipt)
+	require.NoError(t, err)
+	require.True(t, receipt.Status == SUCCESS_STATUS)
+}
+
 func newTestClaim(
 	chainReader *elcontracts.ChainReader,
 	httpEndpoint string,
