@@ -8,16 +8,13 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
-	"github.com/Layr-Labs/eigensdk-go/chainio/clients/wallet"
-	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
+
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	mockerc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/MockERC20"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/logging"
-	"github.com/Layr-Labs/eigensdk-go/metrics"
-	"github.com/Layr-Labs/eigensdk-go/signerv2"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -28,7 +25,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -188,7 +184,7 @@ func TestSetClaimerFor(t *testing.T) {
 	}
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
 	waitForReceipt := true
@@ -227,10 +223,10 @@ func TestSetOperatorPISplit(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	startingSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
@@ -276,10 +272,10 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	startingSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
@@ -324,7 +320,7 @@ func TestSetAllocationDelay(t *testing.T) {
 	waitForReceipt := true
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
 	delay := uint32(10)
@@ -348,9 +344,9 @@ func TestSetAndRemovePermission(t *testing.T) {
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
 	}
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	accountAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -410,7 +406,7 @@ func setTestRewardsCoordinatorActivationDelay(
 		return nil, utils.WrapError("Failed to create rewards coordinator", err)
 	}
 
-	txManager, err := newTestTxManager(httpEndpoint, privateKeyHex)
+	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
 	if err != nil {
 		return nil, utils.WrapError("Failed to create tx manager", err)
 	}
@@ -432,85 +428,6 @@ func setTestRewardsCoordinatorActivationDelay(
 	return receipt, err
 }
 
-// TODO: consider moving this and the other utilities below to testutils
-func newTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleTxManager, error) {
-	testConfig := testutils.GetDefaultTestConfig()
-	ethHttpClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-
-	chainid, err := ethHttpClient.ChainID(context.Background())
-	if err != nil {
-		return nil, utils.WrapError("Failed to retrieve chain id", err)
-	}
-	privateKey, err := crypto.HexToECDSA(privateKeyHex)
-	if err != nil {
-		return nil, utils.WrapError("Failed to convert hex string to private key", err)
-	}
-	signerV2, addr, err := signerv2.SignerFromConfig(signerv2.Config{PrivateKey: privateKey}, chainid)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create signer", err)
-	}
-
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-
-	pkWallet, err := wallet.NewPrivateKeyWallet(ethHttpClient, signerV2, addr, logger)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create wallet", err)
-	}
-
-	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
-	return txManager, nil
-}
-
-// Creates a testing ChainWriter from an httpEndpoint, private key and config.
-// This is needed because the existing testclients.BuildTestClients returns a
-// ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
-func newTestChainWriterFromConfig(
-	httpEndpoint string,
-	privateKeyHex string,
-	config elcontracts.Config,
-) (*elcontracts.ChainWriter, error) {
-	privateKey, err := crypto.HexToECDSA(privateKeyHex)
-	if err != nil {
-		return nil, utils.WrapError("Failed convert hex string to ecdsa private key", err)
-	}
-	testConfig := testutils.GetDefaultTestConfig()
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-	ethHttpClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-	chainid, err := ethHttpClient.ChainID(context.Background())
-	if err != nil {
-		return nil, utils.WrapError("Failed to get chain id", err)
-	}
-	promReg := prometheus.NewRegistry()
-	eigenMetrics := metrics.NewEigenMetrics("", "", promReg, logger)
-	signerV2, addr, err := signerv2.SignerFromConfig(signerv2.Config{PrivateKey: privateKey}, chainid)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create the signer from the given config", err)
-	}
-
-	pkWallet, err := wallet.NewPrivateKeyWallet(ethHttpClient, signerV2, addr, logger)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create wallet", err)
-	}
-	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
-	testWriter, err := elcontracts.NewWriterFromConfig(
-		config,
-		ethHttpClient,
-		logger,
-		eigenMetrics,
-		txManager,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return testWriter, nil
-}
-
 func TestModifyAllocations(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
@@ -526,10 +443,10 @@ func TestModifyAllocations(t *testing.T) {
 		DelegationManagerAddress: contractAddrs.DelegationManager,
 	}
 
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	strategyAddr := contractAddrs.Erc20MockStrategy
@@ -608,9 +525,9 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
 	}
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	pendingAdmin := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
@@ -662,14 +579,14 @@ func TestAcceptAdmin(t *testing.T) {
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
 	}
-	accountChainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
+	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
 
 	pendingAdminPrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
-	adminChainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, pendingAdminPrivateKeyHex, config)
+	adminChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, pendingAdminPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	pendingAdminAddr := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
@@ -714,7 +631,7 @@ func TestRemoveAdmin(t *testing.T) {
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
 	}
-	accountChainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
+	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
 
 	// Adding two admins and removing one. Cannot remove the last admin, so one must remain
@@ -724,13 +641,13 @@ func TestRemoveAdmin(t *testing.T) {
 	admin2 := common.HexToAddress("23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f")
 	admin2PrivateKeyHex := "dbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
 
-	admin1ChainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, admin1PrivateKeyHex, config)
+	admin1ChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, admin1PrivateKeyHex, config)
 	require.NoError(t, err)
 
-	admin2ChainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, admin2PrivateKeyHex, config)
+	admin2ChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, admin2PrivateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	addAdmin1Request := elcontracts.AddPendingAdminRequest{
@@ -798,10 +715,10 @@ func TestProcessClaim(t *testing.T) {
 	}
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	activationDelay := uint32(0)
@@ -838,10 +755,10 @@ func TestProcessClaims(t *testing.T) {
 	}
 
 	// Create ChainWriter
-	chainWriter, err := newTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	chainReader, err := newTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
 	activationDelay := uint32(0)
@@ -886,7 +803,7 @@ func newTestClaim(
 	if err != nil {
 		return emptyRoot, nil, utils.WrapError("Failed to create eth client", err)
 	}
-	txManager, err := newTestTxManager(httpEndpoint, privateKeyHex)
+	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
 	if err != nil {
 		return emptyRoot, nil, utils.WrapError("Failed to create tx manager", err)
 	}
@@ -1042,7 +959,7 @@ func createOperatorSet(
 	if err != nil {
 		return err
 	}
-	txManager, err := newTestTxManager(anvilHttpEndpoint, privateKeyHex)
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, privateKeyHex)
 	if err != nil {
 		return err
 	}
@@ -1115,26 +1032,4 @@ func createOperatorSet(
 
 	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	return err
-}
-
-func newTestChainReaderFromConfig(
-	httpEndpoint string,
-	config elcontracts.Config,
-) (*elcontracts.ChainReader, error) {
-	testConfig := testutils.GetDefaultTestConfig()
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-	ethHttpClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-
-	testReader, err := elcontracts.NewReaderFromConfig(
-		config,
-		ethHttpClient,
-		logger,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create chain reader from config", err)
-	}
-	return testReader, nil
 }
