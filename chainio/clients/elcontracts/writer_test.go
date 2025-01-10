@@ -55,7 +55,7 @@ func TestRegisterOperator(t *testing.T) {
 		// Fund the new address with 5 ether
 		fundedAccount := "0x408EfD9C90d59298A9b32F4441aC9Df6A2d8C3E1"
 		fundedPrivateKeyHex := "3339854a8622364bcd5650fa92eac82d5dccf04089f5575a761c9b7d3c405b1c"
-		richPrivateKeyHex := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+		richPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 		code, _, err := anvilC.Exec(
 			context.Background(),
 			[]string{"cast",
@@ -123,7 +123,7 @@ func TestChainWriter(t *testing.T) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
 	t.Run("update operator details", func(t *testing.T) {
-		walletModified, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+		walletModified, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 		assert.NoError(t, err)
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
 
@@ -139,7 +139,7 @@ func TestChainWriter(t *testing.T) {
 	})
 
 	t.Run("update metadata URI", func(t *testing.T) {
-		walletModified, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+		walletModified, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 		assert.NoError(t, err)
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
 		receipt, err := clients.ElChainWriter.UpdateMetadataURI(
@@ -174,7 +174,7 @@ func TestSetClaimerFor(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
@@ -212,8 +212,8 @@ func TestSetOperatorPISplit(t *testing.T) {
 		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
 	}
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	waitForReceipt := true
 
 	activationDelay := uint32(0)
@@ -261,8 +261,8 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
 	}
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	waitForReceipt := true
 	activationDelay := uint32(0)
 
@@ -315,8 +315,8 @@ func TestSetAllocationDelay(t *testing.T) {
 		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
 	}
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	waitForReceipt := true
 
 	// Create ChainWriter
@@ -339,7 +339,7 @@ func TestSetAndRemovePermission(t *testing.T) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
@@ -349,7 +349,7 @@ func TestSetAndRemovePermission(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	accountAddress := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	accountAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	appointeeAddress := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
 	target := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
 	selector := [4]byte{0, 1, 2, 3}
@@ -437,8 +437,8 @@ func TestModifyAllocations(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
 		DelegationManagerAddress: contractAddrs.DelegationManager,
 	}
@@ -450,7 +450,7 @@ func TestModifyAllocations(t *testing.T) {
 	require.NoError(t, err)
 
 	strategyAddr := contractAddrs.Erc20MockStrategy
-	avsAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	operatorSetId := uint32(1)
 
 	waitForReceipt := true
@@ -519,8 +519,8 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	// TODO: unhardcode permissionControllerAddr
 	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
 
-	operatorAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
@@ -573,8 +573,8 @@ func TestAcceptAdmin(t *testing.T) {
 	// TODO: unhardcode permissionControllerAddr
 	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
 
-	accountAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	accountPrivateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
@@ -629,8 +629,8 @@ func TestRemoveAdmin(t *testing.T) {
 	// TODO: unhardcode permissionControllerAddr
 	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
 
-	accountAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	accountPrivateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
 		DelegationManagerAddress:     contractAddrs.DelegationManager,
 		PermissionsControllerAddress: permissionControllerAddr,
@@ -709,7 +709,7 @@ func TestProcessClaim(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
@@ -749,7 +749,7 @@ func TestProcessClaims(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
@@ -842,7 +842,7 @@ func newTestClaim(
 	// Generate token tree leaf
 	// For the tree structure, see
 	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/a888a1cd1479438dda4b138245a69177b125a973/docs/core/RewardsCoordinator.md#rewards-merkle-tree-structure
-	earnerAddr := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	earnerAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	tokenLeaf := rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{
 		Token:              tokenAddr,
 		CumulativeEarnings: big.NewInt(cumulativeEarnings),
@@ -907,7 +907,7 @@ func newTestClaim(
 		return emptyRoot, nil, utils.WrapError("Failed to create rewards coordinator contract", err)
 	}
 
-	rewardsUpdater := common.HexToAddress("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	rewardsUpdater := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	tx, err = rewardsCoordinator.SetRewardsUpdater(noSendTxOpts, rewardsUpdater)
 	if err != nil {
 		return emptyRoot, nil, utils.WrapError("Failed to create SetRewardsUpdater tx", err)

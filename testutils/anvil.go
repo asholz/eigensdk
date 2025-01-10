@@ -19,6 +19,9 @@ import (
 	contractreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ContractsRegistry"
 )
 
+const ANVIL_FIRST_ADDRESS = "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+const ANVIL_FIRST_PRIVATE_KEY = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
 func StartAnvilContainer(anvilStateFileName string) (testcontainers.Container, error) {
 
 	ctx := context.Background()
