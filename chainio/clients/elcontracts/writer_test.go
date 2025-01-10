@@ -266,7 +266,7 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	waitForReceipt := true
 	activationDelay := uint32(0)
 
-	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
+	// Set activation delay to zero so that the new AVS split can be retrieved immediately after setting it
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
 	require.True(t, receipt.Status == SUCCESS_STATUS)
@@ -385,47 +385,6 @@ func TestSetAndRemovePermission(t *testing.T) {
 	canCall, err = chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
 	require.NoError(t, err)
 	require.False(t, canCall)
-}
-
-// Sets the testing RewardsCoordinator contract's activationDelay.
-// This is useful to test ChainWriter setter functions that depend on activationDelay.
-func setTestRewardsCoordinatorActivationDelay(
-	httpEndpoint string,
-	privateKeyHex string,
-	activationDelay uint32,
-) (*gethtypes.Receipt, error) {
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	ethHttpClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create rewards coordinator", err)
-	}
-
-	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create tx manager", err)
-	}
-
-	noSendOpts, err := txManager.GetNoSendTxOpts()
-	if err != nil {
-		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
-	}
-
-	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create SetActivationDelay tx", err)
-	}
-
-	receipt, err := txManager.Send(context.Background(), tx, true)
-	if err != nil {
-		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
-	}
-	return receipt, err
 }
 
 func TestModifyAllocations(t *testing.T) {
@@ -791,6 +750,8 @@ func TestProcessClaims(t *testing.T) {
 	require.True(t, receipt.Status == SUCCESS_STATUS)
 }
 
+// Returns a (test) claim for the given cumulativeEarnings, whose earner is
+// the account given by the testutils.ANVIL_FIRST_ADDRESS address.
 func newTestClaim(
 	chainReader *elcontracts.ChainReader,
 	httpEndpoint string,
@@ -931,6 +892,7 @@ func newTestClaim(
 	return [32]byte(root), &claim, nil
 }
 
+// Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
 func createOperatorSet(
 	anvilHttpEndpoint string,
 	privateKeyHex string,
@@ -1036,4 +998,45 @@ func createOperatorSet(
 
 	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	return err
+}
+
+// Sets the testing RewardsCoordinator's activationDelay.
+// This is useful to test ChainWriter setter functions that depend on activationDelay.
+func setTestRewardsCoordinatorActivationDelay(
+	httpEndpoint string,
+	privateKeyHex string,
+	activationDelay uint32,
+) (*gethtypes.Receipt, error) {
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create rewards coordinator", err)
+	}
+
+	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create tx manager", err)
+	}
+
+	noSendOpts, err := txManager.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
+	}
+
+	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create SetActivationDelay tx", err)
+	}
+
+	receipt, err := txManager.Send(context.Background(), tx, true)
+	if err != nil {
+		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
+	}
+	return receipt, err
 }
