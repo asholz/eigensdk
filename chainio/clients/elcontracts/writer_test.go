@@ -693,7 +693,7 @@ func TestProcessClaim(t *testing.T) {
 	waitForReceipt := true
 	cumulativeEarnings := int64(42)
 	earner := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
-	_, claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
+	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
 	require.NoError(t, err)
 
 	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, earner, waitForReceipt)
@@ -737,10 +737,10 @@ func TestProcessClaims(t *testing.T) {
 	cumulativeEarnings2 := int64(4256)
 
 	// Generate 2 claims
-	_, claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
+	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
 	require.NoError(t, err)
 
-	_, claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
+	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
 	require.NoError(t, err)
 	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
 		*claim1, *claim2,
@@ -757,47 +757,51 @@ func newTestClaim(
 	httpEndpoint string,
 	cumulativeEarnings int64,
 	privateKeyHex string,
-) ([32]byte, *rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
+) (*rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
 	mockStrategyAddr := contractAddrs.Erc20MockStrategy
 	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	emptyRoot := [32]byte{}
 	waitForReceipt := true
-	ethClient, err := ethclient.Dial(httpEndpoint)
 
+	ethClient, err := ethclient.Dial(httpEndpoint)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create eth client", err)
+		return nil, utils.WrapError("Failed to create eth client", err)
 	}
+
 	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create tx manager", err)
+		return nil, utils.WrapError("Failed to create tx manager", err)
 	}
+
 	contractStrategy, err := strategy.NewContractIStrategy(mockStrategyAddr, ethClient)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to fetch strategy contract", err)
+		return nil, utils.WrapError("Failed to fetch strategy contract", err)
 	}
+
 	tokenAddr, err := contractStrategy.UnderlyingToken(&bind.CallOpts{Context: context.Background()})
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to fetch token address", err)
+		return nil, utils.WrapError("Failed to fetch token address", err)
 	}
 
 	token, err := mockerc20.NewContractMockERC20(tokenAddr, ethClient)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create token contract", err)
+		return nil, utils.WrapError("Failed to create token contract", err)
 	}
 
 	noSendTxOpts, err := txManager.GetNoSendTxOpts()
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to get NoSend tx opts", err)
+		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
 	}
+
 	// Mint tokens for the RewardsCoordinator
 	tx, err := token.Mint(noSendTxOpts, rewardsCoordinatorAddr, big.NewInt(cumulativeEarnings))
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create MockERC20.Mint tx", err)
+		return nil, utils.WrapError("Failed to create Mint tx", err)
 	}
+
 	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to mint tokens for RewardsCoordinator", err)
+		return nil, utils.WrapError("Failed to mint tokens for RewardsCoordinator", err)
 	}
 
 	// Generate token tree leaf
@@ -808,7 +812,6 @@ func newTestClaim(
 		Token:              tokenAddr,
 		CumulativeEarnings: big.NewInt(cumulativeEarnings),
 	}
-	// Hash token tree leaf to get root
 	encodedTokenLeaf := []byte{}
 	tokenLeafSalt := uint8(1)
 
@@ -828,20 +831,22 @@ func newTestClaim(
 		Earner:          earnerAddr,
 		EarnerTokenRoot: [32]byte(earnerTokenRoot),
 	}
+	// Encode earner leaft
 	encodedEarnerLeaf := []byte{}
 	earnerLeafSalt := uint8(0)
 	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeafSalt)
 	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeaf.Earner.Bytes()...)
 	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerTokenRoot...)
 
-	// Hash earner tree leaf to get root
+	// Hash encoded earner tree leaf to get root
 	earnerTreeRoot := crypto.Keccak256(encodedEarnerLeaf)
 
 	// Fetch the next root index from contract
 	nextRootIndex, err := chainReader.GetDistributionRootsLength(context.Background())
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to call GetDistributionRootsLength", err)
+		return nil, utils.WrapError("Failed to call GetDistributionRootsLength", err)
 	}
+
 	tokenLeaves := []rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{tokenLeaf}
 	// Construct the claim
 	claim := rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
@@ -856,40 +861,42 @@ func newTestClaim(
 		TokenLeaves:     tokenLeaves,
 	}
 
-	root := earnerTreeRoot
+	root := [32]byte(earnerTreeRoot)
 	// Fetch the current timestamp to increase it
 	currRewardsCalculationEndTimestamp, err := chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
+		return nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
 	}
 
 	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create rewards coordinator contract", err)
+		return nil, utils.WrapError("Failed to create rewards coordinator contract", err)
 	}
 
 	rewardsUpdater := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	// Change the rewards updater to be able to submit the new root
 	tx, err = rewardsCoordinator.SetRewardsUpdater(noSendTxOpts, rewardsUpdater)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create SetRewardsUpdater tx", err)
+		return nil, utils.WrapError("Failed to create SetRewardsUpdater tx", err)
 	}
 
 	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to setRewardsUpdate", err)
+		return nil, utils.WrapError("Failed to setRewardsUpdate", err)
 	}
 
-	tx, err = rewardsCoordinator.SubmitRoot(noSendTxOpts, [32]byte(root), currRewardsCalculationEndTimestamp+1)
+	tx, err = rewardsCoordinator.SubmitRoot(noSendTxOpts, root, currRewardsCalculationEndTimestamp+1)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to create SubmitRoot tx", err)
+		return nil, utils.WrapError("Failed to create SubmitRoot tx", err)
 	}
 
 	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
 	if err != nil {
-		return emptyRoot, nil, utils.WrapError("Failed to submit root", err)
+		return nil, utils.WrapError("Failed to submit root", err)
 	}
 
-	return [32]byte(root), &claim, nil
+	return &claim, nil
 }
 
 // Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
