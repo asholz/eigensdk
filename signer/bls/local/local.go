@@ -53,9 +53,11 @@ func (s Signer) GetOperatorId() (string, error) {
 }
 
 func (s Signer) GetPublicKeyG1() string {
-	return hex.EncodeToString(s.key.PubKey.Serialize())
+	rawBytes := s.key.PubKey.Bytes()
+	return hex.EncodeToString(rawBytes[:])
 }
 
 func (s Signer) GetPublicKeyG2() string {
-	return hex.EncodeToString(s.key.GetPubKeyG2().Serialize())
+	rawBytes := s.key.GetPubKeyG2().Bytes()
+	return hex.EncodeToString(rawBytes[:])
 }
