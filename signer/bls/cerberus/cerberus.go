@@ -13,6 +13,7 @@ import (
 
 	sdkBls "github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/signer/bls/types"
+	"github.com/consensys/gnark-crypto/ecc/bn254"
 
 	v1 "github.com/Layr-Labs/cerberus-api/pkg/api/v1"
 )
@@ -103,9 +104,13 @@ func (s Signer) GetOperatorId() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to decode BLS public key: %w", err)
 	}
-	pubkey := new(sdkBls.G1Point)
-	publicKey := pubkey.Deserialize(pkBytes)
-	return publicKey.GetOperatorID(), nil
+	var point bn254.G1Affine
+	_, err = point.SetBytes(pkBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to set BLS public key: %w", err)
+	}
+	pubkey := &sdkBls.G1Point{G1Affine: &point}
+	return pubkey.GetOperatorID(), nil
 }
 
 func (s Signer) GetPublicKeyG1() string {
