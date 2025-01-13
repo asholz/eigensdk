@@ -1811,12 +1811,12 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		}
 		noSendTxOpts, err := avsClients.TxManager.GetNoSendTxOpts()
 		require.NoError(t, err)
-		tx, err := registryCoordinator.CreateQuorum(noSendTxOpts, operatorSetParam, big.NewInt(0), strategyParam)
+		tx, err := registryCoordinator.CreateTotalDelegatedStakeQuorum(noSendTxOpts, operatorSetParam, big.NewInt(0), strategyParam)
 		require.NoError(t, err)
 		_, err = avsClients.TxManager.Send(context.TODO(), tx, true)
 		require.NoError(t, err)
 
-		tx, err = registryCoordinator.CreateQuorum(noSendTxOpts, operatorSetParam, big.NewInt(0), strategyParam)
+		tx, err = registryCoordinator.CreateTotalDelegatedStakeQuorum(noSendTxOpts, operatorSetParam, big.NewInt(0), strategyParam)
 		require.NoError(t, err)
 		_, err = avsClients.TxManager.Send(context.TODO(), tx, true)
 		require.NoError(t, err)
