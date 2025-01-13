@@ -3,6 +3,7 @@ package avsregistry
 import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	blsapkregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
+	contractDelegationManager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	indexregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IndexRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
@@ -27,6 +28,7 @@ type ContractBindings struct {
 	IndexRegistryAddr          gethcommon.Address
 	DelegationManagerAddr      gethcommon.Address
 	AvsDirectoryAddr           gethcommon.Address
+	AllocationManagerAddr      gethcommon.Address
 	// contract bindings
 	ServiceManager         *servicemanager.ContractServiceManagerBase
 	RegistryCoordinator    *regcoordinator.ContractRegistryCoordinator
@@ -136,6 +138,7 @@ func NewBindingsFromConfig(
 		indexRegistryAddr     gethcommon.Address
 		delegationManagerAddr gethcommon.Address
 		avsDirectoryAddr      gethcommon.Address
+		allocationManagerAddr gethcommon.Address
 
 		contractBlsRegistryCoordinator *regcoordinator.ContractRegistryCoordinator
 		contractServiceManager         *servicemanager.ContractServiceManagerBase
@@ -209,6 +212,17 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
+
+		delegationManager, err := contractDelegationManager.NewContractDelegationManager(
+			delegationManagerAddr,
+			client)
+		if err != nil {
+			return nil, utils.WrapError("Failed to get DelegationManager contract", err)
+		}
+		allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
+		if err != nil {
+			return nil, utils.WrapError("Failed to get AllocationManager address", err)
+		}
 	}
 
 	if isZeroAddress(cfg.OperatorStateRetrieverAddress) {
@@ -233,6 +247,7 @@ func NewBindingsFromConfig(
 		OperatorStateRetrieverAddr: cfg.OperatorStateRetrieverAddress,
 		DelegationManagerAddr:      delegationManagerAddr,
 		AvsDirectoryAddr:           avsDirectoryAddr,
+		AllocationManagerAddr:      allocationManagerAddr,
 		ServiceManager:             contractServiceManager,
 		RegistryCoordinator:        contractBlsRegistryCoordinator,
 		StakeRegistry:              contractStakeRegistry,
