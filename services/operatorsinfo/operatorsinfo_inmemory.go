@@ -49,11 +49,6 @@ type avsRegistrySubscriber interface {
 // Warning: this service should probably not be used in production. Haven't done a thorough analysis of all the clients
 // but there is still an open PR about an issue with ws subscription on geth:
 // https://github.com/ethereum/go-ethereum/issues/23845
-// Another reason to note for infra/devops engineer who would put this into production, is that this service crashes on
-// websocket connection errors or when failing to query past events. The philosophy here is that hard crashing is
-// better than silently failing, since it will be easier to debug. Naturally, this means that this aggregator using this
-// service needs
-// to be replicated and load-balanced, so that when it fails traffic can be switched to the other aggregator.
 type OperatorsInfoServiceInMemory struct {
 	logFilterQueryBlockRange *big.Int
 	avsRegistrySubscriber    avsRegistrySubscriber
@@ -147,7 +142,6 @@ func (ops *OperatorsInfoServiceInMemory) startServiceInGoroutine(
 				"service",
 				"OperatorPubkeysServiceInMemory",
 			)
-			// TODO! see the warning above the struct definition to understand why we panic here
 			errCh <- err
 			return
 		}
@@ -205,7 +199,6 @@ func (ops *OperatorsInfoServiceInMemory) startServiceInGoroutine(
 						"service",
 						"OperatorPubkeysServiceInMemory",
 					)
-					// see the warning above the struct definition to understand why we panic here
 					errCh <- err
 					return
 				}
