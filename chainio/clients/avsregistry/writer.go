@@ -490,7 +490,37 @@ func (w *ChainWriter) DeregisterOperator(
 	if err != nil {
 		return nil, err
 	}
-	tx, err := w.registryCoordinator.DeregisterOperator(noSendTxOpts, quorumNumbers.UnderlyingType())
+	tx, err := w.registryCoordinator.DeregisterOperator0(noSendTxOpts, quorumNumbers.UnderlyingType())
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, errors.New("failed to send tx with err: " + err.Error())
+	}
+	w.logger.Info(
+		"successfully deregistered operator with the AVS's registry coordinator",
+		"txHash",
+		receipt.TxHash.String(),
+	)
+	return receipt, nil
+}
+
+func (w *ChainWriter) DeregisterOperatorOperatorSets(
+	ctx context.Context,
+	operatorSetIds types.OperatorSetIds,
+	operator types.Operator,
+	pubkey regcoord.BN254G1Point,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("deregistering operator with the AVS's registry coordinator")
+
+	operatorAddress := gethcommon.HexToAddress(operator.Address)
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.DeregisterOperator(noSendTxOpts, operatorAddress, operatorSetIds.UnderlyingType())
 	if err != nil {
 		return nil, err
 	}
