@@ -23,7 +23,7 @@ func StartAnvilContainer(anvilStateFileName string) (testcontainers.Container, e
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "ghcr.io/foundry-rs/foundry:nightly-3abac322efdb69e27b6fe8748b72754ae878f64d@sha256:871b66957335636a02c6c324c969db9adb1d6d64f148753c4a986cf32a40dc3c",
+		Image:        "ghcr.io/foundry-rs/foundry:stable@sha256:daeeaaf4383ee0cbfc9f31f079a04ffb0123e49e5f67f2a20b5ce1ac1959a4d6",
 		Entrypoint:   []string{"anvil"},
 		Cmd:          []string{"--host", "0.0.0.0", "--base-fee", "0", "--gas-price", "0"},
 		ExposedPorts: []string{"8545/tcp"},
