@@ -339,7 +339,7 @@ func TestSetAndRemovePermission(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
+	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
@@ -479,7 +479,7 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
+	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
@@ -533,7 +533,7 @@ func TestAcceptAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
+	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
@@ -589,7 +589,7 @@ func TestRemoveAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress("0x610178dA211FEF7D417bC0e6FeD39F05609AD788")
+	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
