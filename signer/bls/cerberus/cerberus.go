@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"time"
 
 	"google.golang.org/grpc"
@@ -43,7 +42,7 @@ func New(cfg Config) (Signer, error) {
 	if cfg.EnableTLS {
 		creds, err := credentials.NewClientTLSFromFile(cfg.TLSCertFilePath, "")
 		if err != nil {
-			log.Fatalf("could not load tls cert: %s", err)
+			return Signer{}, fmt.Errorf("could not load tls cert: %w", err)
 		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
@@ -52,7 +51,7 @@ func New(cfg Config) (Signer, error) {
 
 	conn, err := grpc.NewClient(cfg.URL, opts...)
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		return Signer{}, fmt.Errorf("did not connect: %w", err)
 	}
 
 	signerClient := v1.NewSignerClient(conn)
@@ -122,7 +121,7 @@ func (s Signer) GetPublicKeyG2() string {
 		PublicKeyG1: s.pubKeyHex,
 	})
 	if err != nil {
-		log.Fatalf("could not get key metadata from cerberus: %v", err)
+		return ""
 	}
 
 	return resp.PublicKeyG2
