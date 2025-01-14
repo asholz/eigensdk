@@ -227,10 +227,10 @@ func TestSetOperatorPISplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	startingSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
+	initialSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
 
-	newSplit := startingSplit * 2
+	newSplit := initialSplit * 2
 	// Set a new operator PI split
 	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
 	require.NoError(t, err)
@@ -276,10 +276,10 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	startingSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
+	initialSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
 
-	newSplit := startingSplit * 2
+	newSplit := initialSplit * 2
 	// Set a new operator AVS split
 	receipt, err = chainWriter.SetOperatorAVSSplit(
 		context.Background(),
