@@ -230,7 +230,7 @@ func TestSetOperatorPISplit(t *testing.T) {
 	initialSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
 
-	newSplit := initialSplit * 2
+	newSplit := initialSplit + 1
 	// Set a new operator PI split
 	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	initialSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
 
-	newSplit := initialSplit * 2
+	newSplit := initialSplit + 1
 	// Set a new operator AVS split
 	receipt, err = chainWriter.SetOperatorAVSSplit(
 		context.Background(),
