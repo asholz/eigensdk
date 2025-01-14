@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: add test for cerberus when the docker is released
+
 func TestOperatorId(t *testing.T) {
 	signer := Signer{
 		pubKeyHex: "dc8f9427033e5ff392f5cc97cc3d6a5472cff2778eee0961a497bd7dbb629a36",

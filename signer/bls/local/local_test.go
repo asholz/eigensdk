@@ -1,4 +1,4 @@
-package privatekey
+package local
 
 import (
 	"context"
@@ -8,11 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const privateKey = "13718104057011380243349384062412322292853638010146548074368241565852610884213"
+// empty password for local testing
+const password = ""
 
 func TestOperatorId(t *testing.T) {
 	signer, err := New(Config{
-		PrivateKey: privateKey,
+		Path:     "testdata/test.bls.json",
+		Password: password,
 	})
 	assert.NoError(t, err)
 
@@ -23,17 +25,19 @@ func TestOperatorId(t *testing.T) {
 
 func TestPublicKeyG1(t *testing.T) {
 	signer, err := New(Config{
-		PrivateKey: privateKey,
+		Path:     "testdata/test.bls.json",
+		Password: password,
 	})
 	assert.NoError(t, err)
 
 	pubKeyG1 := signer.GetPublicKeyG1()
-	assert.Equal(t, pubKeyG1, "0xdc8f9427033e5ff392f5cc97cc3d6a5472cff2778eee0961a497bd7dbb629a36")
+	assert.Equal(t, pubKeyG1, "dc8f9427033e5ff392f5cc97cc3d6a5472cff2778eee0961a497bd7dbb629a36")
 }
 
 func TestPublicKeyG2(t *testing.T) {
 	signer, err := New(Config{
-		PrivateKey: privateKey,
+		Path:     "testdata/test.bls.json",
+		Password: password,
 	})
 	assert.NoError(t, err)
 
@@ -41,13 +45,14 @@ func TestPublicKeyG2(t *testing.T) {
 	assert.Equal(
 		t,
 		pubKeyG2,
-		"0xe9b0f889a847f8dc2ed0514a6b7e11043679491052502e0a68ccc9a410f524e01e9d4863b49ca41d0a94928290b15aed25bfe097e266bdbb9106a09f689b4ea8",
+		"e9b0f889a847f8dc2ed0514a6b7e11043679491052502e0a68ccc9a410f524e01e9d4863b49ca41d0a94928290b15aed25bfe097e266bdbb9106a09f689b4ea8",
 	)
 }
 
 func TestSign(t *testing.T) {
 	signer, err := New(Config{
-		PrivateKey: privateKey,
+		Path:     "testdata/test.bls.json",
+		Password: password,
 	})
 	assert.NoError(t, err)
 
