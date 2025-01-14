@@ -116,7 +116,7 @@ func TestRegisterOperator(t *testing.T) {
 	})
 }
 
-func TestRegisterForOperatorSets(t *testing.T) {
+func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
 	require.NoError(t, err)
@@ -171,24 +171,49 @@ func TestRegisterForOperatorSets(t *testing.T) {
 		Avs: avsAddress,
 		Id:  uint32(operatorSetId),
 	}
+	t.Run("register operator for operator set", func(t *testing.T) {
+		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+		receipt, err := chainWriter.RegisterForOperatorSets(
+			context.Background(),
+			registryCoordinatorAddress,
+			request,
+		)
 
-	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-	receipt, err := chainWriter.RegisterForOperatorSets(
-		context.Background(),
-		registryCoordinatorAddress,
-		request,
-	)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+		isRegistered, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+			context.Background(),
+			operatorAddress,
+			operatorSet,
+		)
+		require.NoError(t, err)
+		require.Equal(t, true, isRegistered)
+	})
 
-	isRegistered, err := chainReader.IsOperatorRegisteredWithOperatorSet(
-		context.Background(),
-		operatorAddress,
-		operatorSet,
-	)
-	require.NoError(t, err)
-	require.Equal(t, isRegistered, true)
+	deregistrationRequest := elcontracts.DeregistrationRequest{
+		AVSAddress:     avsAddress,
+		OperatorSetIds: []uint32{operatorSetId},
+		WaitForReceipt: true,
+	}
+
+	t.Run("deregister operator from operator set", func(t *testing.T) {
+		receipt, err := chainWriter.DeregisterFromOperatorSets(
+			context.Background(),
+			operatorAddress,
+			deregistrationRequest,
+		)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+		isRegistered, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+			context.Background(),
+			operatorAddress,
+			operatorSet,
+		)
+		require.NoError(t, err)
+		require.Equal(t, false, isRegistered)
+	})
 }
 
 func TestChainWriter(t *testing.T) {
