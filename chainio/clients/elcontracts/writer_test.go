@@ -145,7 +145,13 @@ func TestRegisterForOperatorSets(t *testing.T) {
 	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
 
 	// Create an operator set to register an operator on it
-	err = createOperatorSet(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY, avsAddress, operatorSetId, erc20MockStrategyAddr)
+	err = createOperatorSet(
+		anvilHttpEndpoint,
+		testutils.ANVIL_FIRST_PRIVATE_KEY,
+		avsAddress,
+		operatorSetId,
+		erc20MockStrategyAddr,
+	)
 	require.NoError(t, err)
 
 	operatorAddress := common.HexToAddress(operatorAddressHex)
