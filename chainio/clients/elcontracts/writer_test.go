@@ -450,11 +450,12 @@ func TestModifyAllocations(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	// Check that the new allocation is pending
+	// Check that the new allocation is pending and the current magnitude is zero
 	allocationInfo, err := chainReader.GetAllocationInfo(context.Background(), operatorAddr, strategyAddr)
 	require.NoError(t, err)
 	pendingDiff := allocationInfo[0].PendingDiff
 	require.Equal(t, big.NewInt(int64(newAllocation)), pendingDiff)
+	require.Equal(t, allocationInfo[0].CurrentMagnitude, big.NewInt(0))
 
 	// Retrieve the allocation delay and advance the chain
 	allocationDelay, err := chainReader.GetAllocationDelay(context.Background(), operatorAddr)
