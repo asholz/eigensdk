@@ -165,8 +165,6 @@ func TestChainWriter(t *testing.T) {
 	})
 }
 
-const SUCCESS_STATUS = uint64(1)
-
 func TestSetClaimerFor(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
@@ -193,7 +191,7 @@ func TestSetClaimerFor(t *testing.T) {
 	// call SetClaimerFor
 	receipt, err := chainWriter.SetClaimerFor(context.Background(), claimer, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 func TestSetOperatorPISplit(t *testing.T) {
@@ -220,7 +218,7 @@ func TestSetOperatorPISplit(t *testing.T) {
 	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Create ChainWriter
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
@@ -236,7 +234,7 @@ func TestSetOperatorPISplit(t *testing.T) {
 	// Set a new operator PI split
 	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Retrieve the operator PI split to check it has been set
 	updatedSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
@@ -269,7 +267,7 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	// Set activation delay to zero so that the new AVS split can be retrieved immediately after setting it
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Create ChainWriter
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
@@ -291,7 +289,7 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 		waitForReceipt,
 	)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Retrieve the operator AVS split to check it has been set
 	updatedSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
@@ -326,7 +324,7 @@ func TestSetAllocationDelay(t *testing.T) {
 	delay := uint32(10)
 	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 func TestSetAndRemovePermission(t *testing.T) {
@@ -372,7 +370,7 @@ func TestSetAndRemovePermission(t *testing.T) {
 	}
 	receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
 	require.NoError(t, err)
@@ -380,7 +378,7 @@ func TestSetAndRemovePermission(t *testing.T) {
 
 	receipt, err = chainWriter.RemovePermission(context.Background(), removePermissionRequest)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	canCall, err = chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
 	require.NoError(t, err)
@@ -417,7 +415,7 @@ func TestModifyAllocations(t *testing.T) {
 	// The allocation delay must be initialized before modifying the allocations
 	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	allocationConfigurationDelay := 1200
 	// Advance the chain by the required number of blocks
@@ -446,7 +444,7 @@ func TestModifyAllocations(t *testing.T) {
 
 	receipt, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Check that the new allocation is pending
 	allocationInfo, err := chainReader.GetAllocationInfo(context.Background(), operatorAddr, strategyAddr)
@@ -504,7 +502,7 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	t.Run("add pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.AddPendingAdmin(context.Background(), request)
 		require.NoError(t, err)
-		require.True(t, receipt.Status == SUCCESS_STATUS)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 		isPendingAdmin, err := chainReader.IsPendingAdmin(context.Background(), operatorAddr, pendingAdmin)
 		require.NoError(t, err)
@@ -513,7 +511,7 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	t.Run("remove pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.RemovePendingAdmin(context.Background(), removePendingAdminRequest)
 		require.NoError(t, err)
-		require.True(t, receipt.Status == SUCCESS_STATUS)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 		isPendingAdmin, err := chainReader.IsPendingAdmin(context.Background(), operatorAddr, pendingAdmin)
 		require.NoError(t, err)
@@ -560,7 +558,7 @@ func TestAcceptAdmin(t *testing.T) {
 	}
 	receipt, err := accountChainWriter.AddPendingAdmin(context.Background(), request)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	acceptAdminRequest := elcontracts.AcceptAdminRequest{
 		AccountAddress: accountAddr,
@@ -569,7 +567,7 @@ func TestAcceptAdmin(t *testing.T) {
 	t.Run("accept admin", func(t *testing.T) {
 		receipt, err = adminChainWriter.AcceptAdmin(context.Background(), acceptAdminRequest)
 		require.NoError(t, err)
-		require.True(t, receipt.Status == SUCCESS_STATUS)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 		isAdmin, err := chainReader.IsAdmin(context.Background(), accountAddr, pendingAdminAddr)
 		require.NoError(t, err)
@@ -630,20 +628,20 @@ func TestRemoveAdmin(t *testing.T) {
 	// Add and accept admin 1
 	receipt, err := accountChainWriter.AddPendingAdmin(context.Background(), addAdmin1Request)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	receipt, err = admin1ChainWriter.AcceptAdmin(context.Background(), acceptAdminRequest)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Add and accept admin 2
 	receipt, err = admin1ChainWriter.AddPendingAdmin(context.Background(), addAdmin2Request)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	receipt, err = admin2ChainWriter.AcceptAdmin(context.Background(), acceptAdminRequest)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	removeAdminRequest := elcontracts.RemoveAdminRequest{
 		AccountAddress: accountAddr,
@@ -653,7 +651,7 @@ func TestRemoveAdmin(t *testing.T) {
 	t.Run("remove admin 2", func(t *testing.T) {
 		receipt, err = admin1ChainWriter.RemoveAdmin(context.Background(), removeAdminRequest)
 		require.NoError(t, err)
-		require.True(t, receipt.Status == SUCCESS_STATUS)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 		isAdmin, err := chainReader.IsAdmin(context.Background(), accountAddr, admin2)
 		require.NoError(t, err)
@@ -688,7 +686,7 @@ func TestProcessClaim(t *testing.T) {
 	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	waitForReceipt := true
 	cumulativeEarnings := int64(42)
@@ -698,7 +696,7 @@ func TestProcessClaim(t *testing.T) {
 
 	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, earner, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 func TestProcessClaims(t *testing.T) {
@@ -728,7 +726,7 @@ func TestProcessClaims(t *testing.T) {
 	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	earner := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
 
@@ -747,7 +745,7 @@ func TestProcessClaims(t *testing.T) {
 	}
 	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, earner, waitForReceipt)
 	require.NoError(t, err)
-	require.True(t, receipt.Status == SUCCESS_STATUS)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 // Returns a (test) claim for the given cumulativeEarnings, whose earner is
