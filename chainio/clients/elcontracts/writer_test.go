@@ -227,8 +227,10 @@ func TestSetOperatorPISplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	expectedInitialSplit := uint16(1000)
 	initialSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
+	require.Equal(t, expectedInitialSplit, initialSplit)
 
 	newSplit := initialSplit + 1
 	// Set a new operator PI split
@@ -276,8 +278,10 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	expectedInitialSplit := uint16(1000)
 	initialSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
+	require.Equal(t, expectedInitialSplit, initialSplit)
 
 	newSplit := initialSplit + 1
 	// Set a new operator AVS split
