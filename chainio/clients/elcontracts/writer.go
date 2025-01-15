@@ -669,6 +669,7 @@ func (w *ChainWriter) NewRemovePermissionTx(
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
+
 	return w.permissionController.RemoveAppointee(
 		txOpts,
 		request.AccountAddress,
