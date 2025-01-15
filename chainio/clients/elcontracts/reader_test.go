@@ -156,7 +156,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	err = createOperatorSet(client, avsAddress, operatorSetId, erc20MockStrategyAddr)
 	require.NoError(t, err)
 
-	t.Run("register operator to operatorsets", func(t *testing.T) {
+	t.Run("register operator to operatorsets and validate it", func(t *testing.T) {
 		keypair, err := bls.NewKeyPairFromString("0x01")
 		require.NoError(t, err)
 
@@ -177,9 +177,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), receipt.Status)
-	})
 
-	t.Run("validate operator registration", func(t *testing.T) {
 		operators, err := client.ElChainReader.GetOperatorsForOperatorSet(
 			context.Background(),
 			allocationmanager.OperatorSet{Avs: avsAddress, Id: operatorSetId},
@@ -196,7 +194,6 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	})
 
 	t.Run("validate strategies for OperatorSet", func(t *testing.T) {
-
 		strategies, err := client.ElChainReader.GetStrategiesForOperatorSet(context.Background(), operatorSet)
 		require.NoError(t, err)
 		require.Len(t, strategies, 1)
@@ -238,10 +235,13 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	})
 
 	t.Run("get slashable shares before a specific block height", func(t *testing.T) {
+		blockNumber, err := client.EthHttpClient.BlockNumber(context.Background())
+		require.NoError(t, err)
+
 		shares, err := client.ElChainReader.GetSlashableSharesForOperatorSetsBefore(
 			context.Background(),
 			operatorSets,
-			0,
+			uint32(blockNumber)+1,
 		)
 		require.NoError(t, err)
 		require.NotEmpty(t, shares)
