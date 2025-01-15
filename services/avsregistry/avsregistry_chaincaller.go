@@ -80,6 +80,10 @@ func (ar *AvsRegistryServiceChainCaller) GetOperatorsAvsStateAtBlock(
 			"Number of quorums returned from GetOperatorsStakeInQuorumsAtBlock does not match number of quorums requested. Probably pointing to old contract or wrong implementation.",
 			"service",
 			"AvsRegistryServiceChainCaller",
+			"operatorsStakesInQuorums",
+			operatorsStakesInQuorums,
+			"numquorums",
+			numquorums,
 		)
 		return nil,
 			utils.WrapError(
