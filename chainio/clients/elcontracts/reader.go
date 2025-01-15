@@ -18,6 +18,7 @@ import (
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
+	"github.com/Layr-Labs/eigensdk-go/telemetry"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/Layr-Labs/eigensdk-go/utils"
 )
@@ -53,6 +54,7 @@ func NewChainReader(
 	ethClient eth.HttpBackend,
 ) *ChainReader {
 	logger = logger.With(logging.ComponentKey, "elcontracts/reader")
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.newchainreader")
 
 	return &ChainReader{
 		delegationManager:    delegationManager,
@@ -74,6 +76,8 @@ func BuildELChainReader(
 	ethClient eth.HttpBackend,
 	logger logging.Logger,
 ) (*ChainReader, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.buildelchainreader")
+
 	elContractBindings, err := NewEigenlayerContractBindings(
 		delegationManagerAddr,
 		avsDirectoryAddr,
@@ -100,6 +104,8 @@ func NewReaderFromConfig(
 	ethClient eth.HttpBackend,
 	logger logging.Logger,
 ) (*ChainReader, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.newreaderfromconfig")
+
 	elContractBindings, err := NewBindingsFromConfig(
 		cfg,
 		ethClient,
@@ -124,6 +130,8 @@ func (r *ChainReader) IsOperatorRegistered(
 	ctx context.Context,
 	operator types.Operator,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.isoperatorregistered")
+
 	if r.delegationManager == nil {
 		return false, errors.New("DelegationManager contract not provided")
 	}
@@ -145,6 +153,7 @@ func (r *ChainReader) GetStakerShares(
 	ctx context.Context,
 	stakerAddress gethcommon.Address,
 ) ([]gethcommon.Address, []*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getstakershares")
 	return r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 
@@ -154,6 +163,7 @@ func (r *ChainReader) GetDelegatedOperator(
 	stakerAddress gethcommon.Address,
 	blockNumber *big.Int,
 ) (gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getdelegatedoperator")
 	return r.delegationManager.DelegatedTo(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 
@@ -161,6 +171,8 @@ func (r *ChainReader) GetOperatorDetails(
 	ctx context.Context,
 	operator types.Operator,
 ) (types.Operator, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatordetails")
+
 	if r.delegationManager == nil {
 		return types.Operator{}, errors.New("DelegationManager contract not provided")
 	}
@@ -202,6 +214,8 @@ func (r *ChainReader) GetStrategyAndUnderlyingToken(
 	ctx context.Context,
 	strategyAddr gethcommon.Address,
 ) (*strategy.ContractIStrategy, gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getstrategyandunderlyingtoken")
+
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
 	if err != nil {
 		return nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
@@ -219,6 +233,8 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	ctx context.Context,
 	strategyAddr gethcommon.Address,
 ) (*strategy.ContractIStrategy, erc20.ContractIERC20Methods, gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getstrategyandunderlyingerc20token")
+
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
 	if err != nil {
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
@@ -239,6 +255,8 @@ func (r *ChainReader) GetOperatorSharesInStrategy(
 	operatorAddr gethcommon.Address,
 	strategyAddr gethcommon.Address,
 ) (*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorsharesinstrategy")
+
 	if r.delegationManager == nil {
 		return &big.Int{}, errors.New("DelegationManager contract not provided")
 	}
@@ -258,6 +276,8 @@ func (r *ChainReader) CalculateDelegationApprovalDigestHash(
 	approverSalt [32]byte,
 	expiry *big.Int,
 ) ([32]byte, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.calculatedelegationapprovaldigesthash")
+
 	if r.delegationManager == nil {
 		return [32]byte{}, errors.New("DelegationManager contract not provided")
 	}
@@ -279,6 +299,8 @@ func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 	salt [32]byte,
 	expiry *big.Int,
 ) ([32]byte, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.calculateoperatoravsregistrationdigesthash")
+
 	if r.avsDirectory == nil {
 		return [32]byte{}, errors.New("AVSDirectory contract not provided")
 	}
@@ -293,6 +315,8 @@ func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 }
 
 func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getdistributionrootslength")
+
 	if r.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -301,6 +325,8 @@ func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int,
 }
 
 func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (uint32, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.currrewardscalculationendtimestamp")
+
 	if r.rewardsCoordinator == nil {
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -311,6 +337,7 @@ func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (u
 func (r *ChainReader) GetCurrentClaimableDistributionRoot(
 	ctx context.Context,
 ) (rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getcurrentclaimabledistributionroot")
 	if r.rewardsCoordinator == nil {
 		return rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot{}, errors.New(
 			"RewardsCoordinator contract not provided",
@@ -324,6 +351,8 @@ func (r *ChainReader) GetRootIndexFromHash(
 	ctx context.Context,
 	rootHash [32]byte,
 ) (uint32, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getrootindexfromhash")
+
 	if r.rewardsCoordinator == nil {
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -336,6 +365,8 @@ func (r *ChainReader) GetCumulativeClaimed(
 	earner gethcommon.Address,
 	token gethcommon.Address,
 ) (*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getcumulativeclaimed")
+
 	if r.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -347,6 +378,8 @@ func (r *ChainReader) CheckClaim(
 	ctx context.Context,
 	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.checkclaim")
+
 	if r.rewardsCoordinator == nil {
 		return false, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -359,6 +392,8 @@ func (r *ChainReader) GetOperatorAVSSplit(
 	operator gethcommon.Address,
 	avs gethcommon.Address,
 ) (uint16, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatoravssplit")
+
 	if r.rewardsCoordinator == nil {
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -376,6 +411,8 @@ func (r *ChainReader) GetOperatorPISplit(
 	ctx context.Context,
 	operator gethcommon.Address,
 ) (uint16, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorpisplit")
+
 	if r.rewardsCoordinator == nil {
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -394,6 +431,8 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	operatorAddress gethcommon.Address,
 	strategyAddress gethcommon.Address,
 ) (uint64, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getallocatablemagnitude")
+
 	if r.allocationManager == nil {
 		return 0, errors.New("AllocationManager contract not provided")
 	}
@@ -406,6 +445,8 @@ func (r *ChainReader) GetMaxMagnitudes(
 	operatorAddress gethcommon.Address,
 	strategyAddresses []gethcommon.Address,
 ) ([]uint64, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getmaxmagnitudes")
+
 	if r.allocationManager == nil {
 		return []uint64{}, errors.New("AllocationManager contract not provided")
 	}
@@ -418,6 +459,8 @@ func (r *ChainReader) GetAllocationInfo(
 	operatorAddress gethcommon.Address,
 	strategyAddress gethcommon.Address,
 ) ([]AllocationInfo, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getallocationinfo")
+
 	if r.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -450,6 +493,8 @@ func (r *ChainReader) GetOperatorShares(
 	operatorAddress gethcommon.Address,
 	strategyAddresses []gethcommon.Address,
 ) ([]*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorshares")
+
 	if r.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
@@ -464,6 +509,8 @@ func (r *ChainReader) GetOperatorsShares(
 	operatorAddress []gethcommon.Address,
 	strategyAddresses []gethcommon.Address,
 ) ([][]*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorsshares")
+
 	if r.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
@@ -476,6 +523,8 @@ func (r *ChainReader) GetNumOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) (*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getnumoperatorsetsforoperator")
+
 	opSets, err := r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 	if err != nil {
 		return nil, err
@@ -489,6 +538,8 @@ func (r *ChainReader) GetOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) ([]allocationmanager.OperatorSet, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorsetsforoperator")
+
 	// TODO: we're fetching max int64 operatorSets here. What's the practical limit for timeout by RPC? do we need to
 	// paginate?
 	return r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
@@ -500,6 +551,7 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 	operatorAddress gethcommon.Address,
 	operatorSet allocationmanager.OperatorSet,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.isoperatorregisteredwithoperatorset")
 	if operatorSet.Id == 0 {
 		// this is an M2 AVS
 		status, err := r.avsDirectory.AvsOperatorStatus(&bind.CallOpts{Context: ctx}, operatorSet.Avs, operatorAddress)
@@ -529,6 +581,8 @@ func (r *ChainReader) GetOperatorsForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
 ) ([]gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getoperatorsforoperatorset")
+
 	if operatorSet.Id == 0 {
 		return nil, errLegacyAVSsNotSupported
 	} else {
@@ -541,6 +595,8 @@ func (r *ChainReader) GetNumOperatorsForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
 ) (*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getnumoperatorsforoperatorset")
+
 	if operatorSet.Id == 0 {
 		return nil, errLegacyAVSsNotSupported
 	} else {
@@ -554,6 +610,8 @@ func (r *ChainReader) GetStrategiesForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
 ) ([]gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getstrategiesforoperatorset")
+
 	if operatorSet.Id == 0 {
 		return nil, errLegacyAVSsNotSupported
 	} else {
@@ -567,6 +625,8 @@ func (r *ChainReader) GetSlashableShares(
 	operatorSet allocationmanager.OperatorSet,
 	strategies []gethcommon.Address,
 ) (map[gethcommon.Address]*big.Int, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getslashableshares")
+
 	if r.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -606,6 +666,8 @@ func (r *ChainReader) GetSlashableSharesForOperatorSets(
 	ctx context.Context,
 	operatorSets []allocationmanager.OperatorSet,
 ) ([]OperatorSetStakes, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getslashablesharesforoperatorsets")
+
 	currentBlock, err := r.ethClient.BlockNumber(ctx)
 	if err != nil {
 		return nil, err
@@ -623,6 +685,8 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 	operatorSets []allocationmanager.OperatorSet,
 	futureBlock uint32,
 ) ([]OperatorSetStakes, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getslashablesharesforoperatorsetsbefore")
+
 	operatorSetStakes := make([]OperatorSetStakes, len(operatorSets))
 	for i, operatorSet := range operatorSets {
 		operators, err := r.GetOperatorsForOperatorSet(ctx, operatorSet)
@@ -664,6 +728,8 @@ func (r *ChainReader) GetAllocationDelay(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) (uint32, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getallocationdelay")
+
 	if r.allocationManager == nil {
 		return 0, errors.New("AllocationManager contract not provided")
 	}
@@ -681,6 +747,8 @@ func (r *ChainReader) GetRegisteredSets(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) ([]allocationmanager.OperatorSet, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.getregisteredsets")
+
 	if r.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -694,6 +762,8 @@ func (r *ChainReader) CanCall(
 	target gethcommon.Address,
 	selector [4]byte,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.cancall")
+
 	canCall, err := r.permissionController.CanCall(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -713,6 +783,8 @@ func (r *ChainReader) ListAppointees(
 	target gethcommon.Address,
 	selector [4]byte,
 ) ([]gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.listappointees")
+
 	appointees, err := r.permissionController.GetAppointees(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -730,6 +802,8 @@ func (r *ChainReader) ListAppointeePermissions(
 	accountAddress gethcommon.Address,
 	appointeeAddress gethcommon.Address,
 ) ([]gethcommon.Address, [][4]byte, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.listappointeepermissions")
+
 	targets, selectors, err := r.permissionController.GetAppointeePermissions(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -745,6 +819,8 @@ func (r *ChainReader) ListPendingAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.listpendingadmins")
+
 	pendingAdmins, err := r.permissionController.GetPendingAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
 	if err != nil {
 		return nil, errors.New("call to permission controller failed: " + err.Error())
@@ -756,6 +832,8 @@ func (r *ChainReader) ListAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.listadmins")
+
 	pendingAdmins, err := r.permissionController.GetAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
 	if err != nil {
 		return nil, errors.New("call to permission controller failed: " + err.Error())
@@ -768,6 +846,8 @@ func (r *ChainReader) IsPendingAdmin(
 	accountAddress gethcommon.Address,
 	pendingAdminAddress gethcommon.Address,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.ispendingadmin")
+
 	isPendingAdmin, err := r.permissionController.IsPendingAdmin(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -784,6 +864,8 @@ func (r *ChainReader) IsAdmin(
 	accountAddress gethcommon.Address,
 	adminAddress gethcommon.Address,
 ) (bool, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainreader.isadmin")
+
 	isAdmin, err := r.permissionController.IsAdmin(&bind.CallOpts{Context: ctx}, accountAddress, adminAddress)
 	if err != nil {
 		return isAdmin, errors.New("call to permission controller failed: " + err.Error())

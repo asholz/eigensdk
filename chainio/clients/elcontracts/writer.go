@@ -23,6 +23,7 @@ import (
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
+	"github.com/Layr-Labs/eigensdk-go/telemetry"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/Layr-Labs/eigensdk-go/utils"
 )
@@ -62,6 +63,7 @@ func NewChainWriter(
 	txMgr txmgr.TxManager,
 ) *ChainWriter {
 	logger = logger.With(logging.ComponentKey, "elcontracts/writer")
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newchainwriter")
 
 	return &ChainWriter{
 		delegationManager:    delegationManager,
@@ -88,6 +90,8 @@ func BuildELChainWriter(
 	eigenMetrics metrics.Metrics,
 	txMgr txmgr.TxManager,
 ) (*ChainWriter, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.buildelchainwriter")
+
 	elContractBindings, err := NewEigenlayerContractBindings(
 		delegationManagerAddr,
 		avsDirectoryAddr,
@@ -130,6 +134,8 @@ func NewWriterFromConfig(
 	eigenMetrics metrics.Metrics,
 	txMgr txmgr.TxManager,
 ) (*ChainWriter, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newwriterfromconfig")
+
 	elContractBindings, err := NewBindingsFromConfig(
 		cfg,
 		ethClient,
@@ -169,6 +175,8 @@ func (w *ChainWriter) RegisterAsOperator(
 	operator types.Operator,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.registerasoperator")
+
 	if w.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
@@ -202,6 +210,8 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	operator types.Operator,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.updateoperatordetails")
+
 	if w.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
@@ -242,6 +252,8 @@ func (w *ChainWriter) UpdateMetadataURI(
 	uri string,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.updatemetadatauri")
+
 	if w.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
@@ -274,6 +286,8 @@ func (w *ChainWriter) DepositERC20IntoStrategy(
 	amount *big.Int,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.depositerc20intostrategy")
+
 	if w.strategyManager == nil {
 		return nil, errors.New("StrategyManager contract not provided")
 	}
@@ -318,6 +332,8 @@ func (w *ChainWriter) SetClaimerFor(
 	claimer gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.setclaimerfor")
+
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -345,6 +361,8 @@ func (w *ChainWriter) ProcessClaim(
 	earnerAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.processclaim")
+
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -373,6 +391,8 @@ func (w *ChainWriter) SetOperatorAVSSplit(
 	split uint16,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.setoperatoravssplit")
+
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -400,6 +420,8 @@ func (w *ChainWriter) SetOperatorPISplit(
 	split uint16,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.setoperatorpisplit")
+
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -427,6 +449,8 @@ func (w *ChainWriter) ProcessClaims(
 	earnerAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.processclaims")
+
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
 	}
@@ -459,6 +483,8 @@ func (w *ChainWriter) ForceDeregisterFromOperatorSets(
 	operatorSetIds []uint32,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.forcederegisterfromoperatorsets")
+
 	if w.allocationManager == nil {
 		return nil, errors.New("AVSDirectory contract not provided")
 	}
@@ -495,6 +521,8 @@ func (w *ChainWriter) ModifyAllocations(
 	allocations []allocationmanager.IAllocationManagerTypesAllocateParams,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.modifyallocations")
+
 	if w.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -523,6 +551,8 @@ func (w *ChainWriter) SetAllocationDelay(
 	delay uint32,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.setallocationdelay")
+
 	if w.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -549,6 +579,8 @@ func (w *ChainWriter) DeregisterFromOperatorSets(
 	operator gethcommon.Address,
 	request DeregistrationRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.deregisterfromoperatorsets")
+
 	if w.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -581,6 +613,8 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	ctx context.Context,
 	request RegistrationRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.registerforoperatorsets")
+
 	if w.allocationManager == nil {
 		return nil, errors.New("AllocationManager contract not provided")
 	}
@@ -613,6 +647,8 @@ func (w *ChainWriter) RemovePermission(
 	ctx context.Context,
 	request RemovePermissionRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.removepermission")
+
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no-send tx opts", err)
@@ -628,6 +664,8 @@ func (w *ChainWriter) NewRemovePermissionTx(
 	txOpts *bind.TransactOpts,
 	request RemovePermissionRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newremovepermissiontx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -645,6 +683,8 @@ func (w *ChainWriter) NewSetPermissionTx(
 	txOpts *bind.TransactOpts,
 	request SetPermissionRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newsetpermissiontx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -661,6 +701,8 @@ func (w *ChainWriter) SetPermission(
 	ctx context.Context,
 	request SetPermissionRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.setpermission")
+
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no-send tx opts", err)
@@ -678,6 +720,8 @@ func (w *ChainWriter) NewAcceptAdminTx(
 	txOpts *bind.TransactOpts,
 	request AcceptAdminRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newacceptadmintx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -688,6 +732,8 @@ func (w *ChainWriter) AcceptAdmin(
 	ctx context.Context,
 	request AcceptAdminRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.acceptadmin")
+
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no send tx opts", err)
@@ -704,6 +750,8 @@ func (w *ChainWriter) NewAddPendingAdminTx(
 	txOpts *bind.TransactOpts,
 	request AddPendingAdminRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newaddpendingadmintx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -711,6 +759,8 @@ func (w *ChainWriter) NewAddPendingAdminTx(
 }
 
 func (w *ChainWriter) AddPendingAdmin(ctx context.Context, request AddPendingAdminRequest) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.addpendingadmin")
+
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no send tx opts", err)
@@ -726,6 +776,8 @@ func (w *ChainWriter) NewRemoveAdminTx(
 	txOpts *bind.TransactOpts,
 	request RemoveAdminRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newremoveadmintx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -736,6 +788,8 @@ func (w *ChainWriter) RemoveAdmin(
 	ctx context.Context,
 	request RemoveAdminRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.removeadmin")
+
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no send tx opts", err)
@@ -752,6 +806,8 @@ func (w *ChainWriter) NewRemovePendingAdminTx(
 	txOpts *bind.TransactOpts,
 	request RemovePendingAdminRequest,
 ) (*gethtypes.Transaction, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.newremovependingadmintx")
+
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
@@ -762,6 +818,8 @@ func (w *ChainWriter) RemovePendingAdmin(
 	ctx context.Context,
 	request RemovePendingAdminRequest,
 ) (*gethtypes.Receipt, error) {
+	_ = telemetry.GetTelemetry().CaptureEvent("elcontracts.chainwriter.removependingadmin")
+
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
 		return nil, utils.WrapError("failed to get no send tx opts", err)
