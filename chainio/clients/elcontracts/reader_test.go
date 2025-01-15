@@ -179,6 +179,10 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, uint64(1), receipt.Status)
 
+			registeredSets, err := client.ElChainReader.GetRegisteredSets(context.Background(), operatorAddress)
+			require.NoError(t, err)
+			require.NotEmpty(t, registeredSets)
+
 			operators, err := client.ElChainReader.GetOperatorsForOperatorSet(
 				context.Background(),
 				operatorSet,
