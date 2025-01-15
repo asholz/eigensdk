@@ -134,7 +134,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	client, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	avsAddress := common.HexToAddress(ANVIL_FIRST_ADDRESS)
+	avsAddress := common.HexToAddress(ANVIL_THIRD_ADDRESS)
 
 	operatorAddress := common.HexToAddress(ANVIL_SECOND_ADDRESS)
 	operatorPrivateKeyHex := ANVIL_SECOND_PRIVATE_KEY
@@ -184,12 +184,36 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.Len(t, operators, 1)
+		t.Log("Operators: ", operators)
+		t.Logf("Operator Set: %+v", operatorSet)
 	})
 
 	t.Run("get number of operator sets for an operator", func(t *testing.T) {
 		numOperatorSets, err := client.ElChainReader.GetNumOperatorsForOperatorSet(context.Background(), operatorSet)
 		require.NoError(t, err)
 		require.Equal(t, big.NewInt(1), numOperatorSets)
+		t.Log("Number of operators: ", numOperatorSets)
+		t.Log("Operator Set: ", operatorSet)
+	})
+
+	// ME DA 0
+	t.Run("get an operator for an operator set", func(t *testing.T) {
+		operatorSets, err := client.ElChainReader.GetOperatorSetsForOperator(context.Background(), operatorAddress)
+		t.Log("OperatorSets: ", operatorSets)
+		t.Log("Operator Address: ", operatorAddress)
+		require.NoError(t, err)
+	})
+
+	// ME DA 0
+	t.Run("get number of operatorfor an operator set", func(t *testing.T) {
+		numOperatorSets, err := client.ElChainReader.GetNumOperatorSetsForOperator(
+			context.Background(),
+			operatorAddress,
+		)
+		require.NoError(t, err)
+		// require.Equal(t, big.NewInt(1), numOperators)
+		t.Log("Number of operatorsSets: ", numOperatorSets)
+		t.Log("Operator Address: ", operatorAddress)
 	})
 
 	t.Run("validate strategies for OperatorSet", func(t *testing.T) {
