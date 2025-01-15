@@ -58,33 +58,39 @@ func createTxMgr(rpcUrl string, ecdsaPrivateKey *ecdsa.PrivateKey) (eth.HttpBack
 func ExampleGeometricTxManager() {
 	anvilC, err := testutils.StartAnvilContainer("")
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	anvilUrl, err := anvilC.Endpoint(context.TODO(), "http")
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	ecdsaPrivateKey, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	pk := ecdsaPrivateKey.PublicKey
 	address := crypto.PubkeyToAddress(pk)
 
 	client, txmgr, err := createTxMgr(anvilUrl, ecdsaPrivateKey)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	tx, err := createTx(client, address)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	_, err = txmgr.Send(context.TODO(), tx, true)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	// we just add this to make sure the example runs
