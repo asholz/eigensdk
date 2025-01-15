@@ -2,6 +2,7 @@ package elcontracts_test
 
 import (
 	"context"
+	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -18,6 +19,7 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,10 +133,11 @@ func TestChainReader(t *testing.T) {
 }
 
 func TestOperatorSetsAndSlashableShares(t *testing.T) {
-	client, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	client, anvilC, anvilHttpEndpoint := testclients.BuildTestClientsWithAnvilC(t)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	log.Printf("ContractAddress en reader_Test: %+v", contractAddrs)
 
-	avsAddress := common.HexToAddress(ANVIL_THIRD_ADDRESS)
+	avsAddress := common.HexToAddress(ANVIL_FIRST_ADDRESS)
 
 	operatorAddress := common.HexToAddress(ANVIL_SECOND_ADDRESS)
 	operatorPrivateKeyHex := ANVIL_SECOND_PRIVATE_KEY
@@ -180,12 +183,35 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 
 		operators, err := client.ElChainReader.GetOperatorsForOperatorSet(
 			context.Background(),
-			allocationmanager.OperatorSet{Avs: avsAddress, Id: operatorSetId},
+			operatorSet,
 		)
 		require.NoError(t, err)
 		require.Len(t, operators, 1)
-		t.Log("Operators: ", operators)
-		t.Logf("Operator Set: %+v", operatorSet)
+		t.Log("Tengo estos operators: ", operators)
+		t.Logf("Para este Operator Set: %+v", operatorSet)
+	})
+
+	t.Run("allocate delay", func(t *testing.T) {
+		waitForReceipt := true
+		delay := uint32(1)
+		// The allocation delay must be initialized before modifying the allocations
+		receipt, err := operatorClient.ElChainWriter.SetAllocationDelay(
+			context.Background(),
+			operatorAddress,
+			delay,
+			waitForReceipt,
+		)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+		allocationConfigurationDelay := 1200
+		// Advance the chain by the required number of blocks
+		// (ALLOCATION_CONFIGURATION_DELAY) to apply the allocation delay
+		testutils.AdvanceChainByNBlocksExecInContainer(context.Background(), allocationConfigurationDelay+1, anvilC)
+
+		// Retrieve the allocation delay so that the delay is applied
+		_, err = operatorClient.ElChainReader.GetAllocationDelay(context.Background(), operatorAddress)
+		require.NoError(t, err)
 	})
 
 	t.Run("get number of operator sets for an operator", func(t *testing.T) {
@@ -193,19 +219,21 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, big.NewInt(1), numOperatorSets)
 		t.Log("Number of operators: ", numOperatorSets)
-		t.Log("Operator Set: ", operatorSet)
+		t.Log("Para este Operator Set: ", operatorSet)
 	})
 
 	// ME DA 0
-	t.Run("get an operator for an operator set", func(t *testing.T) {
+	t.Run("get an operator set for an operator address", func(t *testing.T) {
 		operatorSets, err := client.ElChainReader.GetOperatorSetsForOperator(context.Background(), operatorAddress)
 		t.Log("OperatorSets: ", operatorSets)
-		t.Log("Operator Address: ", operatorAddress)
+		t.Log("Len of OperatorSets: ", len(operatorSets))
+		t.Log("De este Operator Address: ", operatorAddress)
 		require.NoError(t, err)
+
 	})
 
 	// ME DA 0
-	t.Run("get number of operatorfor an operator set", func(t *testing.T) {
+	t.Run("get number of operator set for an operator address", func(t *testing.T) {
 		numOperatorSets, err := client.ElChainReader.GetNumOperatorSetsForOperator(
 			context.Background(),
 			operatorAddress,
@@ -213,7 +241,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		require.NoError(t, err)
 		// require.Equal(t, big.NewInt(1), numOperators)
 		t.Log("Number of operatorsSets: ", numOperatorSets)
-		t.Log("Operator Address: ", operatorAddress)
+		t.Log("De este Operator Address: ", operatorAddress)
 	})
 
 	t.Run("validate strategies for OperatorSet", func(t *testing.T) {
