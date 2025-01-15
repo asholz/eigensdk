@@ -75,8 +75,10 @@ func TestWriterMethods(t *testing.T) {
 	})
 }
 
+// Compliance test for BLS signature
 func TestBlsSignature(t *testing.T) {
 	// read input from JSON if available, otherwise use default values
+	// Data taken from https://github.com/Layr-Labs/eigensdk-compliance/blob/429459572302d9fd42c1184b7257703460ba09ca/data_files/bls_signature.json
 	var defaultInput = struct {
 		Message    string `json:"message"`
 		BlsPrivKey string `json:"bls_priv_key"`
