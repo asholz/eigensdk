@@ -182,7 +182,6 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			context.Background(),
 			allocationmanager.OperatorSet{Avs: avsAddress, Id: operatorSetId},
 		)
-		t.Log(operators)
 		require.NoError(t, err)
 		require.Len(t, operators, 1)
 	})
