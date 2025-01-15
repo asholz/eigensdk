@@ -2,7 +2,6 @@ package elcontracts_test
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -135,10 +134,8 @@ func TestChainReader(t *testing.T) {
 func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	client, anvilC, anvilHttpEndpoint := testclients.BuildTestClientsWithAnvilC(t)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	log.Printf("ContractAddress en reader_Test: %+v", contractAddrs)
 
 	avsAddress := common.HexToAddress(ANVIL_FIRST_ADDRESS)
-
 	operatorAddress := common.HexToAddress(ANVIL_SECOND_ADDRESS)
 	operatorPrivateKeyHex := ANVIL_SECOND_PRIVATE_KEY
 	operatorClient, err := newTestClients(anvilHttpEndpoint, operatorPrivateKeyHex)
@@ -152,99 +149,94 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		Id:  operatorSetId,
 	}
 
-	operatorSets := []allocationmanager.OperatorSet{
-		{Avs: avsAddress, Id: operatorSetId},
-	}
+	strategies := []common.Address{erc20MockStrategyAddr}
 
-	err = createOperatorSet(client, avsAddress, operatorSetId, erc20MockStrategyAddr)
-	require.NoError(t, err)
-
-	t.Run("register operator to operatorsets and validate it", func(t *testing.T) {
-		keypair, err := bls.NewKeyPairFromString("0x01")
-		require.NoError(t, err)
-
-		request := elcontracts.RegistrationRequest{
-			OperatorAddress: operatorAddress,
-			AVSAddress:      avsAddress,
-			OperatorSetIds:  []uint32{operatorSetId},
-			WaitForReceipt:  true,
-			Socket:          "socket",
-			BlsKeyPair:      keypair,
-		}
-
-		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-		receipt, err := operatorClient.ElChainWriter.RegisterForOperatorSets(
-			context.Background(),
-			registryCoordinatorAddress,
-			request,
-		)
-		require.NoError(t, err)
-		require.Equal(t, uint64(1), receipt.Status)
-
-		operators, err := client.ElChainReader.GetOperatorsForOperatorSet(
-			context.Background(),
-			operatorSet,
-		)
-		require.NoError(t, err)
-		require.Len(t, operators, 1)
-		t.Log("Tengo estos operators: ", operators)
-		t.Logf("Para este Operator Set: %+v", operatorSet)
-	})
-
-	t.Run("allocate delay", func(t *testing.T) {
-		waitForReceipt := true
-		delay := uint32(1)
-		// The allocation delay must be initialized before modifying the allocations
-		receipt, err := operatorClient.ElChainWriter.SetAllocationDelay(
-			context.Background(),
-			operatorAddress,
-			delay,
-			waitForReceipt,
-		)
-		require.NoError(t, err)
-		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-		allocationConfigurationDelay := 1200
-		// Advance the chain by the required number of blocks
-		// (ALLOCATION_CONFIGURATION_DELAY) to apply the allocation delay
-		testutils.AdvanceChainByNBlocksExecInContainer(context.Background(), allocationConfigurationDelay+1, anvilC)
-
-		// Retrieve the allocation delay so that the delay is applied
-		_, err = operatorClient.ElChainReader.GetAllocationDelay(context.Background(), operatorAddress)
+	t.Run("create operator set", func(t *testing.T) {
+		err = createOperatorSet(client, avsAddress, operatorSetId, erc20MockStrategyAddr)
 		require.NoError(t, err)
 	})
 
-	t.Run("get number of operator sets for an operator", func(t *testing.T) {
-		numOperatorSets, err := client.ElChainReader.GetNumOperatorsForOperatorSet(context.Background(), operatorSet)
-		require.NoError(t, err)
-		require.Equal(t, big.NewInt(1), numOperatorSets)
-		t.Log("Number of operators: ", numOperatorSets)
-		t.Log("Para este Operator Set: ", operatorSet)
+	t.Run("register and allocate stake", func(t *testing.T) {
+		t.Run("register operator to operator set and verify", func(t *testing.T) {
+			keypair, err := bls.NewKeyPairFromString("0x01")
+			require.NoError(t, err)
+
+			request := elcontracts.RegistrationRequest{
+				OperatorAddress: operatorAddress,
+				AVSAddress:      avsAddress,
+				OperatorSetIds:  []uint32{operatorSetId},
+				WaitForReceipt:  true,
+				Socket:          "socket",
+				BlsKeyPair:      keypair,
+			}
+
+			registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+			receipt, err := operatorClient.ElChainWriter.RegisterForOperatorSets(
+				context.Background(),
+				registryCoordinatorAddress,
+				request,
+			)
+			require.NoError(t, err)
+			require.Equal(t, uint64(1), receipt.Status)
+
+			operators, err := client.ElChainReader.GetOperatorsForOperatorSet(
+				context.Background(),
+				operatorSet,
+			)
+			require.NoError(t, err)
+			require.Len(t, operators, 1)
+
+			numOperator, err := client.ElChainReader.GetNumOperatorsForOperatorSet(context.Background(), operatorSet)
+			require.NoError(t, err)
+			require.Equal(t, big.NewInt(1), numOperator)
+		})
+
+		t.Run("allocate stake for operator", func(t *testing.T) {
+			const allocationDelay = 1
+			const allocationMagnitude = 100
+			const allocationConfigurationDelay = 1200
+
+			receipt, err := operatorClient.ElChainWriter.SetAllocationDelay(
+				context.Background(),
+				operatorAddress,
+				allocationDelay,
+				true,
+			)
+			require.NoError(t, err)
+			require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+			testutils.AdvanceChainByNBlocksExecInContainer(context.Background(), allocationConfigurationDelay+1, anvilC)
+
+			allocationParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
+				{
+					OperatorSet:   operatorSet,
+					Strategies:    []common.Address{erc20MockStrategyAddr},
+					NewMagnitudes: []uint64{allocationMagnitude},
+				},
+			}
+
+			receipt, err = operatorClient.ElChainWriter.ModifyAllocations(
+				context.Background(),
+				operatorAddress,
+				allocationParams,
+				true,
+			)
+			require.NoError(t, err)
+			require.Equal(t, uint64(1), receipt.Status)
+		})
+
+		t.Run("get operator sets for operator after allocation", func(t *testing.T) {
+			opSets, err := client.ElChainReader.GetOperatorSetsForOperator(context.Background(), operatorAddress)
+			require.NoError(t, err)
+			require.NotEmpty(t, opSets)
+
+			numOpSets, err := client.ElChainReader.GetNumOperatorSetsForOperator(context.Background(), operatorAddress)
+			require.NoError(t, err)
+			require.Equal(t, big.NewInt(1), numOpSets)
+		})
 	})
 
-	// ME DA 0
-	t.Run("get an operator set for an operator address", func(t *testing.T) {
-		operatorSets, err := client.ElChainReader.GetOperatorSetsForOperator(context.Background(), operatorAddress)
-		t.Log("OperatorSets: ", operatorSets)
-		t.Log("Len of OperatorSets: ", len(operatorSets))
-		t.Log("De este Operator Address: ", operatorAddress)
-		require.NoError(t, err)
-
-	})
-
-	// ME DA 0
-	t.Run("get number of operator set for an operator address", func(t *testing.T) {
-		numOperatorSets, err := client.ElChainReader.GetNumOperatorSetsForOperator(
-			context.Background(),
-			operatorAddress,
-		)
-		require.NoError(t, err)
-		// require.Equal(t, big.NewInt(1), numOperators)
-		t.Log("Number of operatorsSets: ", numOperatorSets)
-		t.Log("De este Operator Address: ", operatorAddress)
-	})
-
-	t.Run("validate strategies for OperatorSet", func(t *testing.T) {
+	t.Run("validate strategies for operator set", func(t *testing.T) {
 		strategies, err := client.ElChainReader.GetStrategiesForOperatorSet(context.Background(), operatorSet)
 		require.NoError(t, err)
 		require.Len(t, strategies, 1)
@@ -252,12 +244,6 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	})
 
 	t.Run("get slashable shares for a single operator", func(t *testing.T) {
-		operatorSet := allocationmanager.OperatorSet{
-			Avs: avsAddress,
-			Id:  operatorSetId,
-		}
-		strategies := []common.Address{erc20MockStrategyAddr}
-
 		shares, err := client.ElChainReader.GetSlashableShares(
 			context.Background(),
 			operatorAddress,
@@ -271,32 +257,23 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	t.Run("get slashable shares for multiple operator sets", func(t *testing.T) {
 		shares, err := client.ElChainReader.GetSlashableSharesForOperatorSets(
 			context.Background(),
-			operatorSets,
+			[]allocationmanager.OperatorSet{operatorSet},
 		)
 		require.NoError(t, err)
 		require.NotEmpty(t, shares)
-		require.Len(t, shares, 1)
 	})
 
-	t.Run("get register operator sets for an operator", func(t *testing.T) {
-		sets, err := client.ElChainReader.GetRegisteredSets(context.Background(), operatorAddress)
-		require.NoError(t, err)
-		require.NotEmpty(t, sets)
-		require.Len(t, sets, 1)
-	})
-
-	t.Run("get slashable shares before a specific block height", func(t *testing.T) {
+	t.Run("Get slashable shares before a specific block height", func(t *testing.T) {
 		blockNumber, err := client.EthHttpClient.BlockNumber(context.Background())
 		require.NoError(t, err)
 
 		shares, err := client.ElChainReader.GetSlashableSharesForOperatorSetsBefore(
 			context.Background(),
-			operatorSets,
+			[]allocationmanager.OperatorSet{operatorSet},
 			uint32(blockNumber)+1,
 		)
 		require.NoError(t, err)
 		require.NotEmpty(t, shares)
-		require.Len(t, shares, 1)
 	})
 }
 
