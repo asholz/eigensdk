@@ -49,8 +49,7 @@ Those functions are also available to users.
 
 ### KMSSignerFn
 
-This module includes support for signing messages using a Key Management Service (KMS) key.  Use `KMSSignerFn` to create a signer for KMS-managed keys.```
-You can use `KMSSignerFn` to create a signer for that type of keys.
+This module includes support for signing messages using a Key Management Service (KMS) key.  Use `KMSSignerFn` to create a signer for KMS-managed keys.
 
 ## Upgrade from Signer (v1)
 
