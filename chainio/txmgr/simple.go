@@ -109,14 +109,16 @@ func (m *SimpleTxManager) SendWithRetry(
 		backoff.WithMaxElapsedTime(maxElapsedTime),
 	)
 
+	retryCount := 0
+
 	sendAndWait := func() (*types.Receipt, error) {
+		defer func() { retryCount++ }()
+
 		r, err := m.send(ctx, tx)
 		if err != nil {
+			m.logger.Warn("failed to send transaction", err, "retryCount", retryCount)
 			return nil, err
 		}
-		m.logger.Error("failed to send transaction", err)
-		m.logger.Debugf("waiting %f seconds for backoff", initialInterval.Seconds())
-
 		return m.waitForReceipt(ctx, r.TxHash.Hex())
 	}
 
