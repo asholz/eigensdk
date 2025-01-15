@@ -2,7 +2,6 @@ package testclients
 
 import (
 	"context"
-	"log"
 	"os"
 	"testing"
 
@@ -32,7 +31,6 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 	require.NoError(t, err)
 
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	log.Printf("ContractAddress en testclients: %+v", contractAddrs)
 	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
@@ -70,7 +68,6 @@ func BuildTestClientsWithAnvilC(t *testing.T) (*clients.Clients, testcontainers.
 	require.NoError(t, err)
 
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	log.Printf("ContractAddress en testclients: %+v", contractAddrs)
 	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
