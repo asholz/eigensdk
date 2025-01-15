@@ -1,24 +1,27 @@
 # Signer v2
 
-Signerv2 is a module for signing and verifying messages. It provides a simple and secure way to handle cryptographic signatures.
+Signerv2 is a module for signing messages. It provides a simple and unified way to produce cryptographic signatures.
+Signers instantiated from this module is required to create some SDK transaction managers (see [`NewPrivateKeyWallet`](../chainio/clients/wallet/privatekey_wallet.go) and [`NewSimpleTxManager`](../chainio/txmgr/simple.go)/[`NewGeometricTxnManager`](../chainio/txmgr/geometric/geometric.go)).
 
 ## Features
 
-- Sign messages using various algorithms using Web3Signer
-- Verify message signatures
-- Support for multiple key types
+- Sign messages using raw private keys
+- Sign messages using encrypted keystores
+- Sign messages using a remote signer (web3 or KMS)
 
 ### Comparison to Old Signer
 
 In comparison to the old signer, Signerv2 offers:
-- New signing mechaninsms
-- Simplified API for easier integration
+
+- New signing mechanisms
+- A simplified API for easier extension
 
 ### Using SignerFromConfig
 
 SignerV2 introduces `SignerFromConfig`
 
-The `SignerFromConfig` function allows you to create a signer function based on a configuration. This configuration can specify whether to use a private key signer, a local keystore signer, or a remote web3 signer.
+The `SignerFromConfig` function allows you to create a signer function based on a configuration.
+This configuration specifies whether to use a private key signer, a local keystore signer, or a remote web3 signer.
 
 ```go
 package main
@@ -40,10 +43,18 @@ func main() {
     // Use signerFn and signerAddr as needed
 }
 ```
-### Web3Signer
-`Web3SignerFn` creates a signer function that uses a remote signer
-It exposes `eth_SignTransaction` endpoint which return rlp encoded signed tx
+
+Internally, `SignerFromConfig` calls different signer functions depending on the config it receives: `PrivateKeySignerFn`, `KeyStoreSignerFn`, or `Web3SignerFn`.
+Those functions are also available to users.
+
+### KMSSignerFn
+
+This module also has support for signing with a KMS key.
+You can use `KMSSignerFn` to create a signer for that type of keys.
 
 ## Upgrade from Signer (v1)
 
-`NewPrivateKeySigner` and `NewPrivateKeyFromKeystoreSigner` functions should be upgraded to use the new `SignerFromConfig` with its correct Config
+`NewPrivateKeySigner` and `NewPrivateKeyFromKeystoreSigner` functions should be upgraded to use the new `SignerFromConfig` and a `Config` with a `PrivateKey`, or `KeystorePath` and `Password`, respectively.
+
+The functionality given by the `Signer` interface and `BasicSigner` type was redesigned into the [`wallet`](../chainio/clients/wallet) and [`txmgr`](../chainio/txmgr) modules.
+After generating a `SignerFn` as specified in ["UsingSignerFromConfig"](#using-signerfromconfig), you can generate a transaction manager via `NewPrivateKeyWallet` and `NewSimpleTxManager` (or `NewGeometricTxnManager` for geometric gas pricing)
