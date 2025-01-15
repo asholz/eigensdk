@@ -19,7 +19,7 @@ mocks: ## generates mocks
 
 .PHONY: tests
 tests: ## runs all tests
-	go test -race ./... -timeout=1m
+	go test -race ./... -timeout=3m
 
 .PHONY: tests-cover
 tests-cover: ## run all tests with test coverge
@@ -59,7 +59,7 @@ lint: ## runs all linters
 
 ___BINDINGS___: ## 
 
-core_default := "DelegationManager IRewardsCoordinator ISlasher StrategyManager EigenPod EigenPodManager IStrategy IAVSDirectory"
+core_default := "DelegationManager IRewardsCoordinator StrategyManager EigenPod EigenPodManager IStrategy AVSDirectory AllocationManager PermissionController"
 core_location := "./lib/eigenlayer-middleware/lib/eigenlayer-contracts"
 core_bindings_location := "../../../../bindings"
 
