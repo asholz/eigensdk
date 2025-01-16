@@ -22,8 +22,7 @@ func TestWriterMethods(t *testing.T) {
 	require.NoError(t, err)
 
 	addr := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	ecdsaPrivKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	ecdsaPrivateKey, err := crypto.HexToECDSA(ecdsaPrivKeyHex)
+	ecdsaPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 	require.NoError(t, err)
 
 	quorumNumbers := types.QuorumNums{0}
