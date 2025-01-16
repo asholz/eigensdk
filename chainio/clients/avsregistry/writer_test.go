@@ -103,6 +103,7 @@ func TestBlsSignature(t *testing.T) {
 	x := sig.G1Affine.X.String()
 	y := sig.G1Affine.Y.String()
 
+	// Values taken from previous run of this test
 	assert.Equal(t, x, "15790168376429033610067099039091292283117017641532256477437243974517959682102")
 	assert.Equal(t, y, "4960450323239587206117776989095741074887370703941588742100855592356200866613")
 }
