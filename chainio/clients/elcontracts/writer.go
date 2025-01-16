@@ -346,7 +346,7 @@ func (w *ChainWriter) SetClaimerFor(
 func (w *ChainWriter) ProcessClaim(
 	ctx context.Context,
 	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
-	earnerAddress gethcommon.Address,
+	recipientAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
@@ -358,7 +358,7 @@ func (w *ChainWriter) ProcessClaim(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.rewardsCoordinator.ProcessClaim(noSendTxOpts, claim, earnerAddress)
+	tx, err := w.rewardsCoordinator.ProcessClaim(noSendTxOpts, claim, recipientAddress)
 	if err != nil {
 		return nil, utils.WrapError("failed to create ProcessClaim tx", err)
 	}
@@ -428,7 +428,7 @@ func (w *ChainWriter) SetOperatorPISplit(
 func (w *ChainWriter) ProcessClaims(
 	ctx context.Context,
 	claims []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
-	earnerAddress gethcommon.Address,
+	recipientAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
@@ -444,7 +444,7 @@ func (w *ChainWriter) ProcessClaims(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.rewardsCoordinator.ProcessClaims(noSendTxOpts, claims, earnerAddress)
+	tx, err := w.rewardsCoordinator.ProcessClaims(noSendTxOpts, claims, recipientAddress)
 	if err != nil {
 		return nil, utils.WrapError("failed to create ProcessClaims tx", err)
 	}
