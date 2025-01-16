@@ -58,7 +58,7 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 	return clients, anvilHttpEndpoint
 }
 
-// Starts an anvil container and builds the ChainIO Clients for testing.
+// Starts an anvil container and builds the ChainIO ReadClients for read-only testing.
 func BuildTestReadClients(t *testing.T) (*clients.ReadClients, string) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
