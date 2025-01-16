@@ -306,20 +306,6 @@ func TestOperatorSetsWithWrongInput(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	t.Run("get operators sets with no allocationManager address", func(t *testing.T) {
-		_, err = chainReader.GetRegisteredSets(ctx, operatorAddress)
-		require.Error(t, err)
-
-		_, err = chainReader.GetOperatorSetsForOperator(ctx, operatorAddress)
-		require.Error(t, err)
-
-		_, err = chainReader.GetNumOperatorSetsForOperator(ctx, operatorAddress)
-		require.Error(t, err)
-
-		_, err = chainReader.GetSlashableSharesForOperatorSetsBefore(context.Background(), nil, 0)
-		require.Error(t, err)
-	})
-
 	t.Run("test operator set with invalid id", func(t *testing.T) {
 		_, err := chainReader.GetOperatorsForOperatorSet(ctx, operatorSet)
 		require.Error(t, err)

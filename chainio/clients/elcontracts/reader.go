@@ -476,10 +476,6 @@ func (r *ChainReader) GetNumOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) (*big.Int, error) {
-	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
-	}
-
 	opSets, err := r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 	if err != nil {
 		return nil, err
@@ -495,10 +491,6 @@ func (r *ChainReader) GetOperatorSetsForOperator(
 ) ([]allocationmanager.OperatorSet, error) {
 	// TODO: we're fetching max int64 operatorSets here. What's the practical limit for timeout by RPC? do we need to
 	// paginate?
-	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
-	}
-
 	return r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 }
 
@@ -631,10 +623,6 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 	operatorSets []allocationmanager.OperatorSet,
 	futureBlock uint32,
 ) ([]OperatorSetStakes, error) {
-	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
-	}
-
 	operatorSetStakes := make([]OperatorSetStakes, len(operatorSets))
 	for i, operatorSet := range operatorSets {
 		operators, err := r.GetOperatorsForOperatorSet(ctx, operatorSet)
