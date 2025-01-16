@@ -694,11 +694,11 @@ func TestProcessClaim(t *testing.T) {
 
 	waitForReceipt := true
 	cumulativeEarnings := int64(42)
-	earner := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
 	require.NoError(t, err)
 
-	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, earner, waitForReceipt)
+	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
@@ -732,7 +732,7 @@ func TestProcessClaims(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	earner := common.HexToAddress("0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6")
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 	waitForReceipt := true
 	cumulativeEarnings1 := int64(42)
@@ -747,7 +747,7 @@ func TestProcessClaims(t *testing.T) {
 	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
 		*claim1, *claim2,
 	}
-	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, earner, waitForReceipt)
+	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
