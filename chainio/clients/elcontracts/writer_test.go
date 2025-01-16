@@ -663,95 +663,6 @@ func TestRemoveAdmin(t *testing.T) {
 	})
 }
 
-func TestProcessClaim(t *testing.T) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	config := elcontracts.Config{
-		DelegationManagerAddress:  contractAddrs.DelegationManager,
-		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
-	}
-
-	// Create ChainWriter
-	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
-	require.NoError(t, err)
-
-	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	activationDelay := uint32(0)
-	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
-	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-	waitForReceipt := true
-	cumulativeEarnings := int64(42)
-	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
-	require.NoError(t, err)
-
-	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-}
-
-func TestProcessClaims(t *testing.T) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	config := elcontracts.Config{
-		DelegationManagerAddress:  contractAddrs.DelegationManager,
-		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
-	}
-
-	// Create ChainWriter
-	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
-	require.NoError(t, err)
-
-	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	activationDelay := uint32(0)
-	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
-	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
-	waitForReceipt := true
-	cumulativeEarnings1 := int64(42)
-	cumulativeEarnings2 := int64(4256)
-
-	// Generate 2 claims
-	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
-	require.NoError(t, err)
-
-	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
-	require.NoError(t, err)
-	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
-		*claim1, *claim2,
-	}
-	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-}
-
 // Returns a (test) claim for the given cumulativeEarnings, whose earner is
 // the account given by the testutils.ANVIL_FIRST_ADDRESS address.
 // This was taken from the eigensdk-rs
@@ -901,6 +812,95 @@ func newTestClaim(
 	}
 
 	return &claim, nil
+}
+
+func TestProcessClaim(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	waitForReceipt := true
+	cumulativeEarnings := int64(42)
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
+	require.NoError(t, err)
+
+	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+func TestProcessClaims(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	waitForReceipt := true
+	cumulativeEarnings1 := int64(42)
+	cumulativeEarnings2 := int64(4256)
+
+	// Generate 2 claims
+	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
+	require.NoError(t, err)
+
+	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
+	require.NoError(t, err)
+	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
+		*claim1, *claim2,
+	}
+	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 // Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
