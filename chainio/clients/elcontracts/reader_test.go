@@ -826,4 +826,39 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("try to check if the operator is registered in an operator set with set id 0 and an invalid config",
+		func(t *testing.T) {
+			// IsOperatorRegisteredWithOperatorSet needs a correct AllocationManagerAddress
+			testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+			operatorSetId := uint32(0)
+			operatorSet := allocationmanager.OperatorSet{
+				Avs: testAddr,
+				Id:  operatorSetId,
+			}
+			_, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+				context.Background(),
+				common.HexToAddress(operator.Address),
+				operatorSet,
+			)
+			require.Error(t, err)
+		},
+	)
+
+	t.Run("try to check if the operator is registered in an operator set with set id 1 and an invalid config",
+		func(t *testing.T) {
+			// IsOperatorRegisteredWithOperatorSet needs a correct AllocationManagerAddress
+			testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+			operatorSetId := uint32(1)
+			operatorSet := allocationmanager.OperatorSet{
+				Avs: testAddr,
+				Id:  operatorSetId,
+			}
+			_, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+				context.Background(),
+				common.HexToAddress(operator.Address),
+				operatorSet,
+			)
+			require.Error(t, err)
+		},
+	)
 }

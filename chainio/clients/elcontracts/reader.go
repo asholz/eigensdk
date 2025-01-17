@@ -514,6 +514,10 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 ) (bool, error) {
 	if operatorSet.Id == 0 {
 		// this is an M2 AVS
+		if r.avsDirectory == nil {
+			return false, errors.New("AVSDirectory contract not provided")
+		}
+
 		status, err := r.avsDirectory.AvsOperatorStatus(&bind.CallOpts{Context: ctx}, operatorSet.Avs, operatorAddress)
 		if err != nil {
 			return false, err
@@ -521,6 +525,9 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 
 		return status == 1, nil
 	} else {
+		if r.allocationManager == nil {
+			return false, errors.New("AllocationManager contract not provided")
+		}
 		registeredOperatorSets, err := r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 		if err != nil {
 			return false, err
