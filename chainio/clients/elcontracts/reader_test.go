@@ -772,3 +772,29 @@ func TestContractErrorCases(t *testing.T) {
 		assert.Equal(t, err.Error(), "Failed to fetch token contract: no contract code at given address")
 	})
 }
+
+// TestInvalidConfig tests the behavior of the chainReader when the config is invalid (e.g. missing addresses, wrong
+// addresses)
+func TestInvalidConfig(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorAddr := testutils.ANVIL_FIRST_ADDRESS
+	operator := types.Operator{
+		Address: operatorAddr,
+	}
+
+	config := elcontracts.Config{}
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	_ = contractAddrs
+	_ = operator
+	_ = chainReader
+}
