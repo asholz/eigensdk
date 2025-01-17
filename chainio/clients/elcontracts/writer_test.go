@@ -485,8 +485,8 @@ func TestSetAndRemovePermission(t *testing.T) {
 	require.NoError(t, err)
 
 	accountAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	appointeeAddress := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
-	target := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	appointeeAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	target := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
 	selector := [4]byte{0, 1, 2, 3}
 	waitForReceipt := true
 
