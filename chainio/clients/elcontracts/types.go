@@ -43,7 +43,6 @@ type RegistrationRequest struct {
 	BlsKeyPair      *bls.KeyPair
 	Socket          string
 }
-
 type RemovePermissionRequest struct {
 	AccountAddress   common.Address
 	AppointeeAddress common.Address
