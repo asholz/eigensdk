@@ -748,27 +748,26 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	config := elcontracts.Config{
 		DelegationManagerAddress: contractAddrs.DelegationManager,
 	}
-
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-
-	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	operatorAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
 	require.NoError(t, err)
 
 	avsAdrr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	avsPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	operatorSetId := uint32(1)
 	operatorSet := allocationmanager.OperatorSet{
 		Avs: avsAdrr,
 		Id:  operatorSetId,
 	}
 
-	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
-	strategies := []common.Address{erc20MockStrategyAddr}
+	strategyAddr := contractAddrs.Erc20MockStrategy
+	strategies := []common.Address{strategyAddr}
 
-	err = createOperatorSet(anvilHttpEndpoint, privateKeyHex, operatorAddr, operatorSetId, erc20MockStrategyAddr)
+	err = createOperatorSet(anvilHttpEndpoint, avsPrivateKeyHex, avsAdrr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
@@ -833,7 +832,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			strats, err := chainReader.GetStrategiesForOperatorSet(context.Background(), operatorSet)
 			require.NoError(t, err)
 			require.Len(t, strats, 1)
-			require.Equal(t, strats[0].Hex(), erc20MockStrategyAddr.Hex())
+			require.Equal(t, strats[0].Hex(), strategyAddr.Hex())
 		})
 
 		t.Run("get registered sets", func(t *testing.T) {
@@ -846,6 +845,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			opSets, err := chainReader.GetOperatorSetsForOperator(context.Background(), operatorAddr)
 			require.NoError(t, err)
 			require.NotEmpty(t, opSets)
+			require.Len(t, opSets, 1)
 		})
 
 		t.Run("get amount operatorSets for operator", func(t *testing.T) {
