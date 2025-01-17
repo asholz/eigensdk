@@ -895,4 +895,21 @@ func TestInvalidConfig(t *testing.T) {
 			require.Error(t, err)
 		},
 	)
+
+	t.Run("try to get the strategies for an operator set with set id 1 and an invalid config",
+		func(t *testing.T) {
+			// GetStrategiesForOperatorSet needs a correct AllocationManagerAddress
+			testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+			operatorSetId := uint32(1)
+			operatorSet := allocationmanager.OperatorSet{
+				Avs: testAddr,
+				Id:  operatorSetId,
+			}
+			_, err := chainReader.GetStrategiesForOperatorSet(
+				context.Background(),
+				operatorSet,
+			)
+			require.Error(t, err)
+		},
+	)
 }
