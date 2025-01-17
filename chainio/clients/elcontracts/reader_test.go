@@ -3,12 +3,14 @@ package elcontracts_test
 import (
 	"context"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
+	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -576,8 +578,19 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	// Assert that after stake reduction, Allocatable Magnitude + reduction ammount equals Max allocatable magnitude
 	allocable, err = chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
-
 	assert.Equal(t, maxMagnitudes[0], allocable+allocatable_reduction)
+
+	// Check that the new allocationDelay is equal to delay
+	op := types.Operator{
+		Address: operatorAddr.String(),
+	}
+
+	operatorDetails, err := chainReader.GetOperatorDetails(ctx, op)
+	assert.NoError(t, err)
+	assert.NotNil(t, operatorDetails)
+	assert.Equal(t, op.Address, operatorDetails.Address)
+	assert.Equal(t, delay, operatorDetails.AllocationDelay)
+	t.Logf("Operator details: %+v", operatorDetails)
 }
 
 func TestAdminFunctions(t *testing.T) {
@@ -732,5 +745,34 @@ func TestAppointeesFunctions(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, appointeesPermission)
+	})
+}
+
+func TestCreateRederFromConfig(t *testing.T) {
+	_, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+	require.NoError(t, err)
+
+	t.Run("create a reader client", func(t *testing.T) {
+		config := elcontracts.Config{
+			DelegationManagerAddress: contractAddrs.DelegationManager,
+		}
+
+		_, err = elcontracts.NewReaderFromConfig(config, ethHttpClient, logger)
+		require.NoError(t, err)
+	})
+
+	t.Run("try to create a reader with an invalid config", func(t *testing.T) {
+		config := elcontracts.Config{
+			DelegationManagerAddress: common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS),
+		}
+
+		_, err = elcontracts.NewReaderFromConfig(config, ethHttpClient, logger)
+		require.Error(t, err)
 	})
 }
