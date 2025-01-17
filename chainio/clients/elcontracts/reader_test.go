@@ -831,4 +831,98 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 		t.Log("Error: ", err)
 	})
+
+	t.Run("calculate digest hash with invalid config", func(t *testing.T) {
+		staker := common.Address{0x0}
+		delegationApprover := common.Address{0x0}
+		approverSalt := [32]byte{}
+		expiry := big.NewInt(0)
+
+		// CalculateDelegationApprovalDigestHash needs a correct DelegationManagerAddress
+		_, err := chainReader.CalculateDelegationApprovalDigestHash(
+			context.Background(),
+			staker,
+			common.HexToAddress(operatorAddr),
+			delegationApprover,
+			approverSalt,
+			expiry,
+		)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		// CalculateOperatorAVSRegistrationDigestHash needs a correct AvsDirectoryAddress
+		_, err = chainReader.CalculateOperatorAVSRegistrationDigestHash(context.Background(),
+			common.HexToAddress(operatorAddr),
+			staker,
+			approverSalt, expiry)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
+
+	t.Run("get root with invalid config", func(t *testing.T) {
+		// GetDistributionRootsLength needs a correct RewardsCoordinatorAddress
+		_, err := chainReader.GetDistributionRootsLength(context.Background())
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		// GetRootIndexFromHash needs a correct RewardsCoordinatorAddress
+		_, err = chainReader.GetRootIndexFromHash(context.Background(), [32]byte{})
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
+
+	t.Run("get magnitudes, rewards and claims with invalid config", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+
+		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err := chainReader.GetCumulativeClaimed(
+			context.Background(),
+			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+			common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS),
+		)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.GetMaxMagnitudes(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			[]common.Address{strategyAddr},
+		)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.GetAllocatableMagnitude(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			strategyAddr,
+		)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.GetAllocationInfo(context.Background(), common.HexToAddress(operatorAddr), strategyAddr)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.GetAllocationDelay(context.Background(), common.HexToAddress(operatorAddr))
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.CheckClaim(
+			context.Background(),
+			rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{},
+		)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, err = chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
 }
