@@ -130,11 +130,11 @@ func TestChainReader(t *testing.T) {
 	})
 
 	t.Run("get delegated operator", func(t *testing.T) {
-		val := big.NewInt(0)
+		blockNumber := big.NewInt(0)
 		address, err := read_clients.ElChainReader.GetDelegatedOperator(
 			ctx,
 			common.HexToAddress(operator.Address),
-			val,
+			blockNumber,
 		)
 
 		assert.NoError(t, err)
