@@ -482,6 +482,9 @@ func (r *ChainReader) GetNumOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) (*big.Int, error) {
+	if r.allocationManager == nil {
+		return nil, errors.New("AllocationManager contract not provided")
+	}
 	opSets, err := r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 	if err != nil {
 		return nil, err
