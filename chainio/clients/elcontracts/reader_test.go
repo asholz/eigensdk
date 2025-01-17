@@ -820,4 +820,10 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("try to get the operator sets for an operator with invalid config", func(t *testing.T) {
+		// GetOperatorSetsForOperator needs a correct AllocationManagerAddress
+		_, err := chainReader.GetOperatorSetsForOperator(context.Background(), common.HexToAddress(operator.Address))
+		require.Error(t, err)
+	})
+
 }

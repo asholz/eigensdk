@@ -498,6 +498,9 @@ func (r *ChainReader) GetOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
 ) ([]allocationmanager.OperatorSet, error) {
+	if r.allocationManager == nil {
+		return nil, errors.New("AllocationManager contract not provided")
+	}
 	// TODO: we're fetching max int64 operatorSets here. What's the practical limit for timeout by RPC? do we need to
 	// paginate?
 	return r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
