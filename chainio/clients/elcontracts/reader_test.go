@@ -804,9 +804,21 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("try to get operator details with invalid config", func(t *testing.T) {
+	t.Run("get operator details with invalid config", func(t *testing.T) {
 		// GetOperatorDetails needs a correct DelegationManagerAddress
 		_, err := chainReader.GetOperatorDetails(context.Background(), operator)
+		require.Error(t, err)
+	})
+
+	t.Run("get operator avs", func(t *testing.T) {
+		_, err = chainReader.GetOperatorAVSSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			common.MaxAddress,
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetOperatorPISplit(context.Background(), common.HexToAddress(operatorAddr))
 		require.Error(t, err)
 	})
 
@@ -907,4 +919,8 @@ func TestInvalidConfig(t *testing.T) {
 		_, err = chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
 		require.Error(t, err)
 	})
+}
+
+func TestErrorInBindings(t *testing.T) {
+
 }
