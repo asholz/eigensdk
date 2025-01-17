@@ -18,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 )
 
 // Starts an anvil container and builds the ChainIO Clients for testing.
@@ -193,41 +192,4 @@ func NewTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleT
 
 	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
 	return txManager, nil
-}
-
-func BuildTestClientsWithAnvilC(t *testing.T) (*clients.Clients, testcontainers.Container, string) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
-	require.NoError(t, err)
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-
-	privateKeyHex := "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	ecdsaPrivateKey, err := crypto.HexToECDSA(privateKeyHex)
-	require.NoError(t, err)
-
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	require.NoError(t, err)
-
-	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 anvilHttpEndpoint,
-		EthWsUrl:                   anvilWsEndpoint,
-		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
-		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
-		AvsName:                    "exampleAvs",
-		PromMetricsIpPortAddress:   ":9090",
-	}
-
-	clients, err := clients.BuildAll(
-		chainioConfig,
-		ecdsaPrivateKey,
-		logger,
-	)
-	require.NoError(t, err)
-	return clients, anvilC, anvilHttpEndpoint
 }
