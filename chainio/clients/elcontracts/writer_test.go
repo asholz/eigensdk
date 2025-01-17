@@ -218,6 +218,13 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.Equal(t, false, isRegistered)
+
+		_, err = chainWriter.DeregisterFromOperatorSets(
+			context.Background(),
+			operatorAddress,
+			deregistrationRequest,
+		)
+		require.Error(t, err, "cannot deregister an operator that is not registered")
 	})
 }
 
@@ -241,6 +248,20 @@ func TestChainWriter(t *testing.T) {
 		assert.True(t, receipt.Status == 1)
 	})
 
+	t.Run("update operator details when address is not an operator", func(t *testing.T) {
+		wrongOperatorModified := types.Operator{
+			Address:                   testutils.ANVIL_THIRD_ADDRESS,
+			DelegationApproverAddress: testutils.ANVIL_FIRST_ADDRESS,
+			MetadataUrl:               "eigensdk-go",
+		}
+		_, err := clients.ElChainWriter.UpdateOperatorDetails(
+			context.Background(),
+			wrongOperatorModified,
+			true,
+		)
+		assert.Error(t, err, "cannot update operator details for an address that is not an operator")
+	})
+
 	t.Run("update metadata URI", func(t *testing.T) {
 		walletModified, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 		assert.NoError(t, err)
@@ -253,6 +274,16 @@ func TestChainWriter(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
+	})
+
+	t.Run("update metadata URI when address is not an operator", func(t *testing.T) {
+		_, err := clients.ElChainWriter.UpdateMetadataURI(
+			context.Background(),
+			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+			"",
+			true,
+		)
+		assert.Error(t, err, "cannot update metadata URI for an address that is not an operator")
 	})
 
 	t.Run("deposit ERC20 into strategy", func(t *testing.T) {
@@ -580,7 +611,7 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
+
 	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
@@ -606,6 +637,12 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 		AdminAddress:   pendingAdmin,
 		WaitForReceipt: true,
 	}
+
+	t.Run("remove pending admin when not added", func(t *testing.T) {
+		_, err := chainWriter.RemovePendingAdmin(context.Background(), removePendingAdminRequest)
+		require.Error(t, err, "cannot remove a pending admin that has not been added")
+	})
+
 	t.Run("add pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.AddPendingAdmin(context.Background(), request)
 		require.NoError(t, err)
@@ -764,157 +801,6 @@ func TestRemoveAdmin(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, isAdmin)
 	})
-}
-
-// Returns a (test) claim for the given cumulativeEarnings, whose earner is
-// the account given by the testutils.ANVIL_FIRST_ADDRESS address.
-// This was taken from the eigensdk-rs
-// https://github.com/Layr-Labs/eigensdk-rs/blob/d79b3672584b92f3c5fb204fde6bea394fbf0f12/crates/chainio/clients/elcontracts/src/lib.rs#L146
-func newTestClaim(
-	chainReader *elcontracts.ChainReader,
-	httpEndpoint string,
-	cumulativeEarnings int64,
-	privateKeyHex string,
-) (*rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
-	mockStrategyAddr := contractAddrs.Erc20MockStrategy
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	waitForReceipt := true
-
-	ethClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-
-	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create tx manager", err)
-	}
-
-	contractStrategy, err := strategy.NewContractIStrategy(mockStrategyAddr, ethClient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch strategy contract", err)
-	}
-
-	tokenAddr, err := contractStrategy.UnderlyingToken(&bind.CallOpts{Context: context.Background()})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch token address", err)
-	}
-
-	token, err := mockerc20.NewContractMockERC20(tokenAddr, ethClient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create token contract", err)
-	}
-
-	noSendTxOpts, err := txManager.GetNoSendTxOpts()
-	if err != nil {
-		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
-	}
-
-	// Mint tokens for the RewardsCoordinator
-	tx, err := token.Mint(noSendTxOpts, rewardsCoordinatorAddr, big.NewInt(cumulativeEarnings))
-	if err != nil {
-		return nil, utils.WrapError("Failed to create Mint tx", err)
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("Failed to mint tokens for RewardsCoordinator", err)
-	}
-
-	// Generate token tree leaf
-	// For the tree structure, see
-	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/a888a1cd1479438dda4b138245a69177b125a973/docs/core/RewardsCoordinator.md#rewards-merkle-tree-structure
-	earnerAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	tokenLeaf := rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{
-		Token:              tokenAddr,
-		CumulativeEarnings: big.NewInt(cumulativeEarnings),
-	}
-	encodedTokenLeaf := []byte{}
-	tokenLeafSalt := uint8(1)
-
-	// Write the *big.Int to a 32-byte sized buffer to match the uint256 length
-	cumulativeEarningsBytes := [32]byte{}
-	tokenLeaf.CumulativeEarnings.FillBytes(cumulativeEarningsBytes[:])
-
-	encodedTokenLeaf = append(encodedTokenLeaf, tokenLeafSalt)
-	encodedTokenLeaf = append(encodedTokenLeaf, tokenLeaf.Token.Bytes()...)
-	encodedTokenLeaf = append(encodedTokenLeaf, cumulativeEarningsBytes[:]...)
-
-	// Hash token tree leaf to get root
-	earnerTokenRoot := crypto.Keccak256(encodedTokenLeaf)
-
-	// Generate earner tree leaf
-	earnerLeaf := rewardscoordinator.IRewardsCoordinatorTypesEarnerTreeMerkleLeaf{
-		Earner:          earnerAddr,
-		EarnerTokenRoot: [32]byte(earnerTokenRoot),
-	}
-	// Encode earner leaft
-	encodedEarnerLeaf := []byte{}
-	earnerLeafSalt := uint8(0)
-	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeafSalt)
-	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeaf.Earner.Bytes()...)
-	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerTokenRoot...)
-
-	// Hash encoded earner tree leaf to get root
-	earnerTreeRoot := crypto.Keccak256(encodedEarnerLeaf)
-
-	// Fetch the next root index from contract
-	nextRootIndex, err := chainReader.GetDistributionRootsLength(context.Background())
-	if err != nil {
-		return nil, utils.WrapError("Failed to call GetDistributionRootsLength", err)
-	}
-
-	tokenLeaves := []rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{tokenLeaf}
-	// Construct the claim
-	claim := rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
-		RootIndex:   uint32(nextRootIndex.Uint64()),
-		EarnerIndex: 0,
-		// Empty proof because leaf == root
-		EarnerTreeProof: []byte{},
-		EarnerLeaf:      earnerLeaf,
-		TokenIndices:    []uint32{0},
-		// Empty proof because leaf == root
-		TokenTreeProofs: [][]byte{{}},
-		TokenLeaves:     tokenLeaves,
-	}
-
-	root := [32]byte(earnerTreeRoot)
-	// Fetch the current timestamp to increase it
-	currRewardsCalculationEndTimestamp, err := chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
-	if err != nil {
-		return nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
-	}
-
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create rewards coordinator contract", err)
-	}
-
-	rewardsUpdater := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
-	// Change the rewards updater to be able to submit the new root
-	tx, err = rewardsCoordinator.SetRewardsUpdater(noSendTxOpts, rewardsUpdater)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create SetRewardsUpdater tx", err)
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("Failed to setRewardsUpdate", err)
-	}
-
-	tx, err = rewardsCoordinator.SubmitRoot(noSendTxOpts, root, currRewardsCalculationEndTimestamp+1)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create SubmitRoot tx", err)
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("Failed to submit root", err)
-	}
-
-	return &claim, nil
 }
 
 func TestProcessClaim(t *testing.T) {
@@ -1153,4 +1039,155 @@ func setTestRewardsCoordinatorActivationDelay(
 		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
 	}
 	return receipt, err
+}
+
+// Returns a (test) claim for the given cumulativeEarnings, whose earner is
+// the account given by the testutils.ANVIL_FIRST_ADDRESS address.
+// This was taken from the eigensdk-rs
+// https://github.com/Layr-Labs/eigensdk-rs/blob/d79b3672584b92f3c5fb204fde6bea394fbf0f12/crates/chainio/clients/elcontracts/src/lib.rs#L146
+func newTestClaim(
+	chainReader *elcontracts.ChainReader,
+	httpEndpoint string,
+	cumulativeEarnings int64,
+	privateKeyHex string,
+) (*rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim, error) {
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
+	mockStrategyAddr := contractAddrs.Erc20MockStrategy
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	waitForReceipt := true
+
+	ethClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create tx manager", err)
+	}
+
+	contractStrategy, err := strategy.NewContractIStrategy(mockStrategyAddr, ethClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to fetch strategy contract", err)
+	}
+
+	tokenAddr, err := contractStrategy.UnderlyingToken(&bind.CallOpts{Context: context.Background()})
+	if err != nil {
+		return nil, utils.WrapError("Failed to fetch token address", err)
+	}
+
+	token, err := mockerc20.NewContractMockERC20(tokenAddr, ethClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create token contract", err)
+	}
+
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
+	}
+
+	// Mint tokens for the RewardsCoordinator
+	tx, err := token.Mint(noSendTxOpts, rewardsCoordinatorAddr, big.NewInt(cumulativeEarnings))
+	if err != nil {
+		return nil, utils.WrapError("Failed to create Mint tx", err)
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("Failed to mint tokens for RewardsCoordinator", err)
+	}
+
+	// Generate token tree leaf
+	// For the tree structure, see
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/a888a1cd1479438dda4b138245a69177b125a973/docs/core/RewardsCoordinator.md#rewards-merkle-tree-structure
+	earnerAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	tokenLeaf := rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{
+		Token:              tokenAddr,
+		CumulativeEarnings: big.NewInt(cumulativeEarnings),
+	}
+	encodedTokenLeaf := []byte{}
+	tokenLeafSalt := uint8(1)
+
+	// Write the *big.Int to a 32-byte sized buffer to match the uint256 length
+	cumulativeEarningsBytes := [32]byte{}
+	tokenLeaf.CumulativeEarnings.FillBytes(cumulativeEarningsBytes[:])
+
+	encodedTokenLeaf = append(encodedTokenLeaf, tokenLeafSalt)
+	encodedTokenLeaf = append(encodedTokenLeaf, tokenLeaf.Token.Bytes()...)
+	encodedTokenLeaf = append(encodedTokenLeaf, cumulativeEarningsBytes[:]...)
+
+	// Hash token tree leaf to get root
+	earnerTokenRoot := crypto.Keccak256(encodedTokenLeaf)
+
+	// Generate earner tree leaf
+	earnerLeaf := rewardscoordinator.IRewardsCoordinatorTypesEarnerTreeMerkleLeaf{
+		Earner:          earnerAddr,
+		EarnerTokenRoot: [32]byte(earnerTokenRoot),
+	}
+	// Encode earner leaft
+	encodedEarnerLeaf := []byte{}
+	earnerLeafSalt := uint8(0)
+	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeafSalt)
+	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerLeaf.Earner.Bytes()...)
+	encodedEarnerLeaf = append(encodedEarnerLeaf, earnerTokenRoot...)
+
+	// Hash encoded earner tree leaf to get root
+	earnerTreeRoot := crypto.Keccak256(encodedEarnerLeaf)
+
+	// Fetch the next root index from contract
+	nextRootIndex, err := chainReader.GetDistributionRootsLength(context.Background())
+	if err != nil {
+		return nil, utils.WrapError("Failed to call GetDistributionRootsLength", err)
+	}
+
+	tokenLeaves := []rewardscoordinator.IRewardsCoordinatorTypesTokenTreeMerkleLeaf{tokenLeaf}
+	// Construct the claim
+	claim := rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
+		RootIndex:   uint32(nextRootIndex.Uint64()),
+		EarnerIndex: 0,
+		// Empty proof because leaf == root
+		EarnerTreeProof: []byte{},
+		EarnerLeaf:      earnerLeaf,
+		TokenIndices:    []uint32{0},
+		// Empty proof because leaf == root
+		TokenTreeProofs: [][]byte{{}},
+		TokenLeaves:     tokenLeaves,
+	}
+
+	root := [32]byte(earnerTreeRoot)
+	// Fetch the current timestamp to increase it
+	currRewardsCalculationEndTimestamp, err := chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
+	if err != nil {
+		return nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
+	}
+
+	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create rewards coordinator contract", err)
+	}
+
+	rewardsUpdater := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	// Change the rewards updater to be able to submit the new root
+	tx, err = rewardsCoordinator.SetRewardsUpdater(noSendTxOpts, rewardsUpdater)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create SetRewardsUpdater tx", err)
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("Failed to setRewardsUpdate", err)
+	}
+
+	tx, err = rewardsCoordinator.SubmitRoot(noSendTxOpts, root, currRewardsCalculationEndTimestamp+1)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create SubmitRoot tx", err)
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("Failed to submit root", err)
+	}
+
+	return &claim, nil
 }
