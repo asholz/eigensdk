@@ -652,6 +652,12 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isPendingAdmin)
 	})
+
+	t.Run("add pending admin when already added", func(t *testing.T) {
+		_, err := chainWriter.AddPendingAdmin(context.Background(), request)
+		require.Error(t, err, "cannot add a pending admin that has already been added")
+	})
+
 	t.Run("remove pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.RemovePendingAdmin(context.Background(), removePendingAdminRequest)
 		require.NoError(t, err)
@@ -716,6 +722,11 @@ func TestAcceptAdmin(t *testing.T) {
 		isAdmin, err := chainReader.IsAdmin(context.Background(), accountAddr, pendingAdminAddr)
 		require.NoError(t, err)
 		require.True(t, isAdmin)
+	})
+
+	t.Run("accept admin when already accepted", func(t *testing.T) {
+		_, err = adminChainWriter.AcceptAdmin(context.Background(), acceptAdminRequest)
+		require.Error(t, err, "cannot accept an admin that has already been accepted")
 	})
 }
 
