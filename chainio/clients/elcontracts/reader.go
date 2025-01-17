@@ -145,6 +145,9 @@ func (r *ChainReader) GetStakerShares(
 	ctx context.Context,
 	stakerAddress gethcommon.Address,
 ) ([]gethcommon.Address, []*big.Int, error) {
+	if r.delegationManager == nil {
+		return nil, nil, errors.New("DelegationManager contract not provided")
+	}
 	return r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 

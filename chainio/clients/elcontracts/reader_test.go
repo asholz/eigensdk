@@ -797,4 +797,11 @@ func TestInvalidConfig(t *testing.T) {
 	_ = contractAddrs
 	_ = operator
 	_ = chainReader
+
+	t.Run("try to get a staker shares with invalid config", func(t *testing.T) {
+		// GetStakerShares needs a correct DelegationManagerAddress
+		_, _, err := chainReader.GetStakerShares(context.Background(), common.HexToAddress(operator.Address))
+		require.Error(t, err)
+	})
+
 }
