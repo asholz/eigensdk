@@ -802,14 +802,12 @@ func TestInvalidConfig(t *testing.T) {
 		// IsOperatorRegistered needs a correct DelegationManagerAddress
 		_, err := chainReader.IsOperatorRegistered(context.Background(), operator)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 
 	t.Run("try to get operator details with invalid config", func(t *testing.T) {
 		// GetOperatorDetails needs a correct DelegationManagerAddress
 		_, err := chainReader.GetOperatorDetails(context.Background(), operator)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
@@ -820,16 +818,13 @@ func TestInvalidConfig(t *testing.T) {
 		// GetOperatorSharesInStrategy needs a correct DelegationManagerAddress
 		_, err := chainReader.GetOperatorSharesInStrategy(context.Background(), operatorAddr, strategyAddr)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		// GetStrategyAndUnderlyingToken needs a correct StrategyAddress
 		_, _, err = chainReader.GetStrategyAndUnderlyingToken(context.Background(), strategyAddr)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, _, _, err = chainReader.GetStrategyAndUnderlyingERC20Token(context.Background(), strategyAddr)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 
 	t.Run("calculate digest hash with invalid config", func(t *testing.T) {
@@ -848,7 +843,6 @@ func TestInvalidConfig(t *testing.T) {
 			expiry,
 		)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		// CalculateOperatorAVSRegistrationDigestHash needs a correct AvsDirectoryAddress
 		_, err = chainReader.CalculateOperatorAVSRegistrationDigestHash(context.Background(),
@@ -856,23 +850,19 @@ func TestInvalidConfig(t *testing.T) {
 			staker,
 			approverSalt, expiry)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 
 	t.Run("get root with invalid config", func(t *testing.T) {
 		// GetDistributionRootsLength needs a correct RewardsCoordinatorAddress
 		_, err := chainReader.GetDistributionRootsLength(context.Background())
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		// GetRootIndexFromHash needs a correct RewardsCoordinatorAddress
 		_, err = chainReader.GetRootIndexFromHash(context.Background(), [32]byte{})
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 
 	t.Run("get magnitudes, rewards and claims with invalid config", func(t *testing.T) {
@@ -880,7 +870,6 @@ func TestInvalidConfig(t *testing.T) {
 
 		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err := chainReader.GetCumulativeClaimed(
 			context.Background(),
@@ -888,7 +877,6 @@ func TestInvalidConfig(t *testing.T) {
 			common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS),
 		)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.GetMaxMagnitudes(
 			context.Background(),
@@ -896,7 +884,6 @@ func TestInvalidConfig(t *testing.T) {
 			[]common.Address{strategyAddr},
 		)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.GetAllocatableMagnitude(
 			context.Background(),
@@ -904,25 +891,20 @@ func TestInvalidConfig(t *testing.T) {
 			strategyAddr,
 		)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.GetAllocationInfo(context.Background(), common.HexToAddress(operatorAddr), strategyAddr)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.GetAllocationDelay(context.Background(), common.HexToAddress(operatorAddr))
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.CheckClaim(
 			context.Background(),
 			rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{},
 		)
 		require.Error(t, err)
-		t.Log("Error: ", err)
 
 		_, err = chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
 		require.Error(t, err)
-		t.Log("Error: ", err)
 	})
 }
