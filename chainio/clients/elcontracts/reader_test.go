@@ -828,7 +828,7 @@ func TestInvalidConfig(t *testing.T) {
 
 	t.Run("try to check if the operator is registered in an operator set with set id 0 and an invalid config",
 		func(t *testing.T) {
-			// IsOperatorRegisteredWithOperatorSet needs a correct AllocationManagerAddress
+			// IsOperatorRegisteredWithOperatorSet with setId 0 needs a correct AVSDirectory
 			testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 			operatorSetId := uint32(0)
 			operatorSet := allocationmanager.OperatorSet{
@@ -846,7 +846,7 @@ func TestInvalidConfig(t *testing.T) {
 
 	t.Run("try to check if the operator is registered in an operator set with set id 1 and an invalid config",
 		func(t *testing.T) {
-			// IsOperatorRegisteredWithOperatorSet needs a correct AllocationManagerAddress
+			// IsOperatorRegisteredWithOperatorSet with setId 1 needs a correct AllocationManagerAddress
 			testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 			operatorSetId := uint32(1)
 			operatorSet := allocationmanager.OperatorSet{
