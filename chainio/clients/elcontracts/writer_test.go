@@ -727,7 +727,7 @@ func TestRemoveAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
+
 	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
@@ -740,11 +740,11 @@ func TestRemoveAdmin(t *testing.T) {
 	require.NoError(t, err)
 
 	// Adding two admins and removing one. Cannot remove the last admin, so one must remain
-	admin1 := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
-	admin1PrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+	admin1 := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	admin1PrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 
-	admin2 := common.HexToAddress("23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f")
-	admin2PrivateKeyHex := "dbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+	admin2 := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+	admin2PrivateKeyHex := testutils.ANVIL_THIRD_PRIVATE_KEY
 
 	admin1ChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, admin1PrivateKeyHex, config)
 	require.NoError(t, err)
@@ -800,6 +800,11 @@ func TestRemoveAdmin(t *testing.T) {
 		isAdmin, err := chainReader.IsAdmin(context.Background(), accountAddr, admin2)
 		require.NoError(t, err)
 		require.False(t, isAdmin)
+	})
+
+	t.Run("remove admin 2 when already removed", func(t *testing.T) {
+		_, err := admin1ChainWriter.RemoveAdmin(context.Background(), removeAdminRequest)
+		require.Error(t, err, "cannot remove an admin that has already been removed")
 	})
 }
 
