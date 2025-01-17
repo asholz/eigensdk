@@ -567,6 +567,10 @@ func (r *ChainReader) GetNumOperatorsForOperatorSet(
 	if operatorSet.Id == 0 {
 		return nil, errLegacyAVSsNotSupported
 	} else {
+		if r.allocationManager == nil {
+			return nil, errors.New("AllocationManager contract not provided")
+		}
+
 		return r.allocationManager.GetMemberCount(&bind.CallOpts{Context: ctx}, operatorSet)
 	}
 }
