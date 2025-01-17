@@ -66,35 +66,6 @@ func NewChainReader(
 	}
 }
 
-// BuildELChainReader creates a new ELChainReader
-// Deprecated: Use BuildFromConfig instead
-func BuildELChainReader(
-	delegationManagerAddr gethcommon.Address,
-	avsDirectoryAddr gethcommon.Address,
-	ethClient eth.HttpBackend,
-	logger logging.Logger,
-) (*ChainReader, error) {
-	elContractBindings, err := NewEigenlayerContractBindings(
-		delegationManagerAddr,
-		avsDirectoryAddr,
-		ethClient,
-		logger,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return NewChainReader(
-		elContractBindings.DelegationManager,
-		elContractBindings.StrategyManager,
-		elContractBindings.AvsDirectory,
-		elContractBindings.RewardsCoordinator,
-		elContractBindings.AllocationManager,
-		elContractBindings.PermissionController,
-		logger,
-		ethClient,
-	), nil
-}
-
 func NewReaderFromConfig(
 	cfg Config,
 	ethClient eth.HttpBackend,
@@ -461,13 +432,13 @@ func (r *ChainReader) GetOperatorShares(
 
 func (r *ChainReader) GetOperatorsShares(
 	ctx context.Context,
-	operatorAddress []gethcommon.Address,
+	operatorAddresses []gethcommon.Address,
 	strategyAddresses []gethcommon.Address,
 ) ([][]*big.Int, error) {
 	if r.delegationManager == nil {
 		return nil, errors.New("DelegationManager contract not provided")
 	}
-	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddresses)
+	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddresses, strategyAddresses)
 }
 
 // GetNumOperatorSetsForOperator returns the number of operator sets that an operator is part of
