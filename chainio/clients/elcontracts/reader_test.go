@@ -776,3 +776,59 @@ func TestCreateRederFromConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+// TestInvalidConfig tests the behavior of the chainReader when the config is invalid (e.g. missing addresses, wrong
+// addresses)
+func TestInvalidConfig(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorAddr := testutils.ANVIL_FIRST_ADDRESS
+	operator := types.Operator{
+		Address: operatorAddr,
+	}
+
+	config := elcontracts.Config{}
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	t.Run("try to check if operator is registered with invalid config", func(t *testing.T) {
+		// IsOperatorRegistered needs a correct DelegationManagerAddress
+		_, err := chainReader.IsOperatorRegistered(context.Background(), operator)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
+
+	t.Run("try to get operator details with invalid config", func(t *testing.T) {
+		// GetOperatorDetails needs a correct DelegationManagerAddress
+		_, err := chainReader.GetOperatorDetails(context.Background(), operator)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
+
+	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
+		// Invalid strategy address
+		strategyAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+		// GetOperatorSharesInStrategy needs a correct DelegationManagerAddress
+		_, err := chainReader.GetOperatorSharesInStrategy(context.Background(), operatorAddr, strategyAddr)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		// GetStrategyAndUnderlyingToken needs a correct StrategyAddress
+		_, _, err = chainReader.GetStrategyAndUnderlyingToken(context.Background(), strategyAddr)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+
+		_, _, _, err = chainReader.GetStrategyAndUnderlyingERC20Token(context.Background(), strategyAddr)
+		require.Error(t, err)
+		t.Log("Error: ", err)
+	})
+}
