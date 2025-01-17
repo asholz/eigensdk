@@ -157,6 +157,9 @@ func (r *ChainReader) GetDelegatedOperator(
 	stakerAddress gethcommon.Address,
 	blockNumber *big.Int,
 ) (gethcommon.Address, error) {
+	if r.delegationManager == nil {
+		return gethcommon.Address{}, errors.New("DelegationManager contract not provided")
+	}
 	return r.delegationManager.DelegatedTo(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 
