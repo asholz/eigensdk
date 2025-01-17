@@ -920,7 +920,3 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 }
-
-func TestErrorInBindings(t *testing.T) {
-
-}
