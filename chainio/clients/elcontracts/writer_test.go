@@ -505,21 +505,36 @@ func TestSetAndRemovePermission(t *testing.T) {
 		Selector:         selector,
 		WaitForReceipt:   waitForReceipt,
 	}
-	receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
-	require.NoError(t, err)
-	require.True(t, canCall)
+	t.Run("set permission to account", func(t *testing.T) {
+		receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	receipt, err = chainWriter.RemovePermission(context.Background(), removePermissionRequest)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+		canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+		require.NoError(t, err)
+		require.True(t, canCall)
+	})
 
-	canCall, err = chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
-	require.NoError(t, err)
-	require.False(t, canCall)
+	t.Run("set permission to account when already set", func(t *testing.T) {
+		_, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
+		require.Error(t, err, "cannot set a permission that has already been set")
+	})
+
+	t.Run("remove permission from account", func(t *testing.T) {
+		receipt, err := chainWriter.RemovePermission(context.Background(), removePermissionRequest)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+		canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+		require.NoError(t, err)
+		require.False(t, canCall)
+	})
+
+	t.Run("remove permission from account when not set", func(t *testing.T) {
+		_, err := chainWriter.RemovePermission(context.Background(), removePermissionRequest)
+		require.Error(t, err, "cannot remove a permission that has not been set")
+	})
 }
 
 func TestModifyAllocations(t *testing.T) {
