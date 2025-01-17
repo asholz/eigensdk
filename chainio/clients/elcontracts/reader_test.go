@@ -806,7 +806,11 @@ func TestInvalidConfig(t *testing.T) {
 
 	t.Run("try to get the delegated operator shares with invalid config", func(t *testing.T) {
 		// GetDelegatedOperator needs a correct DelegationManagerAddress
-		_, err := chainReader.GetDelegatedOperator(context.Background(), common.HexToAddress(operator.Address), big.NewInt(0))
+		_, err := chainReader.GetDelegatedOperator(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			big.NewInt(0),
+		)
 		require.Error(t, err)
 	})
 }
