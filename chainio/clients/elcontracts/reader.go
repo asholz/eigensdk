@@ -659,18 +659,13 @@ func (r *ChainReader) CanCall(
 	target gethcommon.Address,
 	selector [4]byte,
 ) (bool, error) {
-	canCall, err := r.permissionController.CanCall(
+	return r.permissionController.CanCall(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
 		appointeeAddress,
 		target,
 		selector,
 	)
-	// This call should not fail since it's a getter
-	if err != nil {
-		return false, errors.New("call to permission controller failed: " + err.Error())
-	}
-	return canCall, nil
 }
 
 func (r *ChainReader) ListAppointees(
@@ -679,17 +674,7 @@ func (r *ChainReader) ListAppointees(
 	target gethcommon.Address,
 	selector [4]byte,
 ) ([]gethcommon.Address, error) {
-	appointees, err := r.permissionController.GetAppointees(
-		&bind.CallOpts{Context: ctx},
-		accountAddress,
-		target,
-		selector,
-	)
-	// This call should not fail since it's a getter
-	if err != nil {
-		return nil, errors.New("call to permission controller failed: " + err.Error())
-	}
-	return appointees, nil
+	return r.permissionController.GetAppointees(&bind.CallOpts{Context: ctx}, accountAddress, target, selector)
 }
 
 func (r *ChainReader) ListAppointeePermissions(
@@ -697,16 +682,11 @@ func (r *ChainReader) ListAppointeePermissions(
 	accountAddress gethcommon.Address,
 	appointeeAddress gethcommon.Address,
 ) ([]gethcommon.Address, [][4]byte, error) {
-	targets, selectors, err := r.permissionController.GetAppointeePermissions(
+	return r.permissionController.GetAppointeePermissions(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
 		appointeeAddress,
 	)
-	// This call should not fail since it's a getter
-	if err != nil {
-		return nil, nil, errors.New("call to permission controller failed: " + err.Error())
-	}
-	return targets, selectors, nil
 }
 
 func (r *ChainReader) ListPendingAdmins(
@@ -728,16 +708,7 @@ func (r *ChainReader) IsPendingAdmin(
 	accountAddress gethcommon.Address,
 	pendingAdminAddress gethcommon.Address,
 ) (bool, error) {
-	isPendingAdmin, err := r.permissionController.IsPendingAdmin(
-		&bind.CallOpts{Context: ctx},
-		accountAddress,
-		pendingAdminAddress,
-	)
-	// This call should not fail since it's a getter
-	if err != nil {
-		return isPendingAdmin, errors.New("call to permission controller failed: " + err.Error())
-	}
-	return isPendingAdmin, nil
+	return r.permissionController.IsPendingAdmin(&bind.CallOpts{Context: ctx}, accountAddress, pendingAdminAddress)
 }
 
 func (r *ChainReader) IsAdmin(
