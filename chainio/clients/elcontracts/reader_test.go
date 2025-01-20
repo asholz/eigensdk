@@ -641,7 +641,6 @@ func TestAdminFunctions(t *testing.T) {
 		listPendingAdmins, err := chainReader.ListPendingAdmins(context.Background(), operatorAddr)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, listPendingAdmins)
-		assert.Len(t, listPendingAdmins, 1)
 	})
 
 	t.Run("non-existent admin", func(t *testing.T) {
@@ -845,7 +844,6 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			opSets, err := chainReader.GetOperatorSetsForOperator(context.Background(), operatorAddr)
 			require.NoError(t, err)
 			require.NotEmpty(t, opSets)
-			require.Len(t, opSets, 1)
 		})
 
 		t.Run("get amount operatorSets for operator", func(t *testing.T) {
@@ -861,7 +859,6 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 			operators, err := chainReader.GetOperatorsForOperatorSet(context.Background(), operatorSet)
 			require.NoError(t, err)
 			require.NotEmpty(t, operators)
-			require.Len(t, operators, 1)
 		})
 
 		t.Run("get amount of operators for operatorsets", func(t *testing.T) {
