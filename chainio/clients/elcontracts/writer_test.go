@@ -130,8 +130,8 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
-	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+	operatorAddressHex := testutils.ANVIL_SECOND_ADDRESS
+	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 
 	config := elcontracts.Config{
 		DelegationManagerAddress:  contractAddrs.DelegationManager,
@@ -145,7 +145,7 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	operatorSetId := uint32(1)
 	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
 
@@ -640,7 +640,7 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	pendingAdmin := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
+	pendingAdmin := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
 	request := elcontracts.AddPendingAdminRequest{
 		AccountAddress: operatorAddr,
 		AdminAddress:   pendingAdmin,
@@ -692,7 +692,6 @@ func TestAcceptAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
 	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
@@ -704,7 +703,7 @@ func TestAcceptAdmin(t *testing.T) {
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	pendingAdminPrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+	pendingAdminPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 	adminChainWriter, err := testclients.NewTestChainWriterFromConfig(
 		anvilHttpEndpoint,
 		pendingAdminPrivateKeyHex,
@@ -715,7 +714,7 @@ func TestAcceptAdmin(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	pendingAdminAddr := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	pendingAdminAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
 	request := elcontracts.AddPendingAdminRequest{
 		AccountAddress: accountAddr,
 		AdminAddress:   pendingAdminAddr,
@@ -795,6 +794,7 @@ func TestRemoveAdmin(t *testing.T) {
 		AccountAddress: accountAddr,
 		WaitForReceipt: true,
 	}
+
 	// Add and accept admin 1
 	receipt, err := accountChainWriter.AddPendingAdmin(context.Background(), addAdmin1Request)
 	require.NoError(t, err)
@@ -818,6 +818,7 @@ func TestRemoveAdmin(t *testing.T) {
 		AdminAddress:   admin2,
 		WaitForReceipt: true,
 	}
+
 	t.Run("remove admin 2", func(t *testing.T) {
 		receipt, err = admin1ChainWriter.RemoveAdmin(context.Background(), removeAdminRequest)
 		require.NoError(t, err)
