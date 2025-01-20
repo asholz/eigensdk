@@ -955,6 +955,10 @@ func TestProcessClaims(t *testing.T) {
 	cumulativeEarnings1 := int64(42)
 	cumulativeEarnings2 := int64(4256)
 
+	emptyClaims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{}
+	_, err = chainWriter.ProcessClaims(context.Background(), emptyClaims, recipient, waitForReceipt)
+	require.Error(t, err, "cannot process empty claims")
+
 	// Generate 2 claims
 	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
 	require.NoError(t, err)
@@ -976,7 +980,7 @@ func TestProcessClaims(t *testing.T) {
 		*claim3,
 	}
 	_, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
-	require.Error(t, err, "cannot process claims for a claim that is not the owner")
+	require.Error(t, err, "cannot process claims for a claimer that is not the owner")
 }
 
 // Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
