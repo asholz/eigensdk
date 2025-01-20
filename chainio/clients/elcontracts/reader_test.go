@@ -590,7 +590,6 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	assert.NotNil(t, operatorDetails)
 	assert.Equal(t, op.Address, operatorDetails.Address)
 	assert.Equal(t, delay, operatorDetails.AllocationDelay)
-	t.Logf("Operator details: %+v", operatorDetails)
 }
 
 func TestAdminFunctions(t *testing.T) {
