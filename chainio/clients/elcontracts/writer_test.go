@@ -228,7 +228,9 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.Equal(t, false, isRegistered)
+	})
 
+	t.Run("deregister operator from operator set when not registered", func(t *testing.T) {
 		_, err = chainWriter.DeregisterFromOperatorSets(
 			context.Background(),
 			operatorAddress,
@@ -290,7 +292,7 @@ func TestChainWriter(t *testing.T) {
 		_, err := clients.ElChainWriter.UpdateMetadataURI(
 			context.Background(),
 			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
-			"",
+			"https://0.0.0.0",
 			true,
 		)
 		assert.Error(t, err, "cannot update metadata URI for an address that is not an operator")
