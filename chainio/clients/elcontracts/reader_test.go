@@ -783,8 +783,6 @@ func TestInvalidConfig(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
 	operatorAddr := testutils.ANVIL_FIRST_ADDRESS
 	operator := types.Operator{
 		Address: operatorAddr,
@@ -793,10 +791,6 @@ func TestInvalidConfig(t *testing.T) {
 	config := elcontracts.Config{}
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
-
-	_ = contractAddrs
-	_ = operator
-	_ = chainReader
 
 	t.Run("try to get a staker shares with invalid config", func(t *testing.T) {
 		// GetStakerShares needs a correct DelegationManagerAddress
