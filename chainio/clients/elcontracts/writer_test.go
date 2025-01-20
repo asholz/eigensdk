@@ -586,6 +586,22 @@ func TestModifyAllocations(t *testing.T) {
 	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	operatorSetId := uint32(1)
 
+	operatorSet := allocationmanager.OperatorSet{
+		Avs: avsAddr,
+		Id:  operatorSetId,
+	}
+	newAllocation := uint64(100)
+	allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
+		{
+			OperatorSet:   operatorSet,
+			Strategies:    []common.Address{strategyAddr},
+			NewMagnitudes: []uint64{newAllocation},
+		},
+	}
+
+	_, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, false)
+	require.Error(t, err, "cannot modify allocations without initializing the allocation delay")
+
 	waitForReceipt := true
 	delay := uint32(1)
 	// The allocation delay must be initialized before modifying the allocations
@@ -604,19 +620,6 @@ func TestModifyAllocations(t *testing.T) {
 
 	err = createOperatorSet(anvilHttpEndpoint, privateKeyHex, avsAddr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
-
-	operatorSet := allocationmanager.OperatorSet{
-		Avs: avsAddr,
-		Id:  operatorSetId,
-	}
-	newAllocation := uint64(100)
-	allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
-		{
-			OperatorSet:   operatorSet,
-			Strategies:    []common.Address{strategyAddr},
-			NewMagnitudes: []uint64{newAllocation},
-		},
-	}
 
 	receipt, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, waitForReceipt)
 	require.NoError(t, err)
