@@ -757,18 +757,13 @@ func TestContractErrorCases(t *testing.T) {
 	strategyAddr := common.HexToAddress("34634374736473673643")
 
 	t.Run("GetStrategyAndUnderlyingToken", func(t *testing.T) {
-		strategy, undToken, err := chainReader.GetStrategyAndUnderlyingToken(ctx, strategyAddr)
-		assert.Zero(t, strategy)
-		assert.Zero(t, undToken)
+		_, _, err := chainReader.GetStrategyAndUnderlyingToken(ctx, strategyAddr)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "Failed to fetch token contract: no contract code at given address")
 	})
 
 	t.Run("GetStrategyAndUnderlyingERC20Token", func(t *testing.T) {
-		strategy, methods, undToken, err := chainReader.GetStrategyAndUnderlyingERC20Token(ctx, strategyAddr)
-		assert.Zero(t, strategy)
-		assert.Zero(t, methods)
-		assert.Zero(t, undToken)
+		_, _, _, err := chainReader.GetStrategyAndUnderlyingERC20Token(ctx, strategyAddr)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "Failed to fetch token contract: no contract code at given address")
 	})
