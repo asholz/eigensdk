@@ -745,7 +745,7 @@ func (r *ChainReader) IsPendingAdmin(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return isPendingAdmin, utils.WrapError("call to permission controller failed", err)
+		return false, utils.WrapError("call to permission controller failed", err)
 	}
 	return isPendingAdmin, nil
 }
@@ -758,7 +758,7 @@ func (r *ChainReader) IsAdmin(
 	isAdmin, err := r.permissionController.IsAdmin(&bind.CallOpts{Context: ctx}, accountAddress, adminAddress)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return isAdmin, utils.WrapError("call to permission controller failed", err)
+		return false, utils.WrapError("call to permission controller failed", err)
 	}
 	return isAdmin, nil
 }
