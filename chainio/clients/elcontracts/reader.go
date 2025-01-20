@@ -340,14 +340,7 @@ func (r *ChainReader) GetOperatorAVSSplit(
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
 
-	split, err := r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
-
-	// This call should not fail since it's a getter
-	if err != nil {
-		return 0, err
-	}
-
-	return split, nil
+	return r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
 }
 
 func (r *ChainReader) GetOperatorPISplit(
@@ -358,14 +351,7 @@ func (r *ChainReader) GetOperatorPISplit(
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
 
-	split, err := r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
-
-	// This call should not fail since it's a getter
-	if err != nil {
-		return 0, err
-	}
-
-	return split, nil
+	return r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
 }
 
 func (r *ChainReader) GetAllocatableMagnitude(
