@@ -196,6 +196,16 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 		require.Equal(t, true, isRegistered)
 	})
 
+	t.Run("register operator for same operator set", func(t *testing.T) {
+		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+		_, err = chainWriter.RegisterForOperatorSets(
+			context.Background(),
+			registryCoordinatorAddress,
+			request,
+		)
+		require.Error(t, err, "cannot register an operator to an operator set that is already registered")
+	})
+
 	deregistrationRequest := elcontracts.DeregistrationRequest{
 		AVSAddress:     avsAddress,
 		OperatorSetIds: []uint32{operatorSetId},
@@ -458,10 +468,24 @@ func TestSetAllocationDelay(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	delay := uint32(10)
-	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+	t.Run("set allocation delay", func(t *testing.T) {
+		delay := uint32(10)
+		receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+	})
+
+	t.Run("set allocation delay with invalid caller", func(t *testing.T) {
+		invalidCaller := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+		delay := uint32(20)
+		_, err = chainWriter.SetAllocationDelay(
+			context.Background(),
+			invalidCaller,
+			delay,
+			false,
+		)
+		require.Error(t, err, "cannot set allocation delay with an invalid caller")
+	})
 }
 
 func TestSetAndRemovePermission(t *testing.T) {
