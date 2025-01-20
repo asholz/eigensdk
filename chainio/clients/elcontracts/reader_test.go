@@ -825,7 +825,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		true,
 	)
 	require.NoError(t, err)
-	require.Equal(t, uint64(1), receipt.Status)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	t.Run("get operators and operator sets", func(t *testing.T) {
 		t.Run("validate strategies for operatorSet", func(t *testing.T) {
