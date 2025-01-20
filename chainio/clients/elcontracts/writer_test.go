@@ -227,7 +227,7 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 			operatorSet,
 		)
 		require.NoError(t, err)
-		require.Equal(t, false, isRegistered)
+		require.False(t, isRegistered)
 	})
 
 	t.Run("deregister operator from operator set when not registered", func(t *testing.T) {
@@ -387,6 +387,11 @@ func TestSetOperatorPISplit(t *testing.T) {
 	updatedSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
 	require.Equal(t, newSplit, updatedSplit)
+
+	// Set a invalid operator PI split
+	invalidSplit := uint16(10001)
+	_, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, invalidSplit, waitForReceipt)
+	require.Error(t, err, "split must be less than 10000")
 }
 
 func TestSetOperatorAVSSplit(t *testing.T) {
@@ -444,6 +449,17 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	updatedSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
 	require.Equal(t, newSplit, updatedSplit)
+
+	// Set a invalid operator AVS split
+	invalidSplit := uint16(10001)
+	_, err = chainWriter.SetOperatorAVSSplit(
+		context.Background(),
+		operatorAddr,
+		avsAddr,
+		invalidSplit,
+		waitForReceipt,
+	)
+	require.Error(t, err, "split must be less than 10000")
 }
 
 func TestSetAllocationDelay(t *testing.T) {
@@ -484,7 +500,7 @@ func TestSetAllocationDelay(t *testing.T) {
 			context.Background(),
 			invalidCaller,
 			delay,
-			false,
+			waitForReceipt,
 		)
 		require.Error(t, err, "cannot set allocation delay with an invalid caller")
 	})
@@ -951,6 +967,16 @@ func TestProcessClaims(t *testing.T) {
 	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Generate 3rd claim who is not the owner
+	notOwnerPrivateKey := testutils.ANVIL_SECOND_PRIVATE_KEY
+	claim3, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, notOwnerPrivateKey)
+	require.NoError(t, err)
+	claims = []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
+		*claim3,
+	}
+	_, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
+	require.Error(t, err, "cannot process claims for a claim that is not the owner")
 }
 
 // Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
