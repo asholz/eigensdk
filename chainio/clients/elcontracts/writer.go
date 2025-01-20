@@ -9,6 +9,9 @@ import (
 
 	"math/big"
 
+	gethcommon "github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
@@ -26,8 +29,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/Layr-Labs/eigensdk-go/utils"
-	gethcommon "github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type Reader interface {
@@ -563,7 +564,6 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	if err != nil {
 		return nil, utils.WrapError("failed to encode registration params", err)
 	}
-
 	tx, err := w.allocationManager.RegisterForOperatorSets(
 		noSendTxOpts,
 		request.OperatorAddress,
