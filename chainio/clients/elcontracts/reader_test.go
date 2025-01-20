@@ -791,14 +791,14 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), receipt.Status)
 
-	const allocationDelay = 1
-	const allocationMagnitude = 100
-	const allocationConfigurationDelay = 1200
+	allocationDelay := 1
+	allocationMagnitude := 100
+	allocationConfigurationDelay := 1200
 
 	receipt, err = chainWriter.SetAllocationDelay(
 		context.Background(),
 		operatorAddr,
-		allocationDelay,
+		uint32(allocationDelay),
 		true,
 	)
 	require.NoError(t, err)
@@ -814,7 +814,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 		{
 			OperatorSet:   operatorSet,
 			Strategies:    strategies,
-			NewMagnitudes: []uint64{allocationMagnitude},
+			NewMagnitudes: []uint64{uint64(allocationMagnitude)},
 		},
 	}
 
