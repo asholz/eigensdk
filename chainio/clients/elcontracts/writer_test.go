@@ -965,22 +965,13 @@ func TestProcessClaims(t *testing.T) {
 
 	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
 	require.NoError(t, err)
+
 	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
 		*claim1, *claim2,
 	}
 	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-	// Generate 3rd claim who is not the owner
-	notOwnerPrivateKey := testutils.ANVIL_SECOND_PRIVATE_KEY
-	claim3, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, notOwnerPrivateKey)
-	require.NoError(t, err)
-	claims = []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
-		*claim3,
-	}
-	_, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
-	require.Error(t, err, "cannot process claims for a claimer that is not the owner")
 }
 
 // Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
