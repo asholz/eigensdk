@@ -195,7 +195,7 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
 	}
 	contractUnderlyingToken, err := erc20.NewContractIERC20(underlyingTokenAddr, r.ethClient)
-	// This call should not fail, if strategy has no underlying token then enters the if above
+	// This call should not fail, if the strategy does not have an underlying token then it would enter the if above
 	if err != nil {
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
 	}
