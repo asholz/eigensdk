@@ -753,6 +753,7 @@ func TestContractErrorCases(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	// This address does not belong to a Token contract
 	strategyAddr := common.HexToAddress("34634374736473673643")
 
 	t.Run("GetStrategyAndUnderlyingToken", func(t *testing.T) {
