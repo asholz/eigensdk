@@ -99,16 +99,7 @@ func (r *ChainReader) IsOperatorRegistered(
 		return false, errors.New("DelegationManager contract not provided")
 	}
 
-	isOperator, err := r.delegationManager.IsOperator(
-		&bind.CallOpts{Context: ctx},
-		gethcommon.HexToAddress(operator.Address),
-	)
-	// This call should not fail since it's a getter
-	if err != nil {
-		return false, err
-	}
-
-	return isOperator, nil
+	return r.delegationManager.IsOperator(&bind.CallOpts{Context: ctx}, gethcommon.HexToAddress(operator.Address))
 }
 
 // GetStakerShares returns the amount of shares that a staker has in all of the strategies in which they have nonzero
