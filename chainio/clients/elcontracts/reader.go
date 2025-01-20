@@ -103,6 +103,7 @@ func (r *ChainReader) IsOperatorRegistered(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return false, err
 	}
@@ -140,6 +141,7 @@ func (r *ChainReader) GetOperatorDetails(
 		&bind.CallOpts{Context: ctx},
 		gethcommon.HexToAddress(operator.Address),
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return types.Operator{}, err
 	}
@@ -150,6 +152,7 @@ func (r *ChainReader) GetOperatorDetails(
 		},
 		gethcommon.HexToAddress(operator.Address),
 	)
+	// This call should not fail
 	if err != nil {
 		return types.Operator{}, err
 	}
@@ -174,6 +177,7 @@ func (r *ChainReader) GetStrategyAndUnderlyingToken(
 	strategyAddr gethcommon.Address,
 ) (*strategy.ContractIStrategy, gethcommon.Address, error) {
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
+	// This call should not fail since it's an init
 	if err != nil {
 		return nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
 	}
@@ -191,6 +195,7 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	strategyAddr gethcommon.Address,
 ) (*strategy.ContractIStrategy, erc20.ContractIERC20Methods, gethcommon.Address, error) {
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
+	// This call should not fail since it's an init
 	if err != nil {
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
 	}
@@ -199,6 +204,7 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
 	}
 	contractUnderlyingToken, err := erc20.NewContractIERC20(underlyingTokenAddr, r.ethClient)
+	// This call should not fail, if strategy has no underlying token then enters the if above
 	if err != nil {
 		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
 	}
@@ -336,6 +342,7 @@ func (r *ChainReader) GetOperatorAVSSplit(
 
 	split, err := r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
 
+	// This call should not fail since it's a getter
 	if err != nil {
 		return 0, err
 	}
@@ -353,6 +360,7 @@ func (r *ChainReader) GetOperatorPISplit(
 
 	split, err := r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
 
+	// This call should not fail since it's a getter
 	if err != nil {
 		return 0, err
 	}
@@ -398,6 +406,7 @@ func (r *ChainReader) GetAllocationInfo(
 		operatorAddress,
 		strategyAddress,
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, err
 	}
@@ -474,6 +483,7 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 	if operatorSet.Id == 0 {
 		// this is an M2 AVS
 		status, err := r.avsDirectory.AvsOperatorStatus(&bind.CallOpts{Context: ctx}, operatorSet.Avs, operatorAddress)
+		// This call should not fail since it's a getter
 		if err != nil {
 			return false, err
 		}
@@ -481,6 +491,7 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 		return status == 1, nil
 	} else {
 		registeredOperatorSets, err := r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+		// This call should not fail since it's a getter
 		if err != nil {
 			return false, err
 		}
@@ -543,6 +554,7 @@ func (r *ChainReader) GetSlashableShares(
 	}
 
 	currentBlock, err := r.ethClient.BlockNumber(ctx)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +566,7 @@ func (r *ChainReader) GetSlashableShares(
 		strategies,
 		uint32(currentBlock),
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, err
 	}
@@ -578,6 +591,7 @@ func (r *ChainReader) GetSlashableSharesForOperatorSets(
 	operatorSets []allocationmanager.OperatorSet,
 ) ([]OperatorSetStakes, error) {
 	currentBlock, err := r.ethClient.BlockNumber(ctx)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, err
 	}
@@ -602,6 +616,7 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 		}
 
 		strategies, err := r.GetStrategiesForOperatorSet(ctx, operatorSet)
+		// If operator setId is 0 will fail on if above
 		if err != nil {
 			return nil, err
 		}
@@ -616,6 +631,7 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 			strategies,
 			futureBlock,
 		)
+		// This call should not fail since it's a getter
 		if err != nil {
 			return nil, err
 		}
@@ -639,6 +655,7 @@ func (r *ChainReader) GetAllocationDelay(
 		return 0, errors.New("AllocationManager contract not provided")
 	}
 	isSet, delay, err := r.allocationManager.GetAllocationDelay(&bind.CallOpts{Context: ctx}, operatorAddress)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return 0, err
 	}
@@ -672,6 +689,7 @@ func (r *ChainReader) CanCall(
 		target,
 		selector,
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return false, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -690,6 +708,7 @@ func (r *ChainReader) ListAppointees(
 		target,
 		selector,
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -706,6 +725,7 @@ func (r *ChainReader) ListAppointeePermissions(
 		accountAddress,
 		appointeeAddress,
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, nil, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -717,6 +737,7 @@ func (r *ChainReader) ListPendingAdmins(
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
 	pendingAdmins, err := r.permissionController.GetPendingAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -728,6 +749,7 @@ func (r *ChainReader) ListAdmins(
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
 	pendingAdmins, err := r.permissionController.GetAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return nil, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -744,6 +766,7 @@ func (r *ChainReader) IsPendingAdmin(
 		accountAddress,
 		pendingAdminAddress,
 	)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return isPendingAdmin, errors.New("call to permission controller failed: " + err.Error())
 	}
@@ -756,6 +779,7 @@ func (r *ChainReader) IsAdmin(
 	adminAddress gethcommon.Address,
 ) (bool, error) {
 	isAdmin, err := r.permissionController.IsAdmin(&bind.CallOpts{Context: ctx}, accountAddress, adminAddress)
+	// This call should not fail since it's a getter
 	if err != nil {
 		return isAdmin, errors.New("call to permission controller failed: " + err.Error())
 	}
