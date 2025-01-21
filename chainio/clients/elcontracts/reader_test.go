@@ -800,6 +800,129 @@ func TestInvalidConfig(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	t.Run("try to check if operator is registered with invalid config", func(t *testing.T) {
+		// IsOperatorRegistered needs a correct DelegationManagerAddress
+		_, err := chainReader.IsOperatorRegistered(context.Background(), operator)
+		require.Error(t, err)
+	})
+
+	t.Run("get operator details with invalid config", func(t *testing.T) {
+		// GetOperatorDetails needs a correct DelegationManagerAddress
+		_, err := chainReader.GetOperatorDetails(context.Background(), operator)
+		require.Error(t, err)
+	})
+
+	t.Run("get operator avs", func(t *testing.T) {
+		_, err = chainReader.GetOperatorAVSSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			common.MaxAddress,
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetOperatorPISplit(context.Background(), common.HexToAddress(operatorAddr))
+		require.Error(t, err)
+	})
+
+	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
+		// Invalid strategy address
+		strategyAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+		// GetOperatorSharesInStrategy needs a correct DelegationManagerAddress
+		_, err := chainReader.GetOperatorSharesInStrategy(context.Background(), operatorAddr, strategyAddr)
+		require.Error(t, err)
+
+		// GetStrategyAndUnderlyingToken needs a correct StrategyAddress
+		_, _, err = chainReader.GetStrategyAndUnderlyingToken(context.Background(), strategyAddr)
+		require.Error(t, err)
+
+		_, _, _, err = chainReader.GetStrategyAndUnderlyingERC20Token(context.Background(), strategyAddr)
+		require.Error(t, err)
+	})
+
+	t.Run("calculate digest hash with invalid config", func(t *testing.T) {
+		staker := common.Address{0x0}
+		delegationApprover := common.Address{0x0}
+		approverSalt := [32]byte{}
+		expiry := big.NewInt(0)
+
+		// CalculateDelegationApprovalDigestHash needs a correct DelegationManagerAddress
+		_, err := chainReader.CalculateDelegationApprovalDigestHash(
+			context.Background(),
+			staker,
+			common.HexToAddress(operatorAddr),
+			delegationApprover,
+			approverSalt,
+			expiry,
+		)
+		require.Error(t, err)
+
+		// CalculateOperatorAVSRegistrationDigestHash needs a correct AvsDirectoryAddress
+		_, err = chainReader.CalculateOperatorAVSRegistrationDigestHash(context.Background(),
+			common.HexToAddress(operatorAddr),
+			staker,
+			approverSalt, expiry)
+		require.Error(t, err)
+	})
+
+	t.Run("get root with invalid config", func(t *testing.T) {
+		// GetDistributionRootsLength needs a correct RewardsCoordinatorAddress
+		_, err := chainReader.GetDistributionRootsLength(context.Background())
+		require.Error(t, err)
+
+		// GetRootIndexFromHash needs a correct RewardsCoordinatorAddress
+		_, err = chainReader.GetRootIndexFromHash(context.Background(), [32]byte{})
+		require.Error(t, err)
+
+		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
+		require.Error(t, err)
+	})
+
+	t.Run("get magnitudes, rewards and claims with invalid config", func(t *testing.T) {
+		contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+		strategyAddr := contractAddrs.Erc20MockStrategy
+
+		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
+		require.Error(t, err)
+
+		_, err := chainReader.GetCumulativeClaimed(
+			context.Background(),
+			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+			common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS),
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetMaxMagnitudes(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			[]common.Address{strategyAddr},
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetAllocatableMagnitude(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			strategyAddr,
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetAllocationInfo(context.Background(), common.HexToAddress(operatorAddr), strategyAddr)
+		require.Error(t, err)
+
+		_, err = chainReader.GetAllocationDelay(context.Background(), common.HexToAddress(operatorAddr))
+		require.Error(t, err)
+
+		_, err = chainReader.CheckClaim(
+			context.Background(),
+			rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{},
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
+		require.Error(t, err)
+	})
+
 	t.Run("try to get a staker shares with invalid config", func(t *testing.T) {
 		// GetStakerShares needs a correct DelegationManagerAddress
 		_, _, err := chainReader.GetStakerShares(context.Background(), common.HexToAddress(operator.Address))
@@ -1159,150 +1282,6 @@ func TestCreateRederFromConfig(t *testing.T) {
 		}
 
 		_, err = elcontracts.NewReaderFromConfig(config, ethHttpClient, logger)
-		require.Error(t, err)
-	})
-}
-
-// TestInvalidConfig tests the behavior of the chainReader when the config is invalid (e.g. missing addresses, wrong
-// addresses)
-func TestInvalidConfig(t *testing.T) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	operatorAddr := testutils.ANVIL_FIRST_ADDRESS
-	operator := types.Operator{
-		Address: operatorAddr,
-	}
-
-	config := elcontracts.Config{}
-	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	t.Run("try to check if operator is registered with invalid config", func(t *testing.T) {
-		// IsOperatorRegistered needs a correct DelegationManagerAddress
-		_, err := chainReader.IsOperatorRegistered(context.Background(), operator)
-		require.Error(t, err)
-	})
-
-	t.Run("get operator details with invalid config", func(t *testing.T) {
-		// GetOperatorDetails needs a correct DelegationManagerAddress
-		_, err := chainReader.GetOperatorDetails(context.Background(), operator)
-		require.Error(t, err)
-	})
-
-	t.Run("get operator avs", func(t *testing.T) {
-		_, err = chainReader.GetOperatorAVSSplit(
-			context.Background(),
-			common.HexToAddress(operatorAddr),
-			common.MaxAddress,
-		)
-		require.Error(t, err)
-
-		_, err = chainReader.GetOperatorPISplit(context.Background(), common.HexToAddress(operatorAddr))
-		require.Error(t, err)
-	})
-
-	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
-		// Invalid strategy address
-		strategyAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-		operatorAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
-
-		// GetOperatorSharesInStrategy needs a correct DelegationManagerAddress
-		_, err := chainReader.GetOperatorSharesInStrategy(context.Background(), operatorAddr, strategyAddr)
-		require.Error(t, err)
-
-		// GetStrategyAndUnderlyingToken needs a correct StrategyAddress
-		_, _, err = chainReader.GetStrategyAndUnderlyingToken(context.Background(), strategyAddr)
-		require.Error(t, err)
-
-		_, _, _, err = chainReader.GetStrategyAndUnderlyingERC20Token(context.Background(), strategyAddr)
-		require.Error(t, err)
-	})
-
-	t.Run("calculate digest hash with invalid config", func(t *testing.T) {
-		staker := common.Address{0x0}
-		delegationApprover := common.Address{0x0}
-		approverSalt := [32]byte{}
-		expiry := big.NewInt(0)
-
-		// CalculateDelegationApprovalDigestHash needs a correct DelegationManagerAddress
-		_, err := chainReader.CalculateDelegationApprovalDigestHash(
-			context.Background(),
-			staker,
-			common.HexToAddress(operatorAddr),
-			delegationApprover,
-			approverSalt,
-			expiry,
-		)
-		require.Error(t, err)
-
-		// CalculateOperatorAVSRegistrationDigestHash needs a correct AvsDirectoryAddress
-		_, err = chainReader.CalculateOperatorAVSRegistrationDigestHash(context.Background(),
-			common.HexToAddress(operatorAddr),
-			staker,
-			approverSalt, expiry)
-		require.Error(t, err)
-	})
-
-	t.Run("get root with invalid config", func(t *testing.T) {
-		// GetDistributionRootsLength needs a correct RewardsCoordinatorAddress
-		_, err := chainReader.GetDistributionRootsLength(context.Background())
-		require.Error(t, err)
-
-		// GetRootIndexFromHash needs a correct RewardsCoordinatorAddress
-		_, err = chainReader.GetRootIndexFromHash(context.Background(), [32]byte{})
-		require.Error(t, err)
-
-		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
-		require.Error(t, err)
-	})
-
-	t.Run("get magnitudes, rewards and claims with invalid config", func(t *testing.T) {
-		strategyAddr := contractAddrs.Erc20MockStrategy
-
-		_, err = chainReader.GetCurrentClaimableDistributionRoot(context.Background())
-		require.Error(t, err)
-
-		_, err := chainReader.GetCumulativeClaimed(
-			context.Background(),
-			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
-			common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS),
-		)
-		require.Error(t, err)
-
-		_, err = chainReader.GetMaxMagnitudes(
-			context.Background(),
-			common.HexToAddress(operatorAddr),
-			[]common.Address{strategyAddr},
-		)
-		require.Error(t, err)
-
-		_, err = chainReader.GetAllocatableMagnitude(
-			context.Background(),
-			common.HexToAddress(operatorAddr),
-			strategyAddr,
-		)
-		require.Error(t, err)
-
-		_, err = chainReader.GetAllocationInfo(context.Background(), common.HexToAddress(operatorAddr), strategyAddr)
-		require.Error(t, err)
-
-		_, err = chainReader.GetAllocationDelay(context.Background(), common.HexToAddress(operatorAddr))
-		require.Error(t, err)
-
-		_, err = chainReader.CheckClaim(
-			context.Background(),
-			rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{},
-		)
-		require.Error(t, err)
-
-		_, err = chainReader.CurrRewardsCalculationEndTimestamp(context.Background())
 		require.Error(t, err)
 	})
 }
