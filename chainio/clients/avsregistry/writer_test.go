@@ -16,8 +16,23 @@ import (
 )
 
 func TestWriterMethods(t *testing.T) {
-	clients, _ := testclients.BuildTestClients(t)
-	chainWriter := clients.AvsRegistryChainWriter
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+
+	config := avsregistry.Config{
+		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
+		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
+	}
+
+	chainWriter, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
+	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
 	require.NoError(t, err)
