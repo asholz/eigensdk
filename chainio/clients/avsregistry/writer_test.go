@@ -4,13 +4,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -84,6 +87,71 @@ func TestWriterMethods(t *testing.T) {
 			chainioutils.ConvertToBN254G1Point(keypair.PubKey),
 			true,
 		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+	})
+
+	t.Run("update socket", func(t *testing.T) {
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			ecdsaPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
+		receipt, err = chainWriter.UpdateSocket(
+			context.Background(),
+			types.Socket(""),
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+	})
+
+	t.Run("deregister operator operator sets", func(t *testing.T) {
+		operator := types.Operator{
+			Address: testutils.ANVIL_FIRST_ADDRESS,
+		}
+
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			ecdsaPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
+		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+		require.NoError(t, err)
+
+		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+		registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+			registryCoordinatorAddress,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+
+		txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+		require.NoError(t, err)
+
+		noSendTxOpts, err := txManager.GetNoSendTxOpts()
+		require.NoError(t, err)
+
+		tx, err := registryCoordinator.EnableOperatorSets(noSendTxOpts)
+		require.NoError(t, err)
+
+		_, err = txManager.Send(context.Background(), tx, true)
+		require.NoError(t, err)
+
+		// Failing because OperatorSetsNotSupported() err, which means operator was registered but not as set.
+		receipt, err = chainWriter.DeregisterOperatorOperatorSets(context.Background(), types.OperatorSetIds{0}, operator, chainioutils.ConvertToBN254G1Point(keypair.PubKey), true)
 		require.NoError(t, err)
 		require.NotNil(t, receipt)
 	})
