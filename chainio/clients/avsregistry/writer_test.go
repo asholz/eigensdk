@@ -44,6 +44,16 @@ func TestWriterMethods(t *testing.T) {
 
 	quorumNumbers := types.QuorumNums{0}
 
+	t.Run("update socket without being registered", func(t *testing.T) {
+		receipt, err := chainWriter.UpdateSocket(
+			context.Background(),
+			types.Socket("102901920192019201902910291209"),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
 	t.Run("register operator", func(t *testing.T) {
 		receipt, err := chainWriter.RegisterOperator(
 			context.Background(),
