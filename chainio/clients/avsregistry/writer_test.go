@@ -161,6 +161,18 @@ func TestWriterMethods(t *testing.T) {
 		assert.Nil(t, receipt)
 	})
 
+	t.Run("fail update stake of entire operator set because of quorum length", func(t *testing.T) {
+		// Fails because operators per quorum length is distinct from quorum numbers
+		receipt, err := chainWriter.UpdateStakesOfEntireOperatorSetForQuorums(
+			context.Background(),
+			[][]gethcommon.Address{{addr, addr}},
+			quorumNumbers,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
 	t.Run("fail deregister operator cancelling context", func(t *testing.T) {
 		subCtx, cancelFn := context.WithCancel(context.Background())
 		cancelFn()
