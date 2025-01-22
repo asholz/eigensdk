@@ -6,14 +6,12 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
-	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -112,48 +110,71 @@ func TestWriterMethods(t *testing.T) {
 		require.NotNil(t, receipt)
 	})
 
-	t.Run("deregister operator operator sets", func(t *testing.T) {
-		operator := types.Operator{
-			Address: testutils.ANVIL_FIRST_ADDRESS,
-		}
-
+	// Error cases
+	t.Run("fail register operator cancelling context", func(t *testing.T) {
+		subCtx, cancelFn := context.WithCancel(context.Background())
+		cancelFn()
 		receipt, err := chainWriter.RegisterOperator(
-			context.Background(),
+			subCtx,
 			ecdsaPrivateKey,
 			keypair,
 			quorumNumbers,
 			"",
 			true,
 		)
-		require.NoError(t, err)
-		require.NotNil(t, receipt)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
 
-		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
-		require.NoError(t, err)
-
-		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-		registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
-			registryCoordinatorAddress,
-			ethHttpClient,
+	t.Run("fail update stake of operator subset cancelling context", func(t *testing.T) {
+		subCtx, cancelFn := context.WithCancel(context.Background())
+		cancelFn()
+		receipt, err := chainWriter.UpdateStakesOfOperatorSubsetForAllQuorums(
+			subCtx,
+			[]gethcommon.Address{addr},
+			true,
 		)
-		require.NoError(t, err)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
 
-		txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
-		require.NoError(t, err)
+	t.Run("fail update stake of entire operator set cancelling context", func(t *testing.T) {
+		subCtx, cancelFn := context.WithCancel(context.Background())
+		cancelFn()
+		receipt, err := chainWriter.UpdateStakesOfEntireOperatorSetForQuorums(
+			subCtx,
+			[][]gethcommon.Address{{addr}},
+			quorumNumbers,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
 
-		noSendTxOpts, err := txManager.GetNoSendTxOpts()
-		require.NoError(t, err)
+	t.Run("fail deregister operator cancelling context", func(t *testing.T) {
+		subCtx, cancelFn := context.WithCancel(context.Background())
+		cancelFn()
+		receipt, err := chainWriter.DeregisterOperator(
+			subCtx,
+			quorumNumbers,
+			chainioutils.ConvertToBN254G1Point(keypair.PubKey),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
 
-		tx, err := registryCoordinator.EnableOperatorSets(noSendTxOpts)
-		require.NoError(t, err)
+	t.Run("fail update socket cancelling context", func(t *testing.T) {
+		subCtx, cancelFn := context.WithCancel(context.Background())
 
-		_, err = txManager.Send(context.Background(), tx, true)
-		require.NoError(t, err)
-
-		// Failing because OperatorSetsNotSupported() err, which means operator was registered but not as set.
-		receipt, err = chainWriter.DeregisterOperatorOperatorSets(context.Background(), types.OperatorSetIds{0}, operator, chainioutils.ConvertToBN254G1Point(keypair.PubKey), true)
-		require.NoError(t, err)
-		require.NotNil(t, receipt)
+		cancelFn()
+		receipt, err := chainWriter.UpdateSocket(
+			subCtx,
+			types.Socket(""),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
 	})
 }
 
