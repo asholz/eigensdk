@@ -186,6 +186,18 @@ func TestWriterMethods(t *testing.T) {
 		assert.Nil(t, receipt)
 	})
 
+	t.Run("fail deregister operator because of operator not registered", func(t *testing.T) {
+		quorumNumbers := types.QuorumNums{}
+		receipt, err := chainWriter.DeregisterOperator(
+			context.Background(),
+			quorumNumbers,
+			chainioutils.ConvertToBN254G1Point(keypair.PubKey),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
 	t.Run("fail update socket cancelling context", func(t *testing.T) {
 		subCtx, cancelFn := context.WithCancel(context.Background())
 
