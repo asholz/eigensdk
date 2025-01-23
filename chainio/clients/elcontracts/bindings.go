@@ -70,13 +70,15 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to fetch StrategyManager contract", err)
 		}
 
-		allocationManagerAddr, err = contractDelegationManager.AllocationManager(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch AllocationManager address", err)
-		}
-		contractAllocationManager, err = allocationmanager.NewContractAllocationManager(allocationManagerAddr, client)
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
+		if !cfg.DontUseAllocationManager {
+			allocationManagerAddr, err = contractDelegationManager.AllocationManager(&bind.CallOpts{})
+			if err != nil {
+				return nil, utils.WrapError("Failed to fetch AllocationManager address", err)
+			}
+			contractAllocationManager, err = allocationmanager.NewContractAllocationManager(allocationManagerAddr, client)
+			if err != nil {
+				return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
+			}
 		}
 	}
 

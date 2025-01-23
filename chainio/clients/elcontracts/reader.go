@@ -27,6 +27,7 @@ type Config struct {
 	AvsDirectoryAddress          gethcommon.Address
 	RewardsCoordinatorAddress    gethcommon.Address
 	PermissionsControllerAddress gethcommon.Address
+	DontUseAllocationManager     bool
 }
 
 type ChainReader struct {
