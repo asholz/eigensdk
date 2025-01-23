@@ -128,15 +128,17 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
 
-		delegationManager, err := contractDelegationManager.NewContractDelegationManager(
-			delegationManagerAddr,
-			client)
-		if err != nil {
-			return nil, utils.WrapError("Failed to get DelegationManager contract", err)
-		}
-		allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to get AllocationManager address", err)
+		if !cfg.DontUseAllocationManager {
+			delegationManager, err := contractDelegationManager.NewContractDelegationManager(
+				delegationManagerAddr,
+				client)
+			if err != nil {
+				return nil, utils.WrapError("Failed to get DelegationManager contract", err)
+			}
+			allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
+			if err != nil {
+				return nil, utils.WrapError("Failed to get AllocationManager address", err)
+			}
 		}
 	}
 

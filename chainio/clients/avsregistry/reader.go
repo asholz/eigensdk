@@ -28,6 +28,7 @@ var DefaultQueryBlockRange = big.NewInt(10_000)
 type Config struct {
 	RegistryCoordinatorAddress    common.Address
 	OperatorStateRetrieverAddress common.Address
+	DontUseAllocationManager      bool
 }
 
 type ChainReader struct {
