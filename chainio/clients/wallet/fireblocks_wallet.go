@@ -51,7 +51,7 @@ type fireblocksWallet struct {
 	logger           logging.Logger
 	chainID          *big.Int
 
-	// nonceToTx keeps track of the transaction ID for each nonce
+	// nonceToTxID keeps track of the transaction ID for each nonce
 	// this is used to retrieve the transaction hash for a given nonce
 	// when a replacement transaction is submitted.
 	nonceToTxID map[uint64]TxID

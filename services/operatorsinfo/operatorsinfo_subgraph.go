@@ -36,7 +36,7 @@ type (
 		SocketUpdates []SocketUpdates `graphql:"socketUpdates(first: 1, orderBy: blockNumber, orderDirection: desc)"`
 	}
 	IndexedOperatorInfo struct {
-		// PubKeyG1 and PubKeyG2 are the public keys of the operator, which are retrieved from the
+		// PubkeyG1 and PubkeyG2 are the public keys of the operator, which are retrieved from the
 		// EigenDAPubKeyCompendium smart contract
 		PubkeyG1 *G1Point
 		PubkeyG2 *G2Point

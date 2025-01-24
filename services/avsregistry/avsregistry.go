@@ -12,7 +12,7 @@ import (
 // operator state
 // at certain blocks, including operatorIds, pubkeys, and staking status in each quorum.
 type AvsRegistryService interface {
-	// GetOperatorsAvsState returns the state of an avs wrt to a list of quorums at a certain block.
+	// GetOperatorsAvsStateAtBlock returns the state of an avs wrt to a list of quorums at a certain block.
 	// The state includes the operatorId, pubkey, and staking amount in each quorum.
 	GetOperatorsAvsStateAtBlock(
 		ctx context.Context,
