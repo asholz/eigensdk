@@ -18,9 +18,7 @@ cleanup_bindings_dir() {
 
 clone() {
   echo "Cloning the EigenLayer contracts repository"
-  # change eigenlayer-contracts to the slashing-magnitudes branch and copy it to a temporal directory
-  cd ../../../contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts/ && git checkout slashing-magnitudes
-  cp -r . $TMP_DIR
+  git clone -b slashing-magnitudes --depth=1 https://github.com/Layr-Labs/eigensdk-go.git "${TMP_DIR}"
 }
 
 generate_bindings() {
