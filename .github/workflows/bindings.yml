@@ -1,0 +1,30 @@
+name: Bindings
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [ '**' ]
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Check bindings are up to date
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Generate new bindings
+        run: |
+          make bindings_host
+
+      - name: Compare bindings
+        run: git diff --exit-code
