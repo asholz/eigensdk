@@ -780,13 +780,6 @@ func getPubkeyRegistrationParams(
 	return &pubkeyRegParams, nil
 }
 
-type RegistrationType uint8
-
-const (
-	RegistrationTypeNormal RegistrationType = 0
-	RegistrationTypeChurn  RegistrationType = 1
-)
-
 func AbiEncodeRegistrationParams(
 	registrationType RegistrationType,
 	socket string,
