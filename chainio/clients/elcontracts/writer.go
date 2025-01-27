@@ -560,7 +560,7 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, utils.WrapError("failed to get public key registration params", err)
 	}
 
-	data, err := AbiEncodeRegistrationParams(request.Socket, *pubkeyRegParams)
+	data, err := AbiEncodeRegistrationParams(RegistrationTypeNormal, request.Socket, *pubkeyRegParams)
 	if err != nil {
 		return nil, utils.WrapError("failed to encode registration params", err)
 	}
@@ -780,7 +780,15 @@ func getPubkeyRegistrationParams(
 	return &pubkeyRegParams, nil
 }
 
+type RegistrationType uint8
+
+const (
+	RegistrationTypeNormal RegistrationType = 0
+	RegistrationTypeChurn  RegistrationType = 1
+)
+
 func AbiEncodeRegistrationParams(
+	registrationType RegistrationType,
 	socket string,
 	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
 ) ([]byte, error) {
@@ -807,9 +815,11 @@ func AbiEncodeRegistrationParams(
 	}
 
 	registrationParams := struct {
-		Socket          string
-		PubkeyRegParams regcoord.IBLSApkRegistryPubkeyRegistrationParams
+		RegistrationType RegistrationType
+		Socket           string
+		PubkeyRegParams  regcoord.IBLSApkRegistryPubkeyRegistrationParams
 	}{
+		registrationType,
 		socket,
 		pubkeyRegistrationParams,
 	}
