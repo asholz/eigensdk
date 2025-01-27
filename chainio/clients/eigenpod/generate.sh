@@ -23,7 +23,6 @@ clone() {
 
 generate_bindings() {
   echo "Generating bindings for the EigenPods contracts"
-  pwd
   current_dir=$(pwd)
   cd "${TMP_DIR}" && make bindings
   # shellcheck disable=SC2164
