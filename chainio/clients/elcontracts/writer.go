@@ -785,6 +785,7 @@ func abiEncodeRegistrationParams(
 	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
 ) ([]byte, error) {
 	registrationParamsType, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "RegistrationType", Type: "uint8"},
 		{Name: "Socket", Type: "string"},
 		{Name: "PubkeyRegParams", Type: "tuple", Components: []abi.ArgumentMarshaling{
 			{Name: "PubkeyRegistrationSignature", Type: "tuple", Components: []abi.ArgumentMarshaling{
