@@ -24,7 +24,7 @@ jobs:
       
       - name: Generate new bindings
         run: |
-          make bindings_host
+          make bindings
 
       - name: Compare bindings
         run: git diff --exit-code
