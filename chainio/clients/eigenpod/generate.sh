@@ -18,11 +18,14 @@ cleanup_bindings_dir() {
 
 clone() {
   echo "Cloning the EigenLayer contracts repository"
-  git clone -b slashing-magnitudes --depth=1 git@github.com:Layr-Labs/eigenlayer-contracts.git "${TMP_DIR}"
+  # change eigenlayer-contracts to the slashing-magnitudes branch and copy it to a temporal directory
+  cd ../../../contracts/lib/eigenlayer-middleware/lib/eigenlayer-contracts/ && git checkout slashing-magnitudes
+  cp -r . $TMP_DIR
 }
 
 generate_bindings() {
   echo "Generating bindings for the EigenPods contracts"
+  pwd
   current_dir=$(pwd)
   cd "${TMP_DIR}" && make bindings
   # shellcheck disable=SC2164
