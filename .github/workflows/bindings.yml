@@ -2,12 +2,9 @@ name: Bindings
 
 on:
   push:
-    branches: [main]
+    branches:
+      - dev
   pull_request:
-    branches: [ '**' ]
-
-env:
-  FOUNDRY_PROFILE: ci
 
 jobs:
   check:
@@ -22,9 +19,13 @@ jobs:
         with:
           submodules: recursive
       
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v0.3.0
+
       - name: Generate new bindings
-        run: |
-          make bindings
+        run: make bindings
 
       - name: Compare bindings
         run: git diff --exit-code
