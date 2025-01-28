@@ -36,7 +36,6 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
         if (block.chainid == 31337 || block.chainid == 1337) {
             (mockToken, strat) = _deployErc20AndStrategyAndWhitelistStrategy(
                 eigenlayerContracts.eigenlayerProxyAdmin,
-                eigenlayerContracts.eigenlayerPauserReg,
                 eigenlayerContracts.baseStrategyImplementation,
                 eigenlayerContracts.strategyManager
             );
@@ -55,7 +54,6 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
 
     function _deployErc20AndStrategyAndWhitelistStrategy(
         ProxyAdmin eigenLayerProxyAdmin,
-        PauserRegistry eigenLayerPauserReg,
         StrategyBaseTVLLimits baseStrategyImplementation,
         IStrategyManager strategyManager
     ) internal returns (IERC20, IStrategy) {

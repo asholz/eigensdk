@@ -21,6 +21,7 @@ import {OperatorStateRetriever} from "eigenlayer-middleware/src/OperatorStateRet
 import {MockAvsContracts} from "./parsers/MockAvsContractsParser.sol";
 import {EigenlayerContracts, EigenlayerContractsParser} from "./parsers/EigenlayerContractsParser.sol";
 import {ConfigsReadWriter} from "./parsers/ConfigsReadWriter.sol";
+import {MockAvsServiceManager} from "../src/MockAvsServiceManager.sol";
 import {ContractsRegistry} from "../src/ContractsRegistry.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -67,18 +68,20 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
 
     function _deploymockAvsRegistryContracts(
         EigenlayerContracts memory eigenlayerContracts,
-        MockAvsOpsAddresses memory addressConfig
+        MockAvsOpsAddresses memory addressConfig,
+        MockAvsServiceManager manager,
+        MockAvsServiceManager managerImpl
     ) internal returns (MockAvsContracts memory) {
         _deployPauserRegistry(addressConfig);
         _deployProxies();
         deployed.stateRetriever = new OperatorStateRetriever();
         _deployAndUpgradeImplementations(eigenlayerContracts);
-        _initializeRegistryCoordinator(addressConfig);
+        _initializeRegistryCoordinator(addressConfig, manager);
 
         require(Ownable(address(deployed.coordinator)).owner() != address(0), "Owner uninitialized");
-        _writeDeploymentOutput();
+        _writeDeploymentOutput(manager, managerImpl);
 
-        return MockAvsContracts(deployed.coordinator, deployed.stateRetriever);
+        return MockAvsContracts(manager, deployed.coordinator, deployed.stateRetriever);
     }
 
     function _deployPauserRegistry(MockAvsOpsAddresses memory config) internal {
@@ -137,39 +140,26 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         deployed.proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(proxy)), implementation);
     }
 
-    function _initializeRegistryCoordinator(MockAvsOpsAddresses memory config) internal {
-        uint32 numQuorums = 0;
-        SlashingRegistryCoordinator.OperatorSetParam[] memory params =
-            new SlashingRegistryCoordinator.OperatorSetParam[](numQuorums);
-
-        for (uint32 i = 0; i < numQuorums; i++) {
-            params[i] = ISlashingRegistryCoordinatorTypes.OperatorSetParam({
-                maxOperatorCount: 10000,
-                kickBIPsOfOperatorStake: 15000,
-                kickBIPsOfTotalStake: 100
-            });
-        }
-
-        uint96[] memory minStake = new uint96[](numQuorums);
-        IStakeRegistry.StrategyParams[][] memory strategyParams = new IStakeRegistry.StrategyParams[][](numQuorums);
-        IStakeRegistryTypes.StakeType[] memory stakeTypes = new IStakeRegistryTypes.StakeType[](numQuorums);
-        uint32[] memory lookAheadPeriods = new uint32[](numQuorums);
-
+    function _initializeRegistryCoordinator(MockAvsOpsAddresses memory config, MockAvsServiceManager manager)
+        internal
+    {
         deployed.proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(deployed.coordinator))),
             address(deployed.coordinatorImplementation),
             abi.encodeCall(
                 SlashingRegistryCoordinator.initialize,
-                (config.communityMultisig, config.churner, config.ejector, 0, address(deployed.coordinator))
+                (config.communityMultisig, config.churner, config.ejector, 0, address(manager))
             )
         );
     }
 
-    function _writeDeploymentOutput() internal {
+    function _writeDeploymentOutput(MockAvsServiceManager manager, MockAvsServiceManager managerImpl) internal {
         string memory parent = "parent object";
         string memory addresses = "addresses";
 
         vm.serializeAddress(addresses, "proxyAdmin", address(deployed.proxyAdmin));
+        vm.serializeAddress(addresses, "mockAvsServiceManager", address(manager));
+        vm.serializeAddress(addresses, "mockAvsServiceManagerImplementation", address(managerImpl));
         vm.serializeAddress(addresses, "registryCoordinator", address(deployed.coordinator));
         vm.serializeAddress(addresses, "registryCoordinatorImplementation", address(deployed.coordinatorImplementation));
         string memory output =
@@ -183,6 +173,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         EigenlayerContracts memory eigen,
         MockAvsContracts memory avs
     ) internal {
+        registry.registerContract("mockAvsServiceManager", address(avs.mockAvsServiceManager));
         registry.registerContract("mockAvsRegistryCoordinator", address(avs.registryCoordinator));
         registry.registerContract("mockAvsOperatorStateRetriever", address(avs.operatorStateRetriever));
         registry.registerContract("delegationManager", address(eigen.delegationManager));
