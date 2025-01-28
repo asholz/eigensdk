@@ -754,7 +754,7 @@ func getPubkeyRegistrationParams(
 	ethClient bind.ContractBackend,
 	registryCoordinatorAddr, operatorAddress gethcommon.Address,
 	blsKeyPair *bls.KeyPair,
-) (*regcoord.IBLSApkRegistryPubkeyRegistrationParams, error) {
+) (*regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams, error) {
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
 	if err != nil {
 		return nil, utils.WrapError("failed to create registry coordinator", err)
@@ -772,7 +772,7 @@ func getPubkeyRegistrationParams(
 	)
 	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
 	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
-	pubkeyRegParams := regcoord.IBLSApkRegistryPubkeyRegistrationParams{
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
 		PubkeyRegistrationSignature: signedMsg,
 		PubkeyG1:                    G1pubkeyBN254,
 		PubkeyG2:                    G2pubkeyBN254,
@@ -783,7 +783,7 @@ func getPubkeyRegistrationParams(
 func AbiEncodeRegistrationParams(
 	registrationType RegistrationType,
 	socket string,
-	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
+	pubkeyRegistrationParams regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams,
 ) ([]byte, error) {
 	registrationParamsType, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
 		{Name: "RegistrationType", Type: "uint8"},
@@ -810,7 +810,7 @@ func AbiEncodeRegistrationParams(
 	registrationParams := struct {
 		RegistrationType RegistrationType
 		Socket           string
-		PubkeyRegParams  regcoord.IBLSApkRegistryPubkeyRegistrationParams
+		PubkeyRegParams  regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams
 	}{
 		registrationType,
 		socket,

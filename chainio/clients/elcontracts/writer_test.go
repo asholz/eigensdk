@@ -277,7 +277,7 @@ func TestEncodeRegistrationParams(t *testing.T) {
 	).SetString("6486088401181402728530570019430319265466049090881984123818353102069786218525", 10)
 	require.True(t, ok)
 
-	registrationParams := regcoord.IBLSApkRegistryPubkeyRegistrationParams{
+	registrationParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
 		PubkeyRegistrationSignature: regcoord.BN254G1Point{
 			X: signatureX,
 			Y: signatureY,
@@ -1105,18 +1105,18 @@ func createOperatorSet(
 		return err
 	}
 
-	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
+	operatorSetParam := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
 		MaxOperatorCount:        10,
 		KickBIPsOfOperatorStake: 100,
 		KickBIPsOfTotalStake:    1000,
 	}
 	minimumStake := big.NewInt(0)
 
-	strategyParams := regcoord.IStakeRegistryStrategyParams{
+	strategyParams := regcoord.IStakeRegistryTypesStrategyParams{
 		Strategy:   erc20MockStrategyAddr,
 		Multiplier: big.NewInt(1),
 	}
-	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
+	strategyParamsArray := []regcoord.IStakeRegistryTypesStrategyParams{strategyParams}
 	lookAheadPeriod := uint32(0)
 	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
 		noSendTxOpts,
