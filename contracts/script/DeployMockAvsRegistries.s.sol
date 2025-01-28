@@ -76,7 +76,9 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         _deployProxies();
         deployed.stateRetriever = new OperatorStateRetriever();
         _deployAndUpgradeImplementations(eigenlayerContracts);
-        _initializeRegistryCoordinator(addressConfig, manager);
+        _initializeRegistryCoordinator(addressConfig);
+
+        _setupPermissions(addressConfig.communityMultisig, eigenlayerContracts);
 
         require(Ownable(address(deployed.coordinator)).owner() != address(0), "Owner uninitialized");
         _writeDeploymentOutput(manager, managerImpl);
@@ -140,17 +142,40 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         deployed.proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(proxy)), implementation);
     }
 
-    function _initializeRegistryCoordinator(MockAvsOpsAddresses memory config, MockAvsServiceManager manager)
-        internal
-    {
+    function _initializeRegistryCoordinator(MockAvsOpsAddresses memory config) internal {
         deployed.proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(deployed.coordinator))),
             address(deployed.coordinatorImplementation),
             abi.encodeCall(
                 SlashingRegistryCoordinator.initialize,
-                (config.communityMultisig, config.churner, config.ejector, 0, address(manager))
+                (config.communityMultisig, config.churner, config.ejector, 0, address(config.communityMultisig))
             )
         );
+    }
+
+    function _setupPermissions(address admin, EigenlayerContracts memory elContracts) internal {
+        address coordinator = address(deployed.coordinator);
+        address allocationManager = address(elContracts.allocationManager);
+        elContracts.permissionController.setAppointee(
+            admin, coordinator, allocationManager, elContracts.allocationManager.createOperatorSets.selector
+        );
+        elContracts.permissionController.setAppointee(
+            admin, coordinator, allocationManager, elContracts.allocationManager.deregisterFromOperatorSets.selector
+        );
+        address stakeRegistry = address(deployed.coordinator.stakeRegistry());
+        elContracts.permissionController.setAppointee(
+            admin, stakeRegistry, allocationManager, elContracts.allocationManager.addStrategiesToOperatorSet.selector
+        );
+        elContracts.permissionController.setAppointee(
+            admin,
+            stakeRegistry,
+            allocationManager,
+            elContracts.allocationManager.removeStrategiesFromOperatorSet.selector
+        );
+        // NOTE: we don't set permissions for the slasher, because there isn't one
+        // elContracts.permissionController.setAppointee(
+        //     admin, slasher, allocationManager, elContracts.allocationManager.slashOperator.selector
+        // );
     }
 
     function _writeDeploymentOutput(MockAvsServiceManager manager, MockAvsServiceManager managerImpl) internal {
