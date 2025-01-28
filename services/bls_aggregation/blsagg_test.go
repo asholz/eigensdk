@@ -1785,7 +1785,7 @@ func newBlsKeyPairPanics(hexKey string) *bls.KeyPair {
 	return keypair
 }
 
-func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerNonSignerStakesAndSignature {
+func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature {
 	nonSignerPubkeys := []avssm.BN254G1Point{}
 	for _, nonSignerPubkey := range blsAggServiceResp.NonSignersPubkeysG1 {
 		nonSignerPubkeys = append(nonSignerPubkeys, avssm.BN254G1Point(utils.ConvertToBN254G1Point(nonSignerPubkey)))
@@ -1794,7 +1794,7 @@ func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSign
 	for _, quorumApk := range blsAggServiceResp.QuorumApksG1 {
 		quorumApks = append(quorumApks, avssm.BN254G1Point(utils.ConvertToBN254G1Point(quorumApk)))
 	}
-	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerNonSignerStakesAndSignature{
+	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature{
 		NonSignerPubkeys: nonSignerPubkeys,
 		QuorumApks:       quorumApks,
 		ApkG2:            avssm.BN254G2Point(utils.ConvertToBN254G2Point(blsAggServiceResp.SignersApkG2)),
