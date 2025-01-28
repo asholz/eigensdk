@@ -8,8 +8,9 @@ import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/in
 import {StrategyBaseTVLLimits} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 import "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
-import "eigenlayer-middleware/src/RegistryCoordinator.sol" as regcoord;
-import {StakeType} from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
+import {ISlashingRegistryCoordinatorTypes} from "eigenlayer-middleware/src/interfaces/ISlashingRegistryCoordinator.sol";
+import {SlashingRegistryCoordinator} from "eigenlayer-middleware/src/SlashingRegistryCoordinator.sol";
+import {IStakeRegistryTypes} from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
 
 import {MockERC20, IERC20} from "../src/MockERC20.sol";
 import "./parsers/EigenlayerContractsParser.sol";
@@ -96,11 +97,10 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
         return (IERC20(mockERC20), erc20MockStrategy);
     }
 
-    function _createQuorum(regcoord.RegistryCoordinator mockAvsRegCoord, IStrategy strat) internal {
+    function _createQuorum(SlashingRegistryCoordinator mockAvsRegCoord, IStrategy strat) internal {
         // for each quorum to setup, we need to define
         // quorumsOperatorSetParams, quorumsMinimumStake, and quorumsStrategyParams
-        regcoord.RegistryCoordinator.OperatorSetParam memory quorumOperatorSetParams = regcoord
-            .IRegistryCoordinator
+        SlashingRegistryCoordinator.OperatorSetParam memory quorumOperatorSetParams = ISlashingRegistryCoordinatorTypes
             .OperatorSetParam({
             // hardcoded for now
             maxOperatorCount: 10000,
@@ -108,8 +108,8 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
             kickBIPsOfTotalStake: 100
         });
         uint96 quorumMinimumStake = 0;
-        IStakeRegistry.StrategyParams[] memory quorumStrategyParams = new IStakeRegistry.StrategyParams[](1);
-        quorumStrategyParams[0] = IStakeRegistry.StrategyParams({
+        IStakeRegistryTypes.StrategyParams[] memory quorumStrategyParams = new IStakeRegistryTypes.StrategyParams[](1);
+        quorumStrategyParams[0] = IStakeRegistryTypes.StrategyParams({
             strategy: strat,
             // setting this to 1 ether since the divisor is also 1 ether
             // therefore this allows an operator to register with even just 1 token
@@ -118,7 +118,7 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
             multiplier: 1 ether
         });
 
-        regcoord.RegistryCoordinator(address(mockAvsRegCoord)).createTotalDelegatedStakeQuorum(
+        SlashingRegistryCoordinator(address(mockAvsRegCoord)).createTotalDelegatedStakeQuorum(
             quorumOperatorSetParams, quorumMinimumStake, quorumStrategyParams
         );
     }

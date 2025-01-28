@@ -6,9 +6,6 @@ import "forge-std/console.sol";
 
 // forge script script/DeployMockAvs.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --etherscan-api-key $ETHERSCAN_API_KEY --broadcast --verify
 contract DeployMockAvs is DeployMockAvsRegistries {
-    MockAvsServiceManager public mockAvsServiceManager;
-    MockAvsServiceManager public mockAvsServiceManagerImplementation;
-
     EmptyContract public emptyContract;
     ProxyAdmin public mockAvsProxyAdmin;
 
@@ -21,38 +18,12 @@ contract DeployMockAvs is DeployMockAvsRegistries {
 
         vm.startBroadcast();
 
-        // Deploy proxy admin for ability to upgrade proxy contracts
-        // Note: can't deploy ProxyAdmin in setUp function, b/c its owner is not set correctly if so.
-        //       not sure why...
-        emptyContract = new EmptyContract();
-        mockAvsProxyAdmin = new ProxyAdmin();
-        mockAvsServiceManager = MockAvsServiceManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(mockAvsProxyAdmin), ""))
-        );
-        MockAvsContracts memory mockAvsContracts = _deploymockAvsRegistryContracts(
-            eigenlayerContracts, addressConfig, mockAvsServiceManager, mockAvsServiceManagerImplementation
-        );
+        MockAvsContracts memory mockAvsContracts = _deploymockAvsRegistryContracts(eigenlayerContracts, addressConfig);
 
-        console.log("HERE16");
         console.logAddress(address(mockAvsContracts.registryCoordinator));
         console.logAddress(address(eigenlayerContracts.avsDirectory));
         console.logAddress(address(eigenlayerContracts.rewardsCoordinator));
         console.logAddress(address(eigenlayerContracts.allocationManager));
-        mockAvsServiceManagerImplementation = new MockAvsServiceManager(
-            mockAvsContracts.registryCoordinator,
-            eigenlayerContracts.avsDirectory,
-            eigenlayerContracts.rewardsCoordinator,
-            eigenlayerContracts.allocationManager
-        );
-
-        console.log("HERE17");
-
-        mockAvsProxyAdmin.upgradeAndCall(
-            TransparentUpgradeableProxy(payable(address(mockAvsServiceManager))),
-            address(mockAvsServiceManagerImplementation),
-            abi.encodeWithSelector(mockAvsServiceManager.initialize.selector, addressConfig.communityMultisig)
-        );
-        require(Ownable(address(mockAvsServiceManager)).owner() != address(0), "Owner uninitialized");
 
         if (block.chainid == 31337 || block.chainid == 1337) {
             _writeContractsToRegistry(contractsRegistry, eigenlayerContracts, mockAvsContracts);
