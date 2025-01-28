@@ -1,0 +1,39 @@
+name: check anvil state up-to-date
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+  merge_group:
+
+jobs:
+  check_anvil_dump:
+    strategy:
+      fail-fast: true
+
+    name: Check anvil dump state is up to date
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts/anvil
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Backup existing anvil dump state
+        run: cp contracts-deployed-anvil-state.json previous-state.json
+      
+      - name: Generate new anvil dump state
+        run: ./deploy-contracts-save-anvil-state.sh
+
+      - name: Check whether the anvil dump state has changed
+        run: |
+          jq --sort-keys . previous_state.json > previous_state.json
+          jq --sort-keys . contracts-deployed-anvil-state.json > state.json
+          diff previous_state.json state.json
