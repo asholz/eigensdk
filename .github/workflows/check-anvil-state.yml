@@ -34,6 +34,6 @@ jobs:
 
       - name: Check whether the anvil dump state has changed
         run: |
-          jq --sort-keys . previous_state.json > previous_state.json
+          jq --sort-keys . previous-state.json > previous_state.json
           jq --sort-keys . contracts-deployed-anvil-state.json > state.json
           diff previous_state.json state.json
