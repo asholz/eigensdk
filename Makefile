@@ -67,7 +67,7 @@ middleware_default := "RegistryCoordinator SlashingRegistryCoordinator IndexRegi
 middleware_location := "./lib/eigenlayer-middleware"
 middleware_bindings_location := "../../bindings"
 
-sdk_default := "ContractsRegistry MockERC20"
+sdk_default := "MockAvsServiceManager ContractsRegistry MockERC20"
 sdk_location := "."
 sdk_bindings_location := "./bindings"
 
