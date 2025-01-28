@@ -5,15 +5,13 @@ on:
     branches:
       - dev
   pull_request:
-
+  merge_group:
+  
 permissions:
   contents: read
 
 jobs:
   check:
-    strategy:
-      fail-fast: true
-
     name: Check bindings are up to date
     runs-on: ubuntu-22.04
     
