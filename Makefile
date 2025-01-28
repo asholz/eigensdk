@@ -63,11 +63,11 @@ core_default := "DelegationManager IRewardsCoordinator StrategyManager EigenPod 
 core_location := "./lib/eigenlayer-middleware/lib/eigenlayer-contracts"
 core_bindings_location := "../../../../bindings"
 
-middleware_default := "RegistryCoordinator IndexRegistry OperatorStateRetriever StakeRegistry BLSApkRegistry IBLSSignatureChecker ServiceManagerBase IERC20"
+middleware_default := "RegistryCoordinator SlashingRegistryCoordinator IndexRegistry OperatorStateRetriever StakeRegistry BLSApkRegistry SocketRegistry IBLSSignatureChecker ServiceManagerBase IERC20"
 middleware_location := "./lib/eigenlayer-middleware"
 middleware_bindings_location := "../../bindings"
 
-sdk_default := "MockAvsServiceManager ContractsRegistry MockERC20"
+sdk_default := "ContractsRegistry MockERC20"
 sdk_location := "."
 sdk_bindings_location := "./bindings"
 
