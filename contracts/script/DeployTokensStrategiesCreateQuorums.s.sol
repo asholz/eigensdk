@@ -63,17 +63,15 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
         mockERC20.mint(tx.origin, MINT_AMOUNT);
         // TODO(samlaf): any reason why we are using the strategybase with tvl limits instead of just using strategybase?
         // the maxPerDeposit and maxDeposits below are just arbitrary values.
+        uint256 maxPerDeposit = 1_000 ether;
+        uint256 maxTotalDeposits = 1_000 ether;
         StrategyBaseTVLLimits erc20MockStrategy = StrategyBaseTVLLimits(
             address(
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyBaseTVLLimits.initialize.selector,
-                        1_000 ether, // maxPerDeposit
-                        1_000 ether, // maxDeposits
-                        IERC20(mockERC20),
-                        eigenLayerPauserReg
+                    abi.encodeCall(
+                        StrategyBaseTVLLimits.initialize, (maxPerDeposit, maxTotalDeposits, IERC20(mockERC20))
                     )
                 )
             )

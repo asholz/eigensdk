@@ -99,6 +99,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         registries.blsApkRegistry = IBLSApkRegistry(_deployProxy());
         registries.indexRegistry = IIndexRegistry(_deployProxy());
         registries.stakeRegistry = IStakeRegistry(_deployProxy());
+        registries.socketRegistry = ISocketRegistry(_deployProxy());
     }
 
     function _deployProxy() internal returns (address) {
@@ -157,17 +158,9 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         deployed.proxyAdmin.upgradeAndCall(
             TransparentUpgradeableProxy(payable(address(deployed.coordinator))),
             address(deployed.coordinatorImplementation),
-            abi.encodeWithSelector(
-                SlashingRegistryCoordinator.initialize.selector,
-                config.communityMultisig,
-                config.churner,
-                config.ejector,
-                0,
-                params,
-                minStake,
-                strategyParams,
-                stakeTypes,
-                lookAheadPeriods
+            abi.encodeCall(
+                SlashingRegistryCoordinator.initialize,
+                (config.communityMultisig, config.churner, config.ejector, 0, address(deployed.coordinator))
             )
         );
     }
