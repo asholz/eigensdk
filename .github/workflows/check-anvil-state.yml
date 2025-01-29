@@ -1,39 +1,35 @@
 name: check anvil state up-to-date
+
 on:
   push:
-    branches:
+    branches: 
       - dev
-  pull_request:
   merge_group:
+  pull_request:
+    # This makes the job run only when any of these files has been changed
+    paths:
+      - 'contracts/lib/**'
+      - 'contracts/script/**'
+      - 'contracts/src/**'
 
 jobs:
-  check_anvil_dump:
-    strategy:
-      fail-fast: true
-
-    name: Check anvil dump state is up to date
+  check:
+    name: Check anvil dump is up-to-date
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./contracts/anvil
+    
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          fetch-depth: 0
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v0.3.0
-
-      - name: Backup existing anvil dump state
-        run: cp contracts-deployed-anvil-state.json previous-state.json
-      
-      - name: Generate new anvil dump state
-        run: ./deploy-contracts-save-anvil-state.sh
-
-      - name: Check whether the anvil dump state has changed
+      # This step checks the diff in the anvil state file.
+      # If the diff is null, that means the anvil state has not changed,
+      # i.e. the anvil state outdated and therefore this step will fail.
+      # Note: if the git diff fails to fetch the changes, then the step will also fail.
+      - name: Check the anvil dump has changed
+        working-directory: contracts/anvil
         run: |
-          jq --sort-keys . previous-state.json > previous_state.json
-          jq --sort-keys . contracts-deployed-anvil-state.json > state.json
-          diff previous_state.json state.json
+          if [ -z "$(git diff origin/${{ github.event.pull_request.base.ref }} -- contracts_deployed_anvil_state.json)" ]; then
+            echo "The anvil dump is outdated";
+            exit 1
+          fi
