@@ -127,12 +127,8 @@ func NewBindingsFromConfig(
 	if isZeroAddress(cfg.ServiceManagerAddress) {
 		logger.Info("ServiceManager address not provided, the calls to the contract will not work")
 	} else {
-		serviceManagerAddr, err = contractBlsRegistryCoordinator.ServiceManager(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
-		}
 		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
-			serviceManagerAddr,
+			cfg.ServiceManagerAddress,
 			client,
 		)
 		if err != nil {
