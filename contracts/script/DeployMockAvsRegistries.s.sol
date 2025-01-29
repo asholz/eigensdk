@@ -9,10 +9,10 @@ import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/in
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import {IServiceManager} from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 import {
-    ISlashingRegistryCoordinator,
-    ISlashingRegistryCoordinatorTypes
-} from "eigenlayer-middleware/src/interfaces/ISlashingRegistryCoordinator.sol";
-import {SlashingRegistryCoordinator} from "eigenlayer-middleware/src/SlashingRegistryCoordinator.sol";
+    IRegistryCoordinator,
+    IRegistryCoordinatorTypes
+} from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
+import {RegistryCoordinator} from "eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {BLSApkRegistry, IBLSApkRegistry} from "eigenlayer-middleware/src/BLSApkRegistry.sol";
 import {IndexRegistry, IIndexRegistry} from "eigenlayer-middleware/src/IndexRegistry.sol";
 import {StakeRegistry, IStakeRegistry, IStakeRegistryTypes} from "eigenlayer-middleware/src/StakeRegistry.sol";
@@ -42,8 +42,8 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
     struct DeployedContracts {
         ProxyAdmin proxyAdmin;
         PauserRegistry pauserReg;
-        SlashingRegistryCoordinator coordinator;
-        ISlashingRegistryCoordinator coordinatorImplementation;
+        RegistryCoordinator coordinator;
+        IRegistryCoordinator coordinatorImplementation;
         OperatorStateRetriever stateRetriever;
         EmptyContract emptyContract;
     }
@@ -100,7 +100,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         if (address(deployed.proxyAdmin) == address(0)) {
             deployed.proxyAdmin = new ProxyAdmin();
         }
-        deployed.coordinator = SlashingRegistryCoordinator(_deployProxy());
+        deployed.coordinator = RegistryCoordinator(_deployProxy());
         registries.blsApkRegistry = IBLSApkRegistry(_deployProxy());
         registries.indexRegistry = IIndexRegistry(_deployProxy());
         registries.stakeRegistry = IStakeRegistry(_deployProxy());
@@ -128,7 +128,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
             new SocketRegistry(IRegistryCoordinator(address(deployed.coordinator)));
         _upgradeProxy(address(registries.socketRegistry), address(registries.socketRegistryImplementation));
 
-        deployed.coordinatorImplementation = new SlashingRegistryCoordinator(
+        deployed.coordinatorImplementation = new RegistryCoordinator(
             registries.stakeRegistry,
             registries.blsApkRegistry,
             registries.indexRegistry,
@@ -147,7 +147,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
             TransparentUpgradeableProxy(payable(address(deployed.coordinator))),
             address(deployed.coordinatorImplementation),
             abi.encodeCall(
-                SlashingRegistryCoordinator.initialize,
+                RegistryCoordinator.initialize,
                 (config.communityMultisig, config.churner, config.ejector, 0, address(config.communityMultisig))
             )
         );

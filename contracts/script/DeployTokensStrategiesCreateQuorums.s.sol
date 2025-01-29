@@ -8,8 +8,8 @@ import {IStrategyManager, IStrategy} from "eigenlayer-contracts/src/contracts/in
 import {StrategyBaseTVLLimits} from "eigenlayer-contracts/src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 import "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
-import {ISlashingRegistryCoordinatorTypes} from "eigenlayer-middleware/src/interfaces/ISlashingRegistryCoordinator.sol";
-import {SlashingRegistryCoordinator} from "eigenlayer-middleware/src/SlashingRegistryCoordinator.sol";
+import {IRegistryCoordinatorTypes} from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
+import {RegistryCoordinator} from "eigenlayer-middleware/src/RegistryCoordinator.sol";
 import {IStakeRegistryTypes} from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
 
 import {MockERC20, IERC20} from "../src/MockERC20.sol";
@@ -93,11 +93,10 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
         return (IERC20(mockERC20), erc20MockStrategy);
     }
 
-    function _createQuorum(SlashingRegistryCoordinator mockAvsRegCoord, IStrategy strat) internal {
+    function _createQuorum(RegistryCoordinator mockAvsRegCoord, IStrategy strat) internal {
         // for each quorum to setup, we need to define
         // quorumsOperatorSetParams, quorumsMinimumStake, and quorumsStrategyParams
-        SlashingRegistryCoordinator.OperatorSetParam memory quorumOperatorSetParams = ISlashingRegistryCoordinatorTypes
-            .OperatorSetParam({
+        RegistryCoordinator.OperatorSetParam memory quorumOperatorSetParams = IRegistryCoordinatorTypes.OperatorSetParam({
             // hardcoded for now
             maxOperatorCount: 10000,
             kickBIPsOfOperatorStake: 15000,
@@ -114,7 +113,7 @@ contract DeployTokensStrategiesCreateQuorums is Script, EigenlayerContractsParse
             multiplier: 1 ether
         });
 
-        SlashingRegistryCoordinator(address(mockAvsRegCoord)).createTotalDelegatedStakeQuorum(
+        RegistryCoordinator(address(mockAvsRegCoord)).createTotalDelegatedStakeQuorum(
             quorumOperatorSetParams, quorumMinimumStake, quorumStrategyParams
         );
     }
