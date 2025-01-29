@@ -75,7 +75,7 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to create BLSRegistryCoordinator contract", err)
 		}
 
-		serviceManagerAddr, err = tryFetchingAddress(contractBlsRegistryCoordinator.ServiceManager)
+		serviceManagerAddr, err = getAddressOrZero(contractBlsRegistryCoordinator.ServiceManager)
 		if err != nil {
 			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
 		}
@@ -173,7 +173,8 @@ func NewBindingsFromConfig(
 	}, nil
 }
 
-func tryFetchingAddress(getAddress func(*bind.CallOpts) (gethcommon.Address, error)) (gethcommon.Address, error) {
+// Makes a contract call to retrieve an address, but returning a zero address if the call reverts.
+func getAddressOrZero(getAddress func(*bind.CallOpts) (gethcommon.Address, error)) (gethcommon.Address, error) {
 	address, err := getAddress(&bind.CallOpts{})
 	if err == gethvm.ErrExecutionReverted {
 		return gethcommon.Address{}, nil
