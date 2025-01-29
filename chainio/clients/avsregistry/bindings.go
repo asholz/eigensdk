@@ -128,6 +128,8 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
 
+		// NOTE: this is a hack to make this version of the SDK work with mainnet
+		// TODO: remove this once mainnet is updated with the new contracts
 		if !cfg.DontUseAllocationManager {
 			delegationManager, err := contractDelegationManager.NewContractDelegationManager(
 				delegationManagerAddr,

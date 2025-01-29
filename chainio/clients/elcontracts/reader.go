@@ -27,7 +27,11 @@ type Config struct {
 	AvsDirectoryAddress          gethcommon.Address
 	RewardsCoordinatorAddress    gethcommon.Address
 	PermissionsControllerAddress gethcommon.Address
-	DontUseAllocationManager     bool
+
+	/// Setting this to true will disable the fetching of the AllocationManager address.
+	/// This is useful for older deployments, which don't have the contract deployed.
+	// TODO: remove this once mainnet is updated with the new contracts
+	DontUseAllocationManager bool
 }
 
 type ChainReader struct {
