@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
-	gethvm "github.com/ethereum/go-ethereum/core/vm"
 )
 
 // ContractBindings Unclear to me why geth bindings don't store and expose the contract address...
@@ -75,18 +74,6 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to create BLSRegistryCoordinator contract", err)
 		}
 
-		serviceManagerAddr, err = getAddressOrZero(contractBlsRegistryCoordinator.ServiceManager)
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
-		}
-		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
-			serviceManagerAddr,
-			client,
-		)
-		if err != nil {
-			return nil, utils.WrapError("Failed to create ServiceManager contract", err)
-		}
-
 		stakeRegistryAddr, err = contractBlsRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
 		if err != nil {
 			return nil, utils.WrapError("Failed to fetch StakeRegistry address", err)
@@ -124,10 +111,6 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to get DelegationManager address", err)
 		}
-		avsDirectoryAddr, err = contractServiceManager.AvsDirectory(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
-		}
 
 		delegationManager, err := contractDelegationManager.NewContractDelegationManager(
 			delegationManagerAddr,
@@ -138,6 +121,27 @@ func NewBindingsFromConfig(
 		allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AllocationManager address", err)
+		}
+	}
+
+	if isZeroAddress(cfg.ServiceManagerAddress) {
+		logger.Info("ServiceManager address not provided, the calls to the contract will not work")
+	} else {
+		serviceManagerAddr, err = contractBlsRegistryCoordinator.ServiceManager(&bind.CallOpts{})
+		if err != nil {
+			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
+		}
+		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
+			serviceManagerAddr,
+			client,
+		)
+		if err != nil {
+			return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+		}
+
+		avsDirectoryAddr, err = contractServiceManager.AvsDirectory(&bind.CallOpts{})
+		if err != nil {
+			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
 	}
 
@@ -171,15 +175,6 @@ func NewBindingsFromConfig(
 		IndexRegistry:              contractIndexRegistry,
 		OperatorStateRetriever:     contractOperatorStateRetriever,
 	}, nil
-}
-
-// Makes a contract call to retrieve an address, but returning a zero address if the call reverts.
-func getAddressOrZero(getAddress func(*bind.CallOpts) (gethcommon.Address, error)) (gethcommon.Address, error) {
-	address, err := getAddress(&bind.CallOpts{})
-	if err == gethvm.ErrExecutionReverted {
-		return gethcommon.Address{}, nil
-	}
-	return address, err
 }
 
 func isZeroAddress(address gethcommon.Address) bool {
