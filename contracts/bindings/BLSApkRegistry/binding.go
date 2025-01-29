@@ -86,84 +86,6 @@ func DeployContractBLSApkRegistry(auth *bind.TransactOpts, backend bind.Contract
 	return address, tx, &ContractBLSApkRegistry{ContractBLSApkRegistryCaller: ContractBLSApkRegistryCaller{contract: contract}, ContractBLSApkRegistryTransactor: ContractBLSApkRegistryTransactor{contract: contract}, ContractBLSApkRegistryFilterer: ContractBLSApkRegistryFilterer{contract: contract}}, nil
 }
 
-// ContractBLSApkRegistryMethods is an auto generated interface around an Ethereum contract.
-type ContractBLSApkRegistryMethods interface {
-	ContractBLSApkRegistryCalls
-	ContractBLSApkRegistryTransacts
-	ContractBLSApkRegistryFilters
-}
-
-// ContractBLSApkRegistryCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractBLSApkRegistryCalls interface {
-	ApkHistory(opts *bind.CallOpts, arg0 uint8, arg1 *big.Int) (struct {
-		ApkHash               [24]byte
-		UpdateBlockNumber     uint32
-		NextUpdateBlockNumber uint32
-	}, error)
-
-	CurrentApk(opts *bind.CallOpts, arg0 uint8) (struct {
-		X *big.Int
-		Y *big.Int
-	}, error)
-
-	GetApk(opts *bind.CallOpts, quorumNumber uint8) (BN254G1Point, error)
-
-	GetApkHashAtBlockNumberAndIndex(opts *bind.CallOpts, quorumNumber uint8, blockNumber uint32, index *big.Int) ([24]byte, error)
-
-	GetApkHistoryLength(opts *bind.CallOpts, quorumNumber uint8) (uint32, error)
-
-	GetApkIndicesAtBlockNumber(opts *bind.CallOpts, quorumNumbers []byte, blockNumber *big.Int) ([]uint32, error)
-
-	GetApkUpdateAtIndex(opts *bind.CallOpts, quorumNumber uint8, index *big.Int) (IBLSApkRegistryApkUpdate, error)
-
-	GetOperatorFromPubkeyHash(opts *bind.CallOpts, pubkeyHash [32]byte) (common.Address, error)
-
-	GetOperatorId(opts *bind.CallOpts, operator common.Address) ([32]byte, error)
-
-	GetRegisteredPubkey(opts *bind.CallOpts, operator common.Address) (BN254G1Point, [32]byte, error)
-
-	OperatorToPubkey(opts *bind.CallOpts, arg0 common.Address) (struct {
-		X *big.Int
-		Y *big.Int
-	}, error)
-
-	OperatorToPubkeyHash(opts *bind.CallOpts, arg0 common.Address) ([32]byte, error)
-
-	PubkeyHashToOperator(opts *bind.CallOpts, arg0 [32]byte) (common.Address, error)
-
-	RegistryCoordinator(opts *bind.CallOpts) (common.Address, error)
-}
-
-// ContractBLSApkRegistryTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractBLSApkRegistryTransacts interface {
-	DeregisterOperator(opts *bind.TransactOpts, operator common.Address, quorumNumbers []byte) (*types.Transaction, error)
-
-	InitializeQuorum(opts *bind.TransactOpts, quorumNumber uint8) (*types.Transaction, error)
-
-	RegisterBLSPublicKey(opts *bind.TransactOpts, operator common.Address, params IBLSApkRegistryPubkeyRegistrationParams, pubkeyRegistrationMessageHash BN254G1Point) (*types.Transaction, error)
-
-	RegisterOperator(opts *bind.TransactOpts, operator common.Address, quorumNumbers []byte) (*types.Transaction, error)
-}
-
-// ContractBLSApkRegistryFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractBLSApkRegistryFilters interface {
-	FilterInitialized(opts *bind.FilterOpts) (*ContractBLSApkRegistryInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractBLSApkRegistryInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractBLSApkRegistryInitialized, error)
-
-	FilterNewPubkeyRegistration(opts *bind.FilterOpts, operator []common.Address) (*ContractBLSApkRegistryNewPubkeyRegistrationIterator, error)
-	WatchNewPubkeyRegistration(opts *bind.WatchOpts, sink chan<- *ContractBLSApkRegistryNewPubkeyRegistration, operator []common.Address) (event.Subscription, error)
-	ParseNewPubkeyRegistration(log types.Log) (*ContractBLSApkRegistryNewPubkeyRegistration, error)
-
-	FilterOperatorAddedToQuorums(opts *bind.FilterOpts) (*ContractBLSApkRegistryOperatorAddedToQuorumsIterator, error)
-	WatchOperatorAddedToQuorums(opts *bind.WatchOpts, sink chan<- *ContractBLSApkRegistryOperatorAddedToQuorums) (event.Subscription, error)
-	ParseOperatorAddedToQuorums(log types.Log) (*ContractBLSApkRegistryOperatorAddedToQuorums, error)
-
-	FilterOperatorRemovedFromQuorums(opts *bind.FilterOpts) (*ContractBLSApkRegistryOperatorRemovedFromQuorumsIterator, error)
-	WatchOperatorRemovedFromQuorums(opts *bind.WatchOpts, sink chan<- *ContractBLSApkRegistryOperatorRemovedFromQuorums) (event.Subscription, error)
-	ParseOperatorRemovedFromQuorums(log types.Log) (*ContractBLSApkRegistryOperatorRemovedFromQuorums, error)
-}
-
 // ContractBLSApkRegistry is an auto generated Go binding around an Ethereum contract.
 type ContractBLSApkRegistry struct {
 	ContractBLSApkRegistryCaller     // Read-only binding to the contract
@@ -171,32 +93,20 @@ type ContractBLSApkRegistry struct {
 	ContractBLSApkRegistryFilterer   // Log filterer for contract events
 }
 
-// ContractBLSApkRegistry implements the ContractBLSApkRegistryMethods interface.
-var _ ContractBLSApkRegistryMethods = (*ContractBLSApkRegistry)(nil)
-
 // ContractBLSApkRegistryCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractBLSApkRegistryCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractBLSApkRegistryCaller implements the ContractBLSApkRegistryCalls interface.
-var _ ContractBLSApkRegistryCalls = (*ContractBLSApkRegistryCaller)(nil)
 
 // ContractBLSApkRegistryTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractBLSApkRegistryTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractBLSApkRegistryTransactor implements the ContractBLSApkRegistryTransacts interface.
-var _ ContractBLSApkRegistryTransacts = (*ContractBLSApkRegistryTransactor)(nil)
-
 // ContractBLSApkRegistryFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractBLSApkRegistryFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractBLSApkRegistryFilterer implements the ContractBLSApkRegistryFilters interface.
-var _ ContractBLSApkRegistryFilters = (*ContractBLSApkRegistryFilterer)(nil)
 
 // ContractBLSApkRegistrySession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

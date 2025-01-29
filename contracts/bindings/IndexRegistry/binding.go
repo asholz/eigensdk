@@ -72,54 +72,6 @@ func DeployContractIndexRegistry(auth *bind.TransactOpts, backend bind.ContractB
 	return address, tx, &ContractIndexRegistry{ContractIndexRegistryCaller: ContractIndexRegistryCaller{contract: contract}, ContractIndexRegistryTransactor: ContractIndexRegistryTransactor{contract: contract}, ContractIndexRegistryFilterer: ContractIndexRegistryFilterer{contract: contract}}, nil
 }
 
-// ContractIndexRegistryMethods is an auto generated interface around an Ethereum contract.
-type ContractIndexRegistryMethods interface {
-	ContractIndexRegistryCalls
-	ContractIndexRegistryTransacts
-	ContractIndexRegistryFilters
-}
-
-// ContractIndexRegistryCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractIndexRegistryCalls interface {
-	OPERATORDOESNOTEXISTID(opts *bind.CallOpts) ([32]byte, error)
-
-	CurrentOperatorIndex(opts *bind.CallOpts, arg0 uint8, arg1 [32]byte) (uint32, error)
-
-	GetLatestOperatorUpdate(opts *bind.CallOpts, quorumNumber uint8, operatorIndex uint32) (IIndexRegistryOperatorUpdate, error)
-
-	GetLatestQuorumUpdate(opts *bind.CallOpts, quorumNumber uint8) (IIndexRegistryQuorumUpdate, error)
-
-	GetOperatorListAtBlockNumber(opts *bind.CallOpts, quorumNumber uint8, blockNumber uint32) ([][32]byte, error)
-
-	GetOperatorUpdateAtIndex(opts *bind.CallOpts, quorumNumber uint8, operatorIndex uint32, arrayIndex uint32) (IIndexRegistryOperatorUpdate, error)
-
-	GetQuorumUpdateAtIndex(opts *bind.CallOpts, quorumNumber uint8, quorumIndex uint32) (IIndexRegistryQuorumUpdate, error)
-
-	RegistryCoordinator(opts *bind.CallOpts) (common.Address, error)
-
-	TotalOperatorsForQuorum(opts *bind.CallOpts, quorumNumber uint8) (uint32, error)
-}
-
-// ContractIndexRegistryTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractIndexRegistryTransacts interface {
-	DeregisterOperator(opts *bind.TransactOpts, operatorId [32]byte, quorumNumbers []byte) (*types.Transaction, error)
-
-	InitializeQuorum(opts *bind.TransactOpts, quorumNumber uint8) (*types.Transaction, error)
-
-	RegisterOperator(opts *bind.TransactOpts, operatorId [32]byte, quorumNumbers []byte) (*types.Transaction, error)
-}
-
-// ContractIndexRegistryFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractIndexRegistryFilters interface {
-	FilterInitialized(opts *bind.FilterOpts) (*ContractIndexRegistryInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractIndexRegistryInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractIndexRegistryInitialized, error)
-
-	FilterQuorumIndexUpdate(opts *bind.FilterOpts, operatorId [][32]byte) (*ContractIndexRegistryQuorumIndexUpdateIterator, error)
-	WatchQuorumIndexUpdate(opts *bind.WatchOpts, sink chan<- *ContractIndexRegistryQuorumIndexUpdate, operatorId [][32]byte) (event.Subscription, error)
-	ParseQuorumIndexUpdate(log types.Log) (*ContractIndexRegistryQuorumIndexUpdate, error)
-}
-
 // ContractIndexRegistry is an auto generated Go binding around an Ethereum contract.
 type ContractIndexRegistry struct {
 	ContractIndexRegistryCaller     // Read-only binding to the contract
@@ -127,32 +79,20 @@ type ContractIndexRegistry struct {
 	ContractIndexRegistryFilterer   // Log filterer for contract events
 }
 
-// ContractIndexRegistry implements the ContractIndexRegistryMethods interface.
-var _ ContractIndexRegistryMethods = (*ContractIndexRegistry)(nil)
-
 // ContractIndexRegistryCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractIndexRegistryCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractIndexRegistryCaller implements the ContractIndexRegistryCalls interface.
-var _ ContractIndexRegistryCalls = (*ContractIndexRegistryCaller)(nil)
 
 // ContractIndexRegistryTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractIndexRegistryTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractIndexRegistryTransactor implements the ContractIndexRegistryTransacts interface.
-var _ ContractIndexRegistryTransacts = (*ContractIndexRegistryTransactor)(nil)
-
 // ContractIndexRegistryFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractIndexRegistryFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractIndexRegistryFilterer implements the ContractIndexRegistryFilters interface.
-var _ ContractIndexRegistryFilters = (*ContractIndexRegistryFilterer)(nil)
 
 // ContractIndexRegistrySession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

@@ -60,31 +60,6 @@ func DeployContractContractsRegistry(auth *bind.TransactOpts, backend bind.Contr
 	return address, tx, &ContractContractsRegistry{ContractContractsRegistryCaller: ContractContractsRegistryCaller{contract: contract}, ContractContractsRegistryTransactor: ContractContractsRegistryTransactor{contract: contract}, ContractContractsRegistryFilterer: ContractContractsRegistryFilterer{contract: contract}}, nil
 }
 
-// ContractContractsRegistryMethods is an auto generated interface around an Ethereum contract.
-type ContractContractsRegistryMethods interface {
-	ContractContractsRegistryCalls
-	ContractContractsRegistryTransacts
-	ContractContractsRegistryFilters
-}
-
-// ContractContractsRegistryCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractContractsRegistryCalls interface {
-	ContractCount(opts *bind.CallOpts) (*big.Int, error)
-
-	ContractNames(opts *bind.CallOpts, arg0 *big.Int) (string, error)
-
-	Contracts(opts *bind.CallOpts, arg0 string) (common.Address, error)
-}
-
-// ContractContractsRegistryTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractContractsRegistryTransacts interface {
-	RegisterContract(opts *bind.TransactOpts, name string, _contract common.Address) (*types.Transaction, error)
-}
-
-// ContractContractsRegistryFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractContractsRegistryFilters interface {
-}
-
 // ContractContractsRegistry is an auto generated Go binding around an Ethereum contract.
 type ContractContractsRegistry struct {
 	ContractContractsRegistryCaller     // Read-only binding to the contract
@@ -92,32 +67,20 @@ type ContractContractsRegistry struct {
 	ContractContractsRegistryFilterer   // Log filterer for contract events
 }
 
-// ContractContractsRegistry implements the ContractContractsRegistryMethods interface.
-var _ ContractContractsRegistryMethods = (*ContractContractsRegistry)(nil)
-
 // ContractContractsRegistryCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractContractsRegistryCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractContractsRegistryCaller implements the ContractContractsRegistryCalls interface.
-var _ ContractContractsRegistryCalls = (*ContractContractsRegistryCaller)(nil)
 
 // ContractContractsRegistryTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractContractsRegistryTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractContractsRegistryTransactor implements the ContractContractsRegistryTransacts interface.
-var _ ContractContractsRegistryTransacts = (*ContractContractsRegistryTransactor)(nil)
-
 // ContractContractsRegistryFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractContractsRegistryFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractContractsRegistryFilterer implements the ContractContractsRegistryFilters interface.
-var _ ContractContractsRegistryFilters = (*ContractContractsRegistryFilterer)(nil)
 
 // ContractContractsRegistrySession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

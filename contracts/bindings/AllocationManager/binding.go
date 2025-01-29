@@ -109,178 +109,6 @@ func DeployContractAllocationManager(auth *bind.TransactOpts, backend bind.Contr
 	return address, tx, &ContractAllocationManager{ContractAllocationManagerCaller: ContractAllocationManagerCaller{contract: contract}, ContractAllocationManagerTransactor: ContractAllocationManagerTransactor{contract: contract}, ContractAllocationManagerFilterer: ContractAllocationManagerFilterer{contract: contract}}, nil
 }
 
-// ContractAllocationManagerMethods is an auto generated interface around an Ethereum contract.
-type ContractAllocationManagerMethods interface {
-	ContractAllocationManagerCalls
-	ContractAllocationManagerTransacts
-	ContractAllocationManagerFilters
-}
-
-// ContractAllocationManagerCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractAllocationManagerCalls interface {
-	ALLOCATIONCONFIGURATIONDELAY(opts *bind.CallOpts) (uint32, error)
-
-	DEALLOCATIONDELAY(opts *bind.CallOpts) (uint32, error)
-
-	Delegation(opts *bind.CallOpts) (common.Address, error)
-
-	EncumberedMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address) (uint64, error)
-
-	GetAVSRegistrar(opts *bind.CallOpts, avs common.Address) (common.Address, error)
-
-	GetAllocatableMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address) (uint64, error)
-
-	GetAllocatedSets(opts *bind.CallOpts, operator common.Address) ([]OperatorSet, error)
-
-	GetAllocatedStrategies(opts *bind.CallOpts, operator common.Address, operatorSet OperatorSet) ([]common.Address, error)
-
-	GetAllocation(opts *bind.CallOpts, operator common.Address, operatorSet OperatorSet, strategy common.Address) (IAllocationManagerTypesAllocation, error)
-
-	GetAllocationDelay(opts *bind.CallOpts, operator common.Address) (bool, uint32, error)
-
-	GetAllocations(opts *bind.CallOpts, operators []common.Address, operatorSet OperatorSet, strategy common.Address) ([]IAllocationManagerTypesAllocation, error)
-
-	GetMaxMagnitude(opts *bind.CallOpts, operator common.Address, strategy common.Address) (uint64, error)
-
-	GetMaxMagnitudes(opts *bind.CallOpts, operators []common.Address, strategy common.Address) ([]uint64, error)
-
-	GetMaxMagnitudes0(opts *bind.CallOpts, operator common.Address, strategies []common.Address) ([]uint64, error)
-
-	GetMaxMagnitudesAtBlock(opts *bind.CallOpts, operator common.Address, strategies []common.Address, blockNumber uint32) ([]uint64, error)
-
-	GetMemberCount(opts *bind.CallOpts, operatorSet OperatorSet) (*big.Int, error)
-
-	GetMembers(opts *bind.CallOpts, operatorSet OperatorSet) ([]common.Address, error)
-
-	GetMinimumSlashableStake(opts *bind.CallOpts, operatorSet OperatorSet, operators []common.Address, strategies []common.Address, futureBlock uint32) ([][]*big.Int, error)
-
-	GetOperatorSetCount(opts *bind.CallOpts, avs common.Address) (*big.Int, error)
-
-	GetRegisteredSets(opts *bind.CallOpts, operator common.Address) ([]OperatorSet, error)
-
-	GetStrategiesInOperatorSet(opts *bind.CallOpts, operatorSet OperatorSet) ([]common.Address, error)
-
-	GetStrategyAllocations(opts *bind.CallOpts, operator common.Address, strategy common.Address) ([]OperatorSet, []IAllocationManagerTypesAllocation, error)
-
-	IsMemberOfOperatorSet(opts *bind.CallOpts, operator common.Address, operatorSet OperatorSet) (bool, error)
-
-	IsOperatorSet(opts *bind.CallOpts, operatorSet OperatorSet) (bool, error)
-
-	Owner(opts *bind.CallOpts) (common.Address, error)
-
-	Paused(opts *bind.CallOpts, index uint8) (bool, error)
-
-	Paused0(opts *bind.CallOpts) (*big.Int, error)
-
-	PauserRegistry(opts *bind.CallOpts) (common.Address, error)
-
-	PermissionController(opts *bind.CallOpts) (common.Address, error)
-}
-
-// ContractAllocationManagerTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractAllocationManagerTransacts interface {
-	AddStrategiesToOperatorSet(opts *bind.TransactOpts, avs common.Address, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	ClearDeallocationQueue(opts *bind.TransactOpts, operator common.Address, strategies []common.Address, numToClear []uint16) (*types.Transaction, error)
-
-	CreateOperatorSets(opts *bind.TransactOpts, avs common.Address, params []IAllocationManagerTypesCreateSetParams) (*types.Transaction, error)
-
-	DeregisterFromOperatorSets(opts *bind.TransactOpts, params IAllocationManagerTypesDeregisterParams) (*types.Transaction, error)
-
-	Initialize(opts *bind.TransactOpts, initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error)
-
-	ModifyAllocations(opts *bind.TransactOpts, operator common.Address, params []IAllocationManagerTypesAllocateParams) (*types.Transaction, error)
-
-	Pause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	PauseAll(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	RegisterForOperatorSets(opts *bind.TransactOpts, operator common.Address, params IAllocationManagerTypesRegisterParams) (*types.Transaction, error)
-
-	RemoveStrategiesFromOperatorSet(opts *bind.TransactOpts, avs common.Address, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	SetAVSRegistrar(opts *bind.TransactOpts, avs common.Address, registrar common.Address) (*types.Transaction, error)
-
-	SetAllocationDelay(opts *bind.TransactOpts, operator common.Address, delay uint32) (*types.Transaction, error)
-
-	SlashOperator(opts *bind.TransactOpts, avs common.Address, params IAllocationManagerTypesSlashingParams) (*types.Transaction, error)
-
-	TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
-
-	Unpause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	UpdateAVSMetadataURI(opts *bind.TransactOpts, avs common.Address, metadataURI string) (*types.Transaction, error)
-}
-
-// ContractAllocationManagerFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractAllocationManagerFilters interface {
-	FilterAVSMetadataURIUpdated(opts *bind.FilterOpts, avs []common.Address) (*ContractAllocationManagerAVSMetadataURIUpdatedIterator, error)
-	WatchAVSMetadataURIUpdated(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerAVSMetadataURIUpdated, avs []common.Address) (event.Subscription, error)
-	ParseAVSMetadataURIUpdated(log types.Log) (*ContractAllocationManagerAVSMetadataURIUpdated, error)
-
-	FilterAVSRegistrarSet(opts *bind.FilterOpts) (*ContractAllocationManagerAVSRegistrarSetIterator, error)
-	WatchAVSRegistrarSet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerAVSRegistrarSet) (event.Subscription, error)
-	ParseAVSRegistrarSet(log types.Log) (*ContractAllocationManagerAVSRegistrarSet, error)
-
-	FilterAllocationDelaySet(opts *bind.FilterOpts) (*ContractAllocationManagerAllocationDelaySetIterator, error)
-	WatchAllocationDelaySet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerAllocationDelaySet) (event.Subscription, error)
-	ParseAllocationDelaySet(log types.Log) (*ContractAllocationManagerAllocationDelaySet, error)
-
-	FilterAllocationUpdated(opts *bind.FilterOpts) (*ContractAllocationManagerAllocationUpdatedIterator, error)
-	WatchAllocationUpdated(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerAllocationUpdated) (event.Subscription, error)
-	ParseAllocationUpdated(log types.Log) (*ContractAllocationManagerAllocationUpdated, error)
-
-	FilterEncumberedMagnitudeUpdated(opts *bind.FilterOpts) (*ContractAllocationManagerEncumberedMagnitudeUpdatedIterator, error)
-	WatchEncumberedMagnitudeUpdated(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerEncumberedMagnitudeUpdated) (event.Subscription, error)
-	ParseEncumberedMagnitudeUpdated(log types.Log) (*ContractAllocationManagerEncumberedMagnitudeUpdated, error)
-
-	FilterInitialized(opts *bind.FilterOpts) (*ContractAllocationManagerInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractAllocationManagerInitialized, error)
-
-	FilterMaxMagnitudeUpdated(opts *bind.FilterOpts) (*ContractAllocationManagerMaxMagnitudeUpdatedIterator, error)
-	WatchMaxMagnitudeUpdated(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerMaxMagnitudeUpdated) (event.Subscription, error)
-	ParseMaxMagnitudeUpdated(log types.Log) (*ContractAllocationManagerMaxMagnitudeUpdated, error)
-
-	FilterOperatorAddedToOperatorSet(opts *bind.FilterOpts, operator []common.Address) (*ContractAllocationManagerOperatorAddedToOperatorSetIterator, error)
-	WatchOperatorAddedToOperatorSet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerOperatorAddedToOperatorSet, operator []common.Address) (event.Subscription, error)
-	ParseOperatorAddedToOperatorSet(log types.Log) (*ContractAllocationManagerOperatorAddedToOperatorSet, error)
-
-	FilterOperatorRemovedFromOperatorSet(opts *bind.FilterOpts, operator []common.Address) (*ContractAllocationManagerOperatorRemovedFromOperatorSetIterator, error)
-	WatchOperatorRemovedFromOperatorSet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerOperatorRemovedFromOperatorSet, operator []common.Address) (event.Subscription, error)
-	ParseOperatorRemovedFromOperatorSet(log types.Log) (*ContractAllocationManagerOperatorRemovedFromOperatorSet, error)
-
-	FilterOperatorSetCreated(opts *bind.FilterOpts) (*ContractAllocationManagerOperatorSetCreatedIterator, error)
-	WatchOperatorSetCreated(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerOperatorSetCreated) (event.Subscription, error)
-	ParseOperatorSetCreated(log types.Log) (*ContractAllocationManagerOperatorSetCreated, error)
-
-	FilterOperatorSlashed(opts *bind.FilterOpts) (*ContractAllocationManagerOperatorSlashedIterator, error)
-	WatchOperatorSlashed(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerOperatorSlashed) (event.Subscription, error)
-	ParseOperatorSlashed(log types.Log) (*ContractAllocationManagerOperatorSlashed, error)
-
-	FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ContractAllocationManagerOwnershipTransferredIterator, error)
-	WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
-	ParseOwnershipTransferred(log types.Log) (*ContractAllocationManagerOwnershipTransferred, error)
-
-	FilterPaused(opts *bind.FilterOpts, account []common.Address) (*ContractAllocationManagerPausedIterator, error)
-	WatchPaused(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerPaused, account []common.Address) (event.Subscription, error)
-	ParsePaused(log types.Log) (*ContractAllocationManagerPaused, error)
-
-	FilterStrategyAddedToOperatorSet(opts *bind.FilterOpts) (*ContractAllocationManagerStrategyAddedToOperatorSetIterator, error)
-	WatchStrategyAddedToOperatorSet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerStrategyAddedToOperatorSet) (event.Subscription, error)
-	ParseStrategyAddedToOperatorSet(log types.Log) (*ContractAllocationManagerStrategyAddedToOperatorSet, error)
-
-	FilterStrategyRemovedFromOperatorSet(opts *bind.FilterOpts) (*ContractAllocationManagerStrategyRemovedFromOperatorSetIterator, error)
-	WatchStrategyRemovedFromOperatorSet(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerStrategyRemovedFromOperatorSet) (event.Subscription, error)
-	ParseStrategyRemovedFromOperatorSet(log types.Log) (*ContractAllocationManagerStrategyRemovedFromOperatorSet, error)
-
-	FilterUnpaused(opts *bind.FilterOpts, account []common.Address) (*ContractAllocationManagerUnpausedIterator, error)
-	WatchUnpaused(opts *bind.WatchOpts, sink chan<- *ContractAllocationManagerUnpaused, account []common.Address) (event.Subscription, error)
-	ParseUnpaused(log types.Log) (*ContractAllocationManagerUnpaused, error)
-}
-
 // ContractAllocationManager is an auto generated Go binding around an Ethereum contract.
 type ContractAllocationManager struct {
 	ContractAllocationManagerCaller     // Read-only binding to the contract
@@ -288,32 +116,20 @@ type ContractAllocationManager struct {
 	ContractAllocationManagerFilterer   // Log filterer for contract events
 }
 
-// ContractAllocationManager implements the ContractAllocationManagerMethods interface.
-var _ ContractAllocationManagerMethods = (*ContractAllocationManager)(nil)
-
 // ContractAllocationManagerCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractAllocationManagerCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractAllocationManagerCaller implements the ContractAllocationManagerCalls interface.
-var _ ContractAllocationManagerCalls = (*ContractAllocationManagerCaller)(nil)
 
 // ContractAllocationManagerTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractAllocationManagerTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractAllocationManagerTransactor implements the ContractAllocationManagerTransacts interface.
-var _ ContractAllocationManagerTransacts = (*ContractAllocationManagerTransactor)(nil)
-
 // ContractAllocationManagerFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractAllocationManagerFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractAllocationManagerFilterer implements the ContractAllocationManagerFilters interface.
-var _ ContractAllocationManagerFilters = (*ContractAllocationManagerFilterer)(nil)
 
 // ContractAllocationManagerSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

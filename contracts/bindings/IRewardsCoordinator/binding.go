@@ -100,154 +100,6 @@ var ContractIRewardsCoordinatorMetaData = &bind.MetaData{
 // Deprecated: Use ContractIRewardsCoordinatorMetaData.ABI instead.
 var ContractIRewardsCoordinatorABI = ContractIRewardsCoordinatorMetaData.ABI
 
-// ContractIRewardsCoordinatorMethods is an auto generated interface around an Ethereum contract.
-type ContractIRewardsCoordinatorMethods interface {
-	ContractIRewardsCoordinatorCalls
-	ContractIRewardsCoordinatorTransacts
-	ContractIRewardsCoordinatorFilters
-}
-
-// ContractIRewardsCoordinatorCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractIRewardsCoordinatorCalls interface {
-	CALCULATIONINTERVALSECONDS(opts *bind.CallOpts) (uint32, error)
-
-	GENESISREWARDSTIMESTAMP(opts *bind.CallOpts) (uint32, error)
-
-	MAXFUTURELENGTH(opts *bind.CallOpts) (uint32, error)
-
-	MAXRETROACTIVELENGTH(opts *bind.CallOpts) (uint32, error)
-
-	MAXREWARDSDURATION(opts *bind.CallOpts) (uint32, error)
-
-	ActivationDelay(opts *bind.CallOpts) (uint32, error)
-
-	CalculateEarnerLeafHash(opts *bind.CallOpts, leaf IRewardsCoordinatorTypesEarnerTreeMerkleLeaf) ([32]byte, error)
-
-	CalculateTokenLeafHash(opts *bind.CallOpts, leaf IRewardsCoordinatorTypesTokenTreeMerkleLeaf) ([32]byte, error)
-
-	CheckClaim(opts *bind.CallOpts, claim IRewardsCoordinatorTypesRewardsMerkleClaim) (bool, error)
-
-	ClaimerFor(opts *bind.CallOpts, earner common.Address) (common.Address, error)
-
-	CumulativeClaimed(opts *bind.CallOpts, claimer common.Address, token common.Address) (*big.Int, error)
-
-	CurrRewardsCalculationEndTimestamp(opts *bind.CallOpts) (uint32, error)
-
-	DefaultOperatorSplitBips(opts *bind.CallOpts) (uint16, error)
-
-	GetCurrentClaimableDistributionRoot(opts *bind.CallOpts) (IRewardsCoordinatorTypesDistributionRoot, error)
-
-	GetCurrentDistributionRoot(opts *bind.CallOpts) (IRewardsCoordinatorTypesDistributionRoot, error)
-
-	GetDistributionRootAtIndex(opts *bind.CallOpts, index *big.Int) (IRewardsCoordinatorTypesDistributionRoot, error)
-
-	GetDistributionRootsLength(opts *bind.CallOpts) (*big.Int, error)
-
-	GetOperatorAVSSplit(opts *bind.CallOpts, operator common.Address, avs common.Address) (uint16, error)
-
-	GetOperatorPISplit(opts *bind.CallOpts, operator common.Address) (uint16, error)
-
-	GetRootIndexFromHash(opts *bind.CallOpts, rootHash [32]byte) (uint32, error)
-
-	RewardsUpdater(opts *bind.CallOpts) (common.Address, error)
-}
-
-// ContractIRewardsCoordinatorTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractIRewardsCoordinatorTransacts interface {
-	CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
-
-	CreateOperatorDirectedAVSRewardsSubmission(opts *bind.TransactOpts, avs common.Address, operatorDirectedRewardsSubmissions []IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission) (*types.Transaction, error)
-
-	CreateRewardsForAllEarners(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
-
-	CreateRewardsForAllSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
-
-	DisableRoot(opts *bind.TransactOpts, rootIndex uint32) (*types.Transaction, error)
-
-	Initialize(opts *bind.TransactOpts, initialOwner common.Address, initialPausedStatus *big.Int, _rewardsUpdater common.Address, _activationDelay uint32, _defaultSplitBips uint16) (*types.Transaction, error)
-
-	ProcessClaim(opts *bind.TransactOpts, claim IRewardsCoordinatorTypesRewardsMerkleClaim, recipient common.Address) (*types.Transaction, error)
-
-	ProcessClaims(opts *bind.TransactOpts, claims []IRewardsCoordinatorTypesRewardsMerkleClaim, recipient common.Address) (*types.Transaction, error)
-
-	SetActivationDelay(opts *bind.TransactOpts, _activationDelay uint32) (*types.Transaction, error)
-
-	SetClaimerFor(opts *bind.TransactOpts, claimer common.Address) (*types.Transaction, error)
-
-	SetClaimerFor0(opts *bind.TransactOpts, earner common.Address, claimer common.Address) (*types.Transaction, error)
-
-	SetDefaultOperatorSplit(opts *bind.TransactOpts, split uint16) (*types.Transaction, error)
-
-	SetOperatorAVSSplit(opts *bind.TransactOpts, operator common.Address, avs common.Address, split uint16) (*types.Transaction, error)
-
-	SetOperatorPISplit(opts *bind.TransactOpts, operator common.Address, split uint16) (*types.Transaction, error)
-
-	SetRewardsForAllSubmitter(opts *bind.TransactOpts, _submitter common.Address, _newValue bool) (*types.Transaction, error)
-
-	SetRewardsUpdater(opts *bind.TransactOpts, _rewardsUpdater common.Address) (*types.Transaction, error)
-
-	SubmitRoot(opts *bind.TransactOpts, root [32]byte, rewardsCalculationEndTimestamp uint32) (*types.Transaction, error)
-}
-
-// ContractIRewardsCoordinatorFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractIRewardsCoordinatorFilters interface {
-	FilterAVSRewardsSubmissionCreated(opts *bind.FilterOpts, avs []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorAVSRewardsSubmissionCreatedIterator, error)
-	WatchAVSRewardsSubmissionCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorAVSRewardsSubmissionCreated, avs []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error)
-	ParseAVSRewardsSubmissionCreated(log types.Log) (*ContractIRewardsCoordinatorAVSRewardsSubmissionCreated, error)
-
-	FilterActivationDelaySet(opts *bind.FilterOpts) (*ContractIRewardsCoordinatorActivationDelaySetIterator, error)
-	WatchActivationDelaySet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorActivationDelaySet) (event.Subscription, error)
-	ParseActivationDelaySet(log types.Log) (*ContractIRewardsCoordinatorActivationDelaySet, error)
-
-	FilterClaimerForSet(opts *bind.FilterOpts, earner []common.Address, oldClaimer []common.Address, claimer []common.Address) (*ContractIRewardsCoordinatorClaimerForSetIterator, error)
-	WatchClaimerForSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorClaimerForSet, earner []common.Address, oldClaimer []common.Address, claimer []common.Address) (event.Subscription, error)
-	ParseClaimerForSet(log types.Log) (*ContractIRewardsCoordinatorClaimerForSet, error)
-
-	FilterDefaultOperatorSplitBipsSet(opts *bind.FilterOpts) (*ContractIRewardsCoordinatorDefaultOperatorSplitBipsSetIterator, error)
-	WatchDefaultOperatorSplitBipsSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorDefaultOperatorSplitBipsSet) (event.Subscription, error)
-	ParseDefaultOperatorSplitBipsSet(log types.Log) (*ContractIRewardsCoordinatorDefaultOperatorSplitBipsSet, error)
-
-	FilterDistributionRootDisabled(opts *bind.FilterOpts, rootIndex []uint32) (*ContractIRewardsCoordinatorDistributionRootDisabledIterator, error)
-	WatchDistributionRootDisabled(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorDistributionRootDisabled, rootIndex []uint32) (event.Subscription, error)
-	ParseDistributionRootDisabled(log types.Log) (*ContractIRewardsCoordinatorDistributionRootDisabled, error)
-
-	FilterDistributionRootSubmitted(opts *bind.FilterOpts, rootIndex []uint32, root [][32]byte, rewardsCalculationEndTimestamp []uint32) (*ContractIRewardsCoordinatorDistributionRootSubmittedIterator, error)
-	WatchDistributionRootSubmitted(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorDistributionRootSubmitted, rootIndex []uint32, root [][32]byte, rewardsCalculationEndTimestamp []uint32) (event.Subscription, error)
-	ParseDistributionRootSubmitted(log types.Log) (*ContractIRewardsCoordinatorDistributionRootSubmitted, error)
-
-	FilterOperatorAVSSplitBipsSet(opts *bind.FilterOpts, caller []common.Address, operator []common.Address, avs []common.Address) (*ContractIRewardsCoordinatorOperatorAVSSplitBipsSetIterator, error)
-	WatchOperatorAVSSplitBipsSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorOperatorAVSSplitBipsSet, caller []common.Address, operator []common.Address, avs []common.Address) (event.Subscription, error)
-	ParseOperatorAVSSplitBipsSet(log types.Log) (*ContractIRewardsCoordinatorOperatorAVSSplitBipsSet, error)
-
-	FilterOperatorDirectedAVSRewardsSubmissionCreated(opts *bind.FilterOpts, caller []common.Address, avs []common.Address, operatorDirectedRewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorOperatorDirectedAVSRewardsSubmissionCreatedIterator, error)
-	WatchOperatorDirectedAVSRewardsSubmissionCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorOperatorDirectedAVSRewardsSubmissionCreated, caller []common.Address, avs []common.Address, operatorDirectedRewardsSubmissionHash [][32]byte) (event.Subscription, error)
-	ParseOperatorDirectedAVSRewardsSubmissionCreated(log types.Log) (*ContractIRewardsCoordinatorOperatorDirectedAVSRewardsSubmissionCreated, error)
-
-	FilterOperatorPISplitBipsSet(opts *bind.FilterOpts, caller []common.Address, operator []common.Address) (*ContractIRewardsCoordinatorOperatorPISplitBipsSetIterator, error)
-	WatchOperatorPISplitBipsSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorOperatorPISplitBipsSet, caller []common.Address, operator []common.Address) (event.Subscription, error)
-	ParseOperatorPISplitBipsSet(log types.Log) (*ContractIRewardsCoordinatorOperatorPISplitBipsSet, error)
-
-	FilterRewardsClaimed(opts *bind.FilterOpts, earner []common.Address, claimer []common.Address, recipient []common.Address) (*ContractIRewardsCoordinatorRewardsClaimedIterator, error)
-	WatchRewardsClaimed(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsClaimed, earner []common.Address, claimer []common.Address, recipient []common.Address) (event.Subscription, error)
-	ParseRewardsClaimed(log types.Log) (*ContractIRewardsCoordinatorRewardsClaimed, error)
-
-	FilterRewardsForAllSubmitterSet(opts *bind.FilterOpts, rewardsForAllSubmitter []common.Address, oldValue []bool, newValue []bool) (*ContractIRewardsCoordinatorRewardsForAllSubmitterSetIterator, error)
-	WatchRewardsForAllSubmitterSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsForAllSubmitterSet, rewardsForAllSubmitter []common.Address, oldValue []bool, newValue []bool) (event.Subscription, error)
-	ParseRewardsForAllSubmitterSet(log types.Log) (*ContractIRewardsCoordinatorRewardsForAllSubmitterSet, error)
-
-	FilterRewardsSubmissionForAllCreated(opts *bind.FilterOpts, submitter []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorRewardsSubmissionForAllCreatedIterator, error)
-	WatchRewardsSubmissionForAllCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsSubmissionForAllCreated, submitter []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error)
-	ParseRewardsSubmissionForAllCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllCreated, error)
-
-	FilterRewardsSubmissionForAllEarnersCreated(opts *bind.FilterOpts, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreatedIterator, error)
-	WatchRewardsSubmissionForAllEarnersCreated(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, tokenHopper []common.Address, submissionNonce []*big.Int, rewardsSubmissionHash [][32]byte) (event.Subscription, error)
-	ParseRewardsSubmissionForAllEarnersCreated(log types.Log) (*ContractIRewardsCoordinatorRewardsSubmissionForAllEarnersCreated, error)
-
-	FilterRewardsUpdaterSet(opts *bind.FilterOpts, oldRewardsUpdater []common.Address, newRewardsUpdater []common.Address) (*ContractIRewardsCoordinatorRewardsUpdaterSetIterator, error)
-	WatchRewardsUpdaterSet(opts *bind.WatchOpts, sink chan<- *ContractIRewardsCoordinatorRewardsUpdaterSet, oldRewardsUpdater []common.Address, newRewardsUpdater []common.Address) (event.Subscription, error)
-	ParseRewardsUpdaterSet(log types.Log) (*ContractIRewardsCoordinatorRewardsUpdaterSet, error)
-}
-
 // ContractIRewardsCoordinator is an auto generated Go binding around an Ethereum contract.
 type ContractIRewardsCoordinator struct {
 	ContractIRewardsCoordinatorCaller     // Read-only binding to the contract
@@ -255,32 +107,20 @@ type ContractIRewardsCoordinator struct {
 	ContractIRewardsCoordinatorFilterer   // Log filterer for contract events
 }
 
-// ContractIRewardsCoordinator implements the ContractIRewardsCoordinatorMethods interface.
-var _ ContractIRewardsCoordinatorMethods = (*ContractIRewardsCoordinator)(nil)
-
 // ContractIRewardsCoordinatorCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractIRewardsCoordinatorCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractIRewardsCoordinatorCaller implements the ContractIRewardsCoordinatorCalls interface.
-var _ ContractIRewardsCoordinatorCalls = (*ContractIRewardsCoordinatorCaller)(nil)
 
 // ContractIRewardsCoordinatorTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractIRewardsCoordinatorTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractIRewardsCoordinatorTransactor implements the ContractIRewardsCoordinatorTransacts interface.
-var _ ContractIRewardsCoordinatorTransacts = (*ContractIRewardsCoordinatorTransactor)(nil)
-
 // ContractIRewardsCoordinatorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractIRewardsCoordinatorFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractIRewardsCoordinatorFilterer implements the ContractIRewardsCoordinatorFilters interface.
-var _ ContractIRewardsCoordinatorFilters = (*ContractIRewardsCoordinatorFilterer)(nil)
 
 // ContractIRewardsCoordinatorSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

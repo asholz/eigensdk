@@ -75,94 +75,6 @@ var ContractServiceManagerBaseMetaData = &bind.MetaData{
 // Deprecated: Use ContractServiceManagerBaseMetaData.ABI instead.
 var ContractServiceManagerBaseABI = ContractServiceManagerBaseMetaData.ABI
 
-// ContractServiceManagerBaseMethods is an auto generated interface around an Ethereum contract.
-type ContractServiceManagerBaseMethods interface {
-	ContractServiceManagerBaseCalls
-	ContractServiceManagerBaseTransacts
-	ContractServiceManagerBaseFilters
-}
-
-// ContractServiceManagerBaseCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractServiceManagerBaseCalls interface {
-	SLASHERPROPOSALDELAY(opts *bind.CallOpts) (*big.Int, error)
-
-	AllocationManager(opts *bind.CallOpts) (common.Address, error)
-
-	AvsDirectory(opts *bind.CallOpts) (common.Address, error)
-
-	GetOperatorRestakedStrategies(opts *bind.CallOpts, operator common.Address) ([]common.Address, error)
-
-	GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error)
-
-	MigrationFinalized(opts *bind.CallOpts) (bool, error)
-
-	Owner(opts *bind.CallOpts) (common.Address, error)
-
-	ProposedSlasher(opts *bind.CallOpts) (common.Address, error)
-
-	RewardsInitiator(opts *bind.CallOpts) (common.Address, error)
-
-	Slasher(opts *bind.CallOpts) (common.Address, error)
-
-	SlasherProposalTimestamp(opts *bind.CallOpts) (*big.Int, error)
-}
-
-// ContractServiceManagerBaseTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractServiceManagerBaseTransacts interface {
-	AcceptProposedSlasher(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	AddStrategyToOperatorSet(opts *bind.TransactOpts, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
-
-	CreateOperatorSets(opts *bind.TransactOpts, params []IAllocationManagerTypesCreateSetParams) (*types.Transaction, error)
-
-	DeregisterOperatorFromAVS(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error)
-
-	DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error)
-
-	ProposeNewSlasher(opts *bind.TransactOpts, newSlasher common.Address) (*types.Transaction, error)
-
-	RegisterOperatorToAVS(opts *bind.TransactOpts, operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error)
-
-	RemoveStrategiesFromOperatorSet(opts *bind.TransactOpts, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	SetAVSRegistrar(opts *bind.TransactOpts, registrar common.Address) (*types.Transaction, error)
-
-	SetRewardsInitiator(opts *bind.TransactOpts, newRewardsInitiator common.Address) (*types.Transaction, error)
-
-	SlashOperator(opts *bind.TransactOpts, params IAllocationManagerTypesSlashingParams) (*types.Transaction, error)
-
-	TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
-
-	UpdateAVSMetadataURI(opts *bind.TransactOpts, _metadataURI string) (*types.Transaction, error)
-}
-
-// ContractServiceManagerBaseFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractServiceManagerBaseFilters interface {
-	FilterInitialized(opts *bind.FilterOpts) (*ContractServiceManagerBaseInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractServiceManagerBaseInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractServiceManagerBaseInitialized, error)
-
-	FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ContractServiceManagerBaseOwnershipTransferredIterator, error)
-	WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ContractServiceManagerBaseOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
-	ParseOwnershipTransferred(log types.Log) (*ContractServiceManagerBaseOwnershipTransferred, error)
-
-	FilterRewardsInitiatorUpdated(opts *bind.FilterOpts) (*ContractServiceManagerBaseRewardsInitiatorUpdatedIterator, error)
-	WatchRewardsInitiatorUpdated(opts *bind.WatchOpts, sink chan<- *ContractServiceManagerBaseRewardsInitiatorUpdated) (event.Subscription, error)
-	ParseRewardsInitiatorUpdated(log types.Log) (*ContractServiceManagerBaseRewardsInitiatorUpdated, error)
-
-	FilterSlasherProposed(opts *bind.FilterOpts) (*ContractServiceManagerBaseSlasherProposedIterator, error)
-	WatchSlasherProposed(opts *bind.WatchOpts, sink chan<- *ContractServiceManagerBaseSlasherProposed) (event.Subscription, error)
-	ParseSlasherProposed(log types.Log) (*ContractServiceManagerBaseSlasherProposed, error)
-
-	FilterSlasherUpdated(opts *bind.FilterOpts) (*ContractServiceManagerBaseSlasherUpdatedIterator, error)
-	WatchSlasherUpdated(opts *bind.WatchOpts, sink chan<- *ContractServiceManagerBaseSlasherUpdated) (event.Subscription, error)
-	ParseSlasherUpdated(log types.Log) (*ContractServiceManagerBaseSlasherUpdated, error)
-}
-
 // ContractServiceManagerBase is an auto generated Go binding around an Ethereum contract.
 type ContractServiceManagerBase struct {
 	ContractServiceManagerBaseCaller     // Read-only binding to the contract
@@ -170,32 +82,20 @@ type ContractServiceManagerBase struct {
 	ContractServiceManagerBaseFilterer   // Log filterer for contract events
 }
 
-// ContractServiceManagerBase implements the ContractServiceManagerBaseMethods interface.
-var _ ContractServiceManagerBaseMethods = (*ContractServiceManagerBase)(nil)
-
 // ContractServiceManagerBaseCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractServiceManagerBaseCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractServiceManagerBaseCaller implements the ContractServiceManagerBaseCalls interface.
-var _ ContractServiceManagerBaseCalls = (*ContractServiceManagerBaseCaller)(nil)
 
 // ContractServiceManagerBaseTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractServiceManagerBaseTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractServiceManagerBaseTransactor implements the ContractServiceManagerBaseTransacts interface.
-var _ ContractServiceManagerBaseTransacts = (*ContractServiceManagerBaseTransactor)(nil)
-
 // ContractServiceManagerBaseFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractServiceManagerBaseFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractServiceManagerBaseFilterer implements the ContractServiceManagerBaseFilters interface.
-var _ ContractServiceManagerBaseFilters = (*ContractServiceManagerBaseFilterer)(nil)
 
 // ContractServiceManagerBaseSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

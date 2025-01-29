@@ -60,76 +60,6 @@ func DeployContractPermissionController(auth *bind.TransactOpts, backend bind.Co
 	return address, tx, &ContractPermissionController{ContractPermissionControllerCaller: ContractPermissionControllerCaller{contract: contract}, ContractPermissionControllerTransactor: ContractPermissionControllerTransactor{contract: contract}, ContractPermissionControllerFilterer: ContractPermissionControllerFilterer{contract: contract}}, nil
 }
 
-// ContractPermissionControllerMethods is an auto generated interface around an Ethereum contract.
-type ContractPermissionControllerMethods interface {
-	ContractPermissionControllerCalls
-	ContractPermissionControllerTransacts
-	ContractPermissionControllerFilters
-}
-
-// ContractPermissionControllerCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractPermissionControllerCalls interface {
-	CanCall(opts *bind.CallOpts, account common.Address, caller common.Address, target common.Address, selector [4]byte) (bool, error)
-
-	GetAdmins(opts *bind.CallOpts, account common.Address) ([]common.Address, error)
-
-	GetAppointeePermissions(opts *bind.CallOpts, account common.Address, appointee common.Address) ([]common.Address, [][4]byte, error)
-
-	GetAppointees(opts *bind.CallOpts, account common.Address, target common.Address, selector [4]byte) ([]common.Address, error)
-
-	GetPendingAdmins(opts *bind.CallOpts, account common.Address) ([]common.Address, error)
-
-	IsAdmin(opts *bind.CallOpts, account common.Address, caller common.Address) (bool, error)
-
-	IsPendingAdmin(opts *bind.CallOpts, account common.Address, pendingAdmin common.Address) (bool, error)
-}
-
-// ContractPermissionControllerTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractPermissionControllerTransacts interface {
-	AcceptAdmin(opts *bind.TransactOpts, account common.Address) (*types.Transaction, error)
-
-	AddPendingAdmin(opts *bind.TransactOpts, account common.Address, admin common.Address) (*types.Transaction, error)
-
-	RemoveAdmin(opts *bind.TransactOpts, account common.Address, admin common.Address) (*types.Transaction, error)
-
-	RemoveAppointee(opts *bind.TransactOpts, account common.Address, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error)
-
-	RemovePendingAdmin(opts *bind.TransactOpts, account common.Address, admin common.Address) (*types.Transaction, error)
-
-	SetAppointee(opts *bind.TransactOpts, account common.Address, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error)
-}
-
-// ContractPermissionControllerFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractPermissionControllerFilters interface {
-	FilterAdminRemoved(opts *bind.FilterOpts, account []common.Address) (*ContractPermissionControllerAdminRemovedIterator, error)
-	WatchAdminRemoved(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerAdminRemoved, account []common.Address) (event.Subscription, error)
-	ParseAdminRemoved(log types.Log) (*ContractPermissionControllerAdminRemoved, error)
-
-	FilterAdminSet(opts *bind.FilterOpts, account []common.Address) (*ContractPermissionControllerAdminSetIterator, error)
-	WatchAdminSet(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerAdminSet, account []common.Address) (event.Subscription, error)
-	ParseAdminSet(log types.Log) (*ContractPermissionControllerAdminSet, error)
-
-	FilterAppointeeRemoved(opts *bind.FilterOpts, account []common.Address, appointee []common.Address) (*ContractPermissionControllerAppointeeRemovedIterator, error)
-	WatchAppointeeRemoved(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerAppointeeRemoved, account []common.Address, appointee []common.Address) (event.Subscription, error)
-	ParseAppointeeRemoved(log types.Log) (*ContractPermissionControllerAppointeeRemoved, error)
-
-	FilterAppointeeSet(opts *bind.FilterOpts, account []common.Address, appointee []common.Address) (*ContractPermissionControllerAppointeeSetIterator, error)
-	WatchAppointeeSet(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerAppointeeSet, account []common.Address, appointee []common.Address) (event.Subscription, error)
-	ParseAppointeeSet(log types.Log) (*ContractPermissionControllerAppointeeSet, error)
-
-	FilterInitialized(opts *bind.FilterOpts) (*ContractPermissionControllerInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractPermissionControllerInitialized, error)
-
-	FilterPendingAdminAdded(opts *bind.FilterOpts, account []common.Address) (*ContractPermissionControllerPendingAdminAddedIterator, error)
-	WatchPendingAdminAdded(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerPendingAdminAdded, account []common.Address) (event.Subscription, error)
-	ParsePendingAdminAdded(log types.Log) (*ContractPermissionControllerPendingAdminAdded, error)
-
-	FilterPendingAdminRemoved(opts *bind.FilterOpts, account []common.Address) (*ContractPermissionControllerPendingAdminRemovedIterator, error)
-	WatchPendingAdminRemoved(opts *bind.WatchOpts, sink chan<- *ContractPermissionControllerPendingAdminRemoved, account []common.Address) (event.Subscription, error)
-	ParsePendingAdminRemoved(log types.Log) (*ContractPermissionControllerPendingAdminRemoved, error)
-}
-
 // ContractPermissionController is an auto generated Go binding around an Ethereum contract.
 type ContractPermissionController struct {
 	ContractPermissionControllerCaller     // Read-only binding to the contract
@@ -137,32 +67,20 @@ type ContractPermissionController struct {
 	ContractPermissionControllerFilterer   // Log filterer for contract events
 }
 
-// ContractPermissionController implements the ContractPermissionControllerMethods interface.
-var _ ContractPermissionControllerMethods = (*ContractPermissionController)(nil)
-
 // ContractPermissionControllerCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractPermissionControllerCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractPermissionControllerCaller implements the ContractPermissionControllerCalls interface.
-var _ ContractPermissionControllerCalls = (*ContractPermissionControllerCaller)(nil)
 
 // ContractPermissionControllerTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractPermissionControllerTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractPermissionControllerTransactor implements the ContractPermissionControllerTransacts interface.
-var _ ContractPermissionControllerTransacts = (*ContractPermissionControllerTransactor)(nil)
-
 // ContractPermissionControllerFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractPermissionControllerFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractPermissionControllerFilterer implements the ContractPermissionControllerFilters interface.
-var _ ContractPermissionControllerFilters = (*ContractPermissionControllerFilterer)(nil)
 
 // ContractPermissionControllerSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

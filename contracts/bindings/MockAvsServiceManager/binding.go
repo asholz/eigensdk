@@ -127,119 +127,6 @@ func DeployContractMockAvsServiceManager(auth *bind.TransactOpts, backend bind.C
 	return address, tx, &ContractMockAvsServiceManager{ContractMockAvsServiceManagerCaller: ContractMockAvsServiceManagerCaller{contract: contract}, ContractMockAvsServiceManagerTransactor: ContractMockAvsServiceManagerTransactor{contract: contract}, ContractMockAvsServiceManagerFilterer: ContractMockAvsServiceManagerFilterer{contract: contract}}, nil
 }
 
-// ContractMockAvsServiceManagerMethods is an auto generated interface around an Ethereum contract.
-type ContractMockAvsServiceManagerMethods interface {
-	ContractMockAvsServiceManagerCalls
-	ContractMockAvsServiceManagerTransacts
-	ContractMockAvsServiceManagerFilters
-}
-
-// ContractMockAvsServiceManagerCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractMockAvsServiceManagerCalls interface {
-	SLASHERPROPOSALDELAY(opts *bind.CallOpts) (*big.Int, error)
-
-	AllocationManager(opts *bind.CallOpts) (common.Address, error)
-
-	AvsDirectory(opts *bind.CallOpts) (common.Address, error)
-
-	BlsApkRegistry(opts *bind.CallOpts) (common.Address, error)
-
-	CheckSignatures(opts *bind.CallOpts, msgHash [32]byte, quorumNumbers []byte, referenceBlockNumber uint32, params IBLSSignatureCheckerNonSignerStakesAndSignature) (IBLSSignatureCheckerQuorumStakeTotals, [32]byte, error)
-
-	Delegation(opts *bind.CallOpts) (common.Address, error)
-
-	GetOperatorRestakedStrategies(opts *bind.CallOpts, operator common.Address) ([]common.Address, error)
-
-	GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error)
-
-	MigrationFinalized(opts *bind.CallOpts) (bool, error)
-
-	Owner(opts *bind.CallOpts) (common.Address, error)
-
-	ProposedSlasher(opts *bind.CallOpts) (common.Address, error)
-
-	RegistryCoordinator(opts *bind.CallOpts) (common.Address, error)
-
-	RewardsInitiator(opts *bind.CallOpts) (common.Address, error)
-
-	Slasher(opts *bind.CallOpts) (common.Address, error)
-
-	SlasherProposalTimestamp(opts *bind.CallOpts) (*big.Int, error)
-
-	StakeRegistry(opts *bind.CallOpts) (common.Address, error)
-
-	StaleStakesForbidden(opts *bind.CallOpts) (bool, error)
-
-	TrySignatureAndApkVerification(opts *bind.CallOpts, msgHash [32]byte, apk BN254G1Point, apkG2 BN254G2Point, sigma BN254G1Point) (struct {
-		PairingSuccessful bool
-		SiganatureIsValid bool
-	}, error)
-}
-
-// ContractMockAvsServiceManagerTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractMockAvsServiceManagerTransacts interface {
-	AcceptProposedSlasher(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	AddStrategyToOperatorSet(opts *bind.TransactOpts, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
-
-	CreateOperatorSets(opts *bind.TransactOpts, params []IAllocationManagerTypesCreateSetParams) (*types.Transaction, error)
-
-	DeregisterOperatorFromAVS(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error)
-
-	DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error)
-
-	Initialize(opts *bind.TransactOpts, _initialOwner common.Address) (*types.Transaction, error)
-
-	ProposeNewSlasher(opts *bind.TransactOpts, newSlasher common.Address) (*types.Transaction, error)
-
-	RegisterOperatorToAVS(opts *bind.TransactOpts, operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error)
-
-	RemoveStrategiesFromOperatorSet(opts *bind.TransactOpts, operatorSetId uint32, strategies []common.Address) (*types.Transaction, error)
-
-	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	SetAVSRegistrar(opts *bind.TransactOpts, registrar common.Address) (*types.Transaction, error)
-
-	SetRewardsInitiator(opts *bind.TransactOpts, newRewardsInitiator common.Address) (*types.Transaction, error)
-
-	SetStaleStakesForbidden(opts *bind.TransactOpts, value bool) (*types.Transaction, error)
-
-	SlashOperator(opts *bind.TransactOpts, params IAllocationManagerTypesSlashingParams) (*types.Transaction, error)
-
-	TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
-
-	UpdateAVSMetadataURI(opts *bind.TransactOpts, _metadataURI string) (*types.Transaction, error)
-}
-
-// ContractMockAvsServiceManagerFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractMockAvsServiceManagerFilters interface {
-	FilterInitialized(opts *bind.FilterOpts) (*ContractMockAvsServiceManagerInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractMockAvsServiceManagerInitialized, error)
-
-	FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ContractMockAvsServiceManagerOwnershipTransferredIterator, error)
-	WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
-	ParseOwnershipTransferred(log types.Log) (*ContractMockAvsServiceManagerOwnershipTransferred, error)
-
-	FilterRewardsInitiatorUpdated(opts *bind.FilterOpts) (*ContractMockAvsServiceManagerRewardsInitiatorUpdatedIterator, error)
-	WatchRewardsInitiatorUpdated(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerRewardsInitiatorUpdated) (event.Subscription, error)
-	ParseRewardsInitiatorUpdated(log types.Log) (*ContractMockAvsServiceManagerRewardsInitiatorUpdated, error)
-
-	FilterSlasherProposed(opts *bind.FilterOpts) (*ContractMockAvsServiceManagerSlasherProposedIterator, error)
-	WatchSlasherProposed(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerSlasherProposed) (event.Subscription, error)
-	ParseSlasherProposed(log types.Log) (*ContractMockAvsServiceManagerSlasherProposed, error)
-
-	FilterSlasherUpdated(opts *bind.FilterOpts) (*ContractMockAvsServiceManagerSlasherUpdatedIterator, error)
-	WatchSlasherUpdated(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerSlasherUpdated) (event.Subscription, error)
-	ParseSlasherUpdated(log types.Log) (*ContractMockAvsServiceManagerSlasherUpdated, error)
-
-	FilterStaleStakesForbiddenUpdate(opts *bind.FilterOpts) (*ContractMockAvsServiceManagerStaleStakesForbiddenUpdateIterator, error)
-	WatchStaleStakesForbiddenUpdate(opts *bind.WatchOpts, sink chan<- *ContractMockAvsServiceManagerStaleStakesForbiddenUpdate) (event.Subscription, error)
-	ParseStaleStakesForbiddenUpdate(log types.Log) (*ContractMockAvsServiceManagerStaleStakesForbiddenUpdate, error)
-}
-
 // ContractMockAvsServiceManager is an auto generated Go binding around an Ethereum contract.
 type ContractMockAvsServiceManager struct {
 	ContractMockAvsServiceManagerCaller     // Read-only binding to the contract
@@ -247,32 +134,20 @@ type ContractMockAvsServiceManager struct {
 	ContractMockAvsServiceManagerFilterer   // Log filterer for contract events
 }
 
-// ContractMockAvsServiceManager implements the ContractMockAvsServiceManagerMethods interface.
-var _ ContractMockAvsServiceManagerMethods = (*ContractMockAvsServiceManager)(nil)
-
 // ContractMockAvsServiceManagerCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractMockAvsServiceManagerCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractMockAvsServiceManagerCaller implements the ContractMockAvsServiceManagerCalls interface.
-var _ ContractMockAvsServiceManagerCalls = (*ContractMockAvsServiceManagerCaller)(nil)
 
 // ContractMockAvsServiceManagerTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractMockAvsServiceManagerTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractMockAvsServiceManagerTransactor implements the ContractMockAvsServiceManagerTransacts interface.
-var _ ContractMockAvsServiceManagerTransacts = (*ContractMockAvsServiceManagerTransactor)(nil)
-
 // ContractMockAvsServiceManagerFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractMockAvsServiceManagerFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractMockAvsServiceManagerFilterer implements the ContractMockAvsServiceManagerFilters interface.
-var _ ContractMockAvsServiceManagerFilters = (*ContractMockAvsServiceManagerFilterer)(nil)
 
 // ContractMockAvsServiceManagerSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

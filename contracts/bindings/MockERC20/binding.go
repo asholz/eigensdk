@@ -60,54 +60,6 @@ func DeployContractMockERC20(auth *bind.TransactOpts, backend bind.ContractBacke
 	return address, tx, &ContractMockERC20{ContractMockERC20Caller: ContractMockERC20Caller{contract: contract}, ContractMockERC20Transactor: ContractMockERC20Transactor{contract: contract}, ContractMockERC20Filterer: ContractMockERC20Filterer{contract: contract}}, nil
 }
 
-// ContractMockERC20Methods is an auto generated interface around an Ethereum contract.
-type ContractMockERC20Methods interface {
-	ContractMockERC20Calls
-	ContractMockERC20Transacts
-	ContractMockERC20Filters
-}
-
-// ContractMockERC20Calls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractMockERC20Calls interface {
-	Allowance(opts *bind.CallOpts, owner common.Address, spender common.Address) (*big.Int, error)
-
-	BalanceOf(opts *bind.CallOpts, account common.Address) (*big.Int, error)
-
-	Decimals(opts *bind.CallOpts) (uint8, error)
-
-	Name(opts *bind.CallOpts) (string, error)
-
-	Symbol(opts *bind.CallOpts) (string, error)
-
-	TotalSupply(opts *bind.CallOpts) (*big.Int, error)
-}
-
-// ContractMockERC20Transacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractMockERC20Transacts interface {
-	Approve(opts *bind.TransactOpts, spender common.Address, amount *big.Int) (*types.Transaction, error)
-
-	DecreaseAllowance(opts *bind.TransactOpts, spender common.Address, subtractedValue *big.Int) (*types.Transaction, error)
-
-	IncreaseAllowance(opts *bind.TransactOpts, spender common.Address, addedValue *big.Int) (*types.Transaction, error)
-
-	Mint(opts *bind.TransactOpts, account common.Address, amount *big.Int) (*types.Transaction, error)
-
-	Transfer(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
-
-	TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, amount *big.Int) (*types.Transaction, error)
-}
-
-// ContractMockERC20Filterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractMockERC20Filters interface {
-	FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*ContractMockERC20ApprovalIterator, error)
-	WatchApproval(opts *bind.WatchOpts, sink chan<- *ContractMockERC20Approval, owner []common.Address, spender []common.Address) (event.Subscription, error)
-	ParseApproval(log types.Log) (*ContractMockERC20Approval, error)
-
-	FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*ContractMockERC20TransferIterator, error)
-	WatchTransfer(opts *bind.WatchOpts, sink chan<- *ContractMockERC20Transfer, from []common.Address, to []common.Address) (event.Subscription, error)
-	ParseTransfer(log types.Log) (*ContractMockERC20Transfer, error)
-}
-
 // ContractMockERC20 is an auto generated Go binding around an Ethereum contract.
 type ContractMockERC20 struct {
 	ContractMockERC20Caller     // Read-only binding to the contract
@@ -115,32 +67,20 @@ type ContractMockERC20 struct {
 	ContractMockERC20Filterer   // Log filterer for contract events
 }
 
-// ContractMockERC20 implements the ContractMockERC20Methods interface.
-var _ ContractMockERC20Methods = (*ContractMockERC20)(nil)
-
 // ContractMockERC20Caller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractMockERC20Caller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractMockERC20Caller implements the ContractMockERC20Calls interface.
-var _ ContractMockERC20Calls = (*ContractMockERC20Caller)(nil)
 
 // ContractMockERC20Transactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractMockERC20Transactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractMockERC20Transactor implements the ContractMockERC20Transacts interface.
-var _ ContractMockERC20Transacts = (*ContractMockERC20Transactor)(nil)
-
 // ContractMockERC20Filterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractMockERC20Filterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractMockERC20Filterer implements the ContractMockERC20Filters interface.
-var _ ContractMockERC20Filters = (*ContractMockERC20Filterer)(nil)
 
 // ContractMockERC20Session is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

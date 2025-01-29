@@ -84,196 +84,6 @@ func DeployContractDelegationManager(auth *bind.TransactOpts, backend bind.Contr
 	return address, tx, &ContractDelegationManager{ContractDelegationManagerCaller: ContractDelegationManagerCaller{contract: contract}, ContractDelegationManagerTransactor: ContractDelegationManagerTransactor{contract: contract}, ContractDelegationManagerFilterer: ContractDelegationManagerFilterer{contract: contract}}, nil
 }
 
-// ContractDelegationManagerMethods is an auto generated interface around an Ethereum contract.
-type ContractDelegationManagerMethods interface {
-	ContractDelegationManagerCalls
-	ContractDelegationManagerTransacts
-	ContractDelegationManagerFilters
-}
-
-// ContractDelegationManagerCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractDelegationManagerCalls interface {
-	DELEGATIONAPPROVALTYPEHASH(opts *bind.CallOpts) ([32]byte, error)
-
-	AllocationManager(opts *bind.CallOpts) (common.Address, error)
-
-	BeaconChainETHStrategy(opts *bind.CallOpts) (common.Address, error)
-
-	CalculateDelegationApprovalDigestHash(opts *bind.CallOpts, staker common.Address, operator common.Address, approver common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error)
-
-	CalculateWithdrawalRoot(opts *bind.CallOpts, withdrawal IDelegationManagerTypesWithdrawal) ([32]byte, error)
-
-	CumulativeWithdrawalsQueued(opts *bind.CallOpts, staker common.Address) (*big.Int, error)
-
-	DelegatedTo(opts *bind.CallOpts, staker common.Address) (common.Address, error)
-
-	DelegationApprover(opts *bind.CallOpts, operator common.Address) (common.Address, error)
-
-	DelegationApproverSaltIsSpent(opts *bind.CallOpts, delegationApprover common.Address, salt [32]byte) (bool, error)
-
-	DepositScalingFactor(opts *bind.CallOpts, staker common.Address, strategy common.Address) (*big.Int, error)
-
-	DomainSeparator(opts *bind.CallOpts) ([32]byte, error)
-
-	EigenPodManager(opts *bind.CallOpts) (common.Address, error)
-
-	GetDepositedShares(opts *bind.CallOpts, staker common.Address) ([]common.Address, []*big.Int, error)
-
-	GetOperatorShares(opts *bind.CallOpts, operator common.Address, strategies []common.Address) ([]*big.Int, error)
-
-	GetOperatorsShares(opts *bind.CallOpts, operators []common.Address, strategies []common.Address) ([][]*big.Int, error)
-
-	GetQueuedWithdrawals(opts *bind.CallOpts, staker common.Address) (struct {
-		Withdrawals []IDelegationManagerTypesWithdrawal
-		Shares      [][]*big.Int
-	}, error)
-
-	GetSlashableSharesInQueue(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error)
-
-	GetWithdrawableShares(opts *bind.CallOpts, staker common.Address, strategies []common.Address) (struct {
-		WithdrawableShares []*big.Int
-		DepositShares      []*big.Int
-	}, error)
-
-	IsDelegated(opts *bind.CallOpts, staker common.Address) (bool, error)
-
-	IsOperator(opts *bind.CallOpts, operator common.Address) (bool, error)
-
-	MinWithdrawalDelayBlocks(opts *bind.CallOpts) (uint32, error)
-
-	OperatorShares(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error)
-
-	Owner(opts *bind.CallOpts) (common.Address, error)
-
-	Paused(opts *bind.CallOpts, index uint8) (bool, error)
-
-	Paused0(opts *bind.CallOpts) (*big.Int, error)
-
-	PauserRegistry(opts *bind.CallOpts) (common.Address, error)
-
-	PendingWithdrawals(opts *bind.CallOpts, withdrawalRoot [32]byte) (bool, error)
-
-	PermissionController(opts *bind.CallOpts) (common.Address, error)
-
-	QueuedWithdrawals(opts *bind.CallOpts, withdrawalRoot [32]byte) (struct {
-		Staker      common.Address
-		DelegatedTo common.Address
-		Withdrawer  common.Address
-		Nonce       *big.Int
-		StartBlock  uint32
-	}, error)
-
-	StrategyManager(opts *bind.CallOpts) (common.Address, error)
-}
-
-// ContractDelegationManagerTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractDelegationManagerTransacts interface {
-	BurnOperatorShares(opts *bind.TransactOpts, operator common.Address, strategy common.Address, prevMaxMagnitude uint64, newMaxMagnitude uint64) (*types.Transaction, error)
-
-	CompleteQueuedWithdrawal(opts *bind.TransactOpts, withdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error)
-
-	CompleteQueuedWithdrawals(opts *bind.TransactOpts, tokens [][]common.Address, receiveAsTokens []bool, numToComplete *big.Int) (*types.Transaction, error)
-
-	CompleteQueuedWithdrawals0(opts *bind.TransactOpts, withdrawals []IDelegationManagerTypesWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error)
-
-	DecreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, curDepositShares *big.Int, beaconChainSlashingFactorDecrease uint64) (*types.Transaction, error)
-
-	DelegateTo(opts *bind.TransactOpts, operator common.Address, approverSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error)
-
-	IncreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, prevDepositShares *big.Int, addedShares *big.Int) (*types.Transaction, error)
-
-	Initialize(opts *bind.TransactOpts, initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error)
-
-	ModifyOperatorDetails(opts *bind.TransactOpts, operator common.Address, newDelegationApprover common.Address) (*types.Transaction, error)
-
-	Pause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	PauseAll(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	QueueWithdrawals(opts *bind.TransactOpts, params []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error)
-
-	Redelegate(opts *bind.TransactOpts, newOperator common.Address, newOperatorApproverSig ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error)
-
-	RegisterAsOperator(opts *bind.TransactOpts, initDelegationApprover common.Address, allocationDelay uint32, metadataURI string) (*types.Transaction, error)
-
-	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
-
-	Undelegate(opts *bind.TransactOpts, staker common.Address) (*types.Transaction, error)
-
-	Unpause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	UpdateOperatorMetadataURI(opts *bind.TransactOpts, operator common.Address, metadataURI string) (*types.Transaction, error)
-}
-
-// ContractDelegationManagerFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractDelegationManagerFilters interface {
-	FilterDelegationApproverUpdated(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerDelegationApproverUpdatedIterator, error)
-	WatchDelegationApproverUpdated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerDelegationApproverUpdated, operator []common.Address) (event.Subscription, error)
-	ParseDelegationApproverUpdated(log types.Log) (*ContractDelegationManagerDelegationApproverUpdated, error)
-
-	FilterDepositScalingFactorUpdated(opts *bind.FilterOpts) (*ContractDelegationManagerDepositScalingFactorUpdatedIterator, error)
-	WatchDepositScalingFactorUpdated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerDepositScalingFactorUpdated) (event.Subscription, error)
-	ParseDepositScalingFactorUpdated(log types.Log) (*ContractDelegationManagerDepositScalingFactorUpdated, error)
-
-	FilterInitialized(opts *bind.FilterOpts) (*ContractDelegationManagerInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractDelegationManagerInitialized, error)
-
-	FilterOperatorMetadataURIUpdated(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerOperatorMetadataURIUpdatedIterator, error)
-	WatchOperatorMetadataURIUpdated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOperatorMetadataURIUpdated, operator []common.Address) (event.Subscription, error)
-	ParseOperatorMetadataURIUpdated(log types.Log) (*ContractDelegationManagerOperatorMetadataURIUpdated, error)
-
-	FilterOperatorRegistered(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerOperatorRegisteredIterator, error)
-	WatchOperatorRegistered(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOperatorRegistered, operator []common.Address) (event.Subscription, error)
-	ParseOperatorRegistered(log types.Log) (*ContractDelegationManagerOperatorRegistered, error)
-
-	FilterOperatorSharesBurned(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerOperatorSharesBurnedIterator, error)
-	WatchOperatorSharesBurned(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOperatorSharesBurned, operator []common.Address) (event.Subscription, error)
-	ParseOperatorSharesBurned(log types.Log) (*ContractDelegationManagerOperatorSharesBurned, error)
-
-	FilterOperatorSharesDecreased(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerOperatorSharesDecreasedIterator, error)
-	WatchOperatorSharesDecreased(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOperatorSharesDecreased, operator []common.Address) (event.Subscription, error)
-	ParseOperatorSharesDecreased(log types.Log) (*ContractDelegationManagerOperatorSharesDecreased, error)
-
-	FilterOperatorSharesIncreased(opts *bind.FilterOpts, operator []common.Address) (*ContractDelegationManagerOperatorSharesIncreasedIterator, error)
-	WatchOperatorSharesIncreased(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOperatorSharesIncreased, operator []common.Address) (event.Subscription, error)
-	ParseOperatorSharesIncreased(log types.Log) (*ContractDelegationManagerOperatorSharesIncreased, error)
-
-	FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ContractDelegationManagerOwnershipTransferredIterator, error)
-	WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
-	ParseOwnershipTransferred(log types.Log) (*ContractDelegationManagerOwnershipTransferred, error)
-
-	FilterPaused(opts *bind.FilterOpts, account []common.Address) (*ContractDelegationManagerPausedIterator, error)
-	WatchPaused(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerPaused, account []common.Address) (event.Subscription, error)
-	ParsePaused(log types.Log) (*ContractDelegationManagerPaused, error)
-
-	FilterSlashingWithdrawalCompleted(opts *bind.FilterOpts) (*ContractDelegationManagerSlashingWithdrawalCompletedIterator, error)
-	WatchSlashingWithdrawalCompleted(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerSlashingWithdrawalCompleted) (event.Subscription, error)
-	ParseSlashingWithdrawalCompleted(log types.Log) (*ContractDelegationManagerSlashingWithdrawalCompleted, error)
-
-	FilterSlashingWithdrawalQueued(opts *bind.FilterOpts) (*ContractDelegationManagerSlashingWithdrawalQueuedIterator, error)
-	WatchSlashingWithdrawalQueued(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerSlashingWithdrawalQueued) (event.Subscription, error)
-	ParseSlashingWithdrawalQueued(log types.Log) (*ContractDelegationManagerSlashingWithdrawalQueued, error)
-
-	FilterStakerDelegated(opts *bind.FilterOpts, staker []common.Address, operator []common.Address) (*ContractDelegationManagerStakerDelegatedIterator, error)
-	WatchStakerDelegated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerStakerDelegated, staker []common.Address, operator []common.Address) (event.Subscription, error)
-	ParseStakerDelegated(log types.Log) (*ContractDelegationManagerStakerDelegated, error)
-
-	FilterStakerForceUndelegated(opts *bind.FilterOpts, staker []common.Address, operator []common.Address) (*ContractDelegationManagerStakerForceUndelegatedIterator, error)
-	WatchStakerForceUndelegated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerStakerForceUndelegated, staker []common.Address, operator []common.Address) (event.Subscription, error)
-	ParseStakerForceUndelegated(log types.Log) (*ContractDelegationManagerStakerForceUndelegated, error)
-
-	FilterStakerUndelegated(opts *bind.FilterOpts, staker []common.Address, operator []common.Address) (*ContractDelegationManagerStakerUndelegatedIterator, error)
-	WatchStakerUndelegated(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerStakerUndelegated, staker []common.Address, operator []common.Address) (event.Subscription, error)
-	ParseStakerUndelegated(log types.Log) (*ContractDelegationManagerStakerUndelegated, error)
-
-	FilterUnpaused(opts *bind.FilterOpts, account []common.Address) (*ContractDelegationManagerUnpausedIterator, error)
-	WatchUnpaused(opts *bind.WatchOpts, sink chan<- *ContractDelegationManagerUnpaused, account []common.Address) (event.Subscription, error)
-	ParseUnpaused(log types.Log) (*ContractDelegationManagerUnpaused, error)
-}
-
 // ContractDelegationManager is an auto generated Go binding around an Ethereum contract.
 type ContractDelegationManager struct {
 	ContractDelegationManagerCaller     // Read-only binding to the contract
@@ -281,32 +91,20 @@ type ContractDelegationManager struct {
 	ContractDelegationManagerFilterer   // Log filterer for contract events
 }
 
-// ContractDelegationManager implements the ContractDelegationManagerMethods interface.
-var _ ContractDelegationManagerMethods = (*ContractDelegationManager)(nil)
-
 // ContractDelegationManagerCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractDelegationManagerCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractDelegationManagerCaller implements the ContractDelegationManagerCalls interface.
-var _ ContractDelegationManagerCalls = (*ContractDelegationManagerCaller)(nil)
 
 // ContractDelegationManagerTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractDelegationManagerTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractDelegationManagerTransactor implements the ContractDelegationManagerTransacts interface.
-var _ ContractDelegationManagerTransacts = (*ContractDelegationManagerTransactor)(nil)
-
 // ContractDelegationManagerFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractDelegationManagerFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractDelegationManagerFilterer implements the ContractDelegationManagerFilters interface.
-var _ ContractDelegationManagerFilters = (*ContractDelegationManagerFilterer)(nil)
 
 // ContractDelegationManagerSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

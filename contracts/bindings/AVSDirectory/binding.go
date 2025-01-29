@@ -67,98 +67,6 @@ func DeployContractAVSDirectory(auth *bind.TransactOpts, backend bind.ContractBa
 	return address, tx, &ContractAVSDirectory{ContractAVSDirectoryCaller: ContractAVSDirectoryCaller{contract: contract}, ContractAVSDirectoryTransactor: ContractAVSDirectoryTransactor{contract: contract}, ContractAVSDirectoryFilterer: ContractAVSDirectoryFilterer{contract: contract}}, nil
 }
 
-// ContractAVSDirectoryMethods is an auto generated interface around an Ethereum contract.
-type ContractAVSDirectoryMethods interface {
-	ContractAVSDirectoryCalls
-	ContractAVSDirectoryTransacts
-	ContractAVSDirectoryFilters
-}
-
-// ContractAVSDirectoryCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractAVSDirectoryCalls interface {
-	OPERATORAVSREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error)
-
-	OPERATORSETFORCEDEREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error)
-
-	OPERATORSETREGISTRATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error)
-
-	AvsOperatorStatus(opts *bind.CallOpts, avs common.Address, operator common.Address) (uint8, error)
-
-	CalculateOperatorAVSRegistrationDigestHash(opts *bind.CallOpts, operator common.Address, avs common.Address, salt [32]byte, expiry *big.Int) ([32]byte, error)
-
-	Delegation(opts *bind.CallOpts) (common.Address, error)
-
-	DomainSeparator(opts *bind.CallOpts) ([32]byte, error)
-
-	OperatorSaltIsSpent(opts *bind.CallOpts, operator common.Address, salt [32]byte) (bool, error)
-
-	Owner(opts *bind.CallOpts) (common.Address, error)
-
-	Paused(opts *bind.CallOpts, index uint8) (bool, error)
-
-	Paused0(opts *bind.CallOpts) (*big.Int, error)
-
-	PauserRegistry(opts *bind.CallOpts) (common.Address, error)
-}
-
-// ContractAVSDirectoryTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractAVSDirectoryTransacts interface {
-	CancelSalt(opts *bind.TransactOpts, salt [32]byte) (*types.Transaction, error)
-
-	DeregisterOperatorFromAVS(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error)
-
-	Initialize(opts *bind.TransactOpts, initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error)
-
-	Pause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	PauseAll(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	RegisterOperatorToAVS(opts *bind.TransactOpts, operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error)
-
-	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
-
-	Unpause(opts *bind.TransactOpts, newPausedStatus *big.Int) (*types.Transaction, error)
-
-	UpdateAVSMetadataURI(opts *bind.TransactOpts, metadataURI string) (*types.Transaction, error)
-}
-
-// ContractAVSDirectoryFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractAVSDirectoryFilters interface {
-	FilterAVSMetadataURIUpdated(opts *bind.FilterOpts, avs []common.Address) (*ContractAVSDirectoryAVSMetadataURIUpdatedIterator, error)
-	WatchAVSMetadataURIUpdated(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryAVSMetadataURIUpdated, avs []common.Address) (event.Subscription, error)
-	ParseAVSMetadataURIUpdated(log types.Log) (*ContractAVSDirectoryAVSMetadataURIUpdated, error)
-
-	FilterAVSMigratedToOperatorSets(opts *bind.FilterOpts, avs []common.Address) (*ContractAVSDirectoryAVSMigratedToOperatorSetsIterator, error)
-	WatchAVSMigratedToOperatorSets(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryAVSMigratedToOperatorSets, avs []common.Address) (event.Subscription, error)
-	ParseAVSMigratedToOperatorSets(log types.Log) (*ContractAVSDirectoryAVSMigratedToOperatorSets, error)
-
-	FilterInitialized(opts *bind.FilterOpts) (*ContractAVSDirectoryInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractAVSDirectoryInitialized, error)
-
-	FilterOperatorAVSRegistrationStatusUpdated(opts *bind.FilterOpts, operator []common.Address, avs []common.Address) (*ContractAVSDirectoryOperatorAVSRegistrationStatusUpdatedIterator, error)
-	WatchOperatorAVSRegistrationStatusUpdated(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryOperatorAVSRegistrationStatusUpdated, operator []common.Address, avs []common.Address) (event.Subscription, error)
-	ParseOperatorAVSRegistrationStatusUpdated(log types.Log) (*ContractAVSDirectoryOperatorAVSRegistrationStatusUpdated, error)
-
-	FilterOperatorMigratedToOperatorSets(opts *bind.FilterOpts, operator []common.Address, avs []common.Address) (*ContractAVSDirectoryOperatorMigratedToOperatorSetsIterator, error)
-	WatchOperatorMigratedToOperatorSets(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryOperatorMigratedToOperatorSets, operator []common.Address, avs []common.Address) (event.Subscription, error)
-	ParseOperatorMigratedToOperatorSets(log types.Log) (*ContractAVSDirectoryOperatorMigratedToOperatorSets, error)
-
-	FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*ContractAVSDirectoryOwnershipTransferredIterator, error)
-	WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
-	ParseOwnershipTransferred(log types.Log) (*ContractAVSDirectoryOwnershipTransferred, error)
-
-	FilterPaused(opts *bind.FilterOpts, account []common.Address) (*ContractAVSDirectoryPausedIterator, error)
-	WatchPaused(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryPaused, account []common.Address) (event.Subscription, error)
-	ParsePaused(log types.Log) (*ContractAVSDirectoryPaused, error)
-
-	FilterUnpaused(opts *bind.FilterOpts, account []common.Address) (*ContractAVSDirectoryUnpausedIterator, error)
-	WatchUnpaused(opts *bind.WatchOpts, sink chan<- *ContractAVSDirectoryUnpaused, account []common.Address) (event.Subscription, error)
-	ParseUnpaused(log types.Log) (*ContractAVSDirectoryUnpaused, error)
-}
-
 // ContractAVSDirectory is an auto generated Go binding around an Ethereum contract.
 type ContractAVSDirectory struct {
 	ContractAVSDirectoryCaller     // Read-only binding to the contract
@@ -166,32 +74,20 @@ type ContractAVSDirectory struct {
 	ContractAVSDirectoryFilterer   // Log filterer for contract events
 }
 
-// ContractAVSDirectory implements the ContractAVSDirectoryMethods interface.
-var _ ContractAVSDirectoryMethods = (*ContractAVSDirectory)(nil)
-
 // ContractAVSDirectoryCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractAVSDirectoryCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractAVSDirectoryCaller implements the ContractAVSDirectoryCalls interface.
-var _ ContractAVSDirectoryCalls = (*ContractAVSDirectoryCaller)(nil)
 
 // ContractAVSDirectoryTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractAVSDirectoryTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractAVSDirectoryTransactor implements the ContractAVSDirectoryTransacts interface.
-var _ ContractAVSDirectoryTransacts = (*ContractAVSDirectoryTransactor)(nil)
-
 // ContractAVSDirectoryFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractAVSDirectoryFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractAVSDirectoryFilterer implements the ContractAVSDirectoryFilters interface.
-var _ ContractAVSDirectoryFilters = (*ContractAVSDirectoryFilterer)(nil)
 
 // ContractAVSDirectorySession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.

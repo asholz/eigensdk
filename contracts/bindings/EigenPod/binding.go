@@ -102,116 +102,6 @@ func DeployContractEigenPod(auth *bind.TransactOpts, backend bind.ContractBacken
 	return address, tx, &ContractEigenPod{ContractEigenPodCaller: ContractEigenPodCaller{contract: contract}, ContractEigenPodTransactor: ContractEigenPodTransactor{contract: contract}, ContractEigenPodFilterer: ContractEigenPodFilterer{contract: contract}}, nil
 }
 
-// ContractEigenPodMethods is an auto generated interface around an Ethereum contract.
-type ContractEigenPodMethods interface {
-	ContractEigenPodCalls
-	ContractEigenPodTransacts
-	ContractEigenPodFilters
-}
-
-// ContractEigenPodCalls is an auto generated interface that defines the call methods available for an Ethereum contract.
-type ContractEigenPodCalls interface {
-	GENESISTIME(opts *bind.CallOpts) (uint64, error)
-
-	ActiveValidatorCount(opts *bind.CallOpts) (*big.Int, error)
-
-	CheckpointBalanceExitedGwei(opts *bind.CallOpts, arg0 uint64) (uint64, error)
-
-	CurrentCheckpoint(opts *bind.CallOpts) (IEigenPodTypesCheckpoint, error)
-
-	CurrentCheckpointTimestamp(opts *bind.CallOpts) (uint64, error)
-
-	EigenPodManager(opts *bind.CallOpts) (common.Address, error)
-
-	EthPOS(opts *bind.CallOpts) (common.Address, error)
-
-	GetParentBlockRoot(opts *bind.CallOpts, timestamp uint64) ([32]byte, error)
-
-	LastCheckpointTimestamp(opts *bind.CallOpts) (uint64, error)
-
-	PodOwner(opts *bind.CallOpts) (common.Address, error)
-
-	ProofSubmitter(opts *bind.CallOpts) (common.Address, error)
-
-	ValidatorPubkeyHashToInfo(opts *bind.CallOpts, validatorPubkeyHash [32]byte) (IEigenPodTypesValidatorInfo, error)
-
-	ValidatorPubkeyToInfo(opts *bind.CallOpts, validatorPubkey []byte) (IEigenPodTypesValidatorInfo, error)
-
-	ValidatorStatus(opts *bind.CallOpts, validatorPubkey []byte) (uint8, error)
-
-	ValidatorStatus0(opts *bind.CallOpts, pubkeyHash [32]byte) (uint8, error)
-
-	WithdrawableRestakedExecutionLayerGwei(opts *bind.CallOpts) (uint64, error)
-}
-
-// ContractEigenPodTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
-type ContractEigenPodTransacts interface {
-	Initialize(opts *bind.TransactOpts, _podOwner common.Address) (*types.Transaction, error)
-
-	RecoverTokens(opts *bind.TransactOpts, tokenList []common.Address, amountsToWithdraw []*big.Int, recipient common.Address) (*types.Transaction, error)
-
-	SetProofSubmitter(opts *bind.TransactOpts, newProofSubmitter common.Address) (*types.Transaction, error)
-
-	Stake(opts *bind.TransactOpts, pubkey []byte, signature []byte, depositDataRoot [32]byte) (*types.Transaction, error)
-
-	StartCheckpoint(opts *bind.TransactOpts, revertIfNoBalance bool) (*types.Transaction, error)
-
-	VerifyCheckpointProofs(opts *bind.TransactOpts, balanceContainerProof BeaconChainProofsBalanceContainerProof, proofs []BeaconChainProofsBalanceProof) (*types.Transaction, error)
-
-	VerifyStaleBalance(opts *bind.TransactOpts, beaconTimestamp uint64, stateRootProof BeaconChainProofsStateRootProof, proof BeaconChainProofsValidatorProof) (*types.Transaction, error)
-
-	VerifyWithdrawalCredentials(opts *bind.TransactOpts, beaconTimestamp uint64, stateRootProof BeaconChainProofsStateRootProof, validatorIndices []*big.Int, validatorFieldsProofs [][]byte, validatorFields [][][32]byte) (*types.Transaction, error)
-
-	WithdrawRestakedBeaconChainETH(opts *bind.TransactOpts, recipient common.Address, amountWei *big.Int) (*types.Transaction, error)
-}
-
-// ContractEigenPodFilterer is an auto generated interface that defines the log filtering methods available for an Ethereum contract.
-type ContractEigenPodFilters interface {
-	FilterCheckpointCreated(opts *bind.FilterOpts, checkpointTimestamp []uint64, beaconBlockRoot [][32]byte) (*ContractEigenPodCheckpointCreatedIterator, error)
-	WatchCheckpointCreated(opts *bind.WatchOpts, sink chan<- *ContractEigenPodCheckpointCreated, checkpointTimestamp []uint64, beaconBlockRoot [][32]byte) (event.Subscription, error)
-	ParseCheckpointCreated(log types.Log) (*ContractEigenPodCheckpointCreated, error)
-
-	FilterCheckpointFinalized(opts *bind.FilterOpts, checkpointTimestamp []uint64) (*ContractEigenPodCheckpointFinalizedIterator, error)
-	WatchCheckpointFinalized(opts *bind.WatchOpts, sink chan<- *ContractEigenPodCheckpointFinalized, checkpointTimestamp []uint64) (event.Subscription, error)
-	ParseCheckpointFinalized(log types.Log) (*ContractEigenPodCheckpointFinalized, error)
-
-	FilterEigenPodStaked(opts *bind.FilterOpts) (*ContractEigenPodEigenPodStakedIterator, error)
-	WatchEigenPodStaked(opts *bind.WatchOpts, sink chan<- *ContractEigenPodEigenPodStaked) (event.Subscription, error)
-	ParseEigenPodStaked(log types.Log) (*ContractEigenPodEigenPodStaked, error)
-
-	FilterInitialized(opts *bind.FilterOpts) (*ContractEigenPodInitializedIterator, error)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ContractEigenPodInitialized) (event.Subscription, error)
-	ParseInitialized(log types.Log) (*ContractEigenPodInitialized, error)
-
-	FilterNonBeaconChainETHReceived(opts *bind.FilterOpts) (*ContractEigenPodNonBeaconChainETHReceivedIterator, error)
-	WatchNonBeaconChainETHReceived(opts *bind.WatchOpts, sink chan<- *ContractEigenPodNonBeaconChainETHReceived) (event.Subscription, error)
-	ParseNonBeaconChainETHReceived(log types.Log) (*ContractEigenPodNonBeaconChainETHReceived, error)
-
-	FilterProofSubmitterUpdated(opts *bind.FilterOpts) (*ContractEigenPodProofSubmitterUpdatedIterator, error)
-	WatchProofSubmitterUpdated(opts *bind.WatchOpts, sink chan<- *ContractEigenPodProofSubmitterUpdated) (event.Subscription, error)
-	ParseProofSubmitterUpdated(log types.Log) (*ContractEigenPodProofSubmitterUpdated, error)
-
-	FilterRestakedBeaconChainETHWithdrawn(opts *bind.FilterOpts, recipient []common.Address) (*ContractEigenPodRestakedBeaconChainETHWithdrawnIterator, error)
-	WatchRestakedBeaconChainETHWithdrawn(opts *bind.WatchOpts, sink chan<- *ContractEigenPodRestakedBeaconChainETHWithdrawn, recipient []common.Address) (event.Subscription, error)
-	ParseRestakedBeaconChainETHWithdrawn(log types.Log) (*ContractEigenPodRestakedBeaconChainETHWithdrawn, error)
-
-	FilterValidatorBalanceUpdated(opts *bind.FilterOpts) (*ContractEigenPodValidatorBalanceUpdatedIterator, error)
-	WatchValidatorBalanceUpdated(opts *bind.WatchOpts, sink chan<- *ContractEigenPodValidatorBalanceUpdated) (event.Subscription, error)
-	ParseValidatorBalanceUpdated(log types.Log) (*ContractEigenPodValidatorBalanceUpdated, error)
-
-	FilterValidatorCheckpointed(opts *bind.FilterOpts, checkpointTimestamp []uint64, validatorIndex []*big.Int) (*ContractEigenPodValidatorCheckpointedIterator, error)
-	WatchValidatorCheckpointed(opts *bind.WatchOpts, sink chan<- *ContractEigenPodValidatorCheckpointed, checkpointTimestamp []uint64, validatorIndex []*big.Int) (event.Subscription, error)
-	ParseValidatorCheckpointed(log types.Log) (*ContractEigenPodValidatorCheckpointed, error)
-
-	FilterValidatorRestaked(opts *bind.FilterOpts) (*ContractEigenPodValidatorRestakedIterator, error)
-	WatchValidatorRestaked(opts *bind.WatchOpts, sink chan<- *ContractEigenPodValidatorRestaked) (event.Subscription, error)
-	ParseValidatorRestaked(log types.Log) (*ContractEigenPodValidatorRestaked, error)
-
-	FilterValidatorWithdrawn(opts *bind.FilterOpts, checkpointTimestamp []uint64, validatorIndex []*big.Int) (*ContractEigenPodValidatorWithdrawnIterator, error)
-	WatchValidatorWithdrawn(opts *bind.WatchOpts, sink chan<- *ContractEigenPodValidatorWithdrawn, checkpointTimestamp []uint64, validatorIndex []*big.Int) (event.Subscription, error)
-	ParseValidatorWithdrawn(log types.Log) (*ContractEigenPodValidatorWithdrawn, error)
-}
-
 // ContractEigenPod is an auto generated Go binding around an Ethereum contract.
 type ContractEigenPod struct {
 	ContractEigenPodCaller     // Read-only binding to the contract
@@ -219,32 +109,20 @@ type ContractEigenPod struct {
 	ContractEigenPodFilterer   // Log filterer for contract events
 }
 
-// ContractEigenPod implements the ContractEigenPodMethods interface.
-var _ ContractEigenPodMethods = (*ContractEigenPod)(nil)
-
 // ContractEigenPodCaller is an auto generated read-only Go binding around an Ethereum contract.
 type ContractEigenPodCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractEigenPodCaller implements the ContractEigenPodCalls interface.
-var _ ContractEigenPodCalls = (*ContractEigenPodCaller)(nil)
 
 // ContractEigenPodTransactor is an auto generated write-only Go binding around an Ethereum contract.
 type ContractEigenPodTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// ContractEigenPodTransactor implements the ContractEigenPodTransacts interface.
-var _ ContractEigenPodTransacts = (*ContractEigenPodTransactor)(nil)
-
 // ContractEigenPodFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 type ContractEigenPodFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
-
-// ContractEigenPodFilterer implements the ContractEigenPodFilters interface.
-var _ ContractEigenPodFilters = (*ContractEigenPodFilterer)(nil)
 
 // ContractEigenPodSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
