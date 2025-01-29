@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
+	gethvm "github.com/ethereum/go-ethereum/core/vm"
 )
 
 // ContractBindings Unclear to me why geth bindings don't store and expose the contract address...
@@ -74,7 +75,7 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to create BLSRegistryCoordinator contract", err)
 		}
 
-		serviceManagerAddr, err = contractBlsRegistryCoordinator.ServiceManager(&bind.CallOpts{})
+		serviceManagerAddr, err = tryFetchingAddress(contractBlsRegistryCoordinator.ServiceManager)
 		if err != nil {
 			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
 		}
@@ -170,6 +171,14 @@ func NewBindingsFromConfig(
 		IndexRegistry:              contractIndexRegistry,
 		OperatorStateRetriever:     contractOperatorStateRetriever,
 	}, nil
+}
+
+func tryFetchingAddress(getAddress func(*bind.CallOpts) (gethcommon.Address, error)) (gethcommon.Address, error) {
+	address, err := getAddress(&bind.CallOpts{})
+	if err == gethvm.ErrExecutionReverted {
+		return gethcommon.Address{}, nil
+	}
+	return address, err
 }
 
 func isZeroAddress(address gethcommon.Address) bool {
