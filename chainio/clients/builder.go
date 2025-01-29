@@ -28,6 +28,9 @@ type BuildAllConfig struct {
 	OperatorStateRetrieverAddr string
 	AvsName                    string
 	PromMetricsIpPortAddress   string
+
+	/// The address of the ServiceManager contract.
+	ServiceManagerAddress string
 }
 
 // ReadClients is a struct that holds only the read clients for interacting with the AVS and EL contracts.
@@ -77,12 +80,17 @@ func BuildReadClients(
 		return nil, utils.WrapError("Failed to create Eth WS client", err)
 	}
 
+	avsCfg := avsregistry.Config{
+		RegistryCoordinatorAddress:    gethcommon.HexToAddress(config.RegistryCoordinatorAddr),
+		OperatorStateRetrieverAddress: gethcommon.HexToAddress(config.OperatorStateRetrieverAddr),
+	}
+	if config.ServiceManagerAddress != "" {
+		avsCfg.ServiceManagerAddress = gethcommon.HexToAddress(config.ServiceManagerAddress)
+	}
+
 	// creating AVS clients: Reader
 	avsRegistryChainReader, avsRegistryChainSubscriber, avsRegistryContractBindings, err := avsregistry.BuildReadClients(
-		avsregistry.Config{
-			RegistryCoordinatorAddress:    gethcommon.HexToAddress(config.RegistryCoordinatorAddr),
-			OperatorStateRetrieverAddress: gethcommon.HexToAddress(config.OperatorStateRetrieverAddr),
-		},
+		avsCfg,
 		ethHttpClient,
 		ethWsClient,
 		logger,
