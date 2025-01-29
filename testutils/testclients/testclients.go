@@ -82,6 +82,7 @@ func BuildTestReadClients(t *testing.T) (*clients.ReadClients, string) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	clients, err := clients.BuildReadClients(
