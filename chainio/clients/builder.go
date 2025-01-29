@@ -244,6 +244,9 @@ func (config *BuildAllConfig) validate(logger logging.Logger) error {
 		logger.Error("BuildAllConfig.validate: Missing bls registry coordinator address")
 		return fmt.Errorf("BuildAllConfig.validate: Missing bls registry coordinator address")
 	}
+	if config.ServiceManagerAddress == "" {
+		logger.Info("BuildAllConfig.validate: Missing optional service manager address")
+	}
 	if config.OperatorStateRetrieverAddr == "" {
 		logger.Error("BuildAllConfig.validate: Missing bls operator state retriever address")
 		return fmt.Errorf("BuildAllConfig.validate: Missing bls operator state retriever address")
