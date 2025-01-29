@@ -8,9 +8,9 @@ script_path=$(
     pwd -P
 )
 
-# build abigen-with-interfaces docker image if it doesn't exist
-if [[ "$(docker images -q abigen-with-interfaces 2>/dev/null)" == "" ]]; then
-    docker build -t abigen-with-interfaces -f abigen-with-interfaces.Dockerfile $script_path
+# build abigen docker image if it doesn't exist
+if [[ "$(docker images -q abigen 2>/dev/null)" == "" ]]; then
+    docker build -t abigen -f abigen.Dockerfile $script_path
 fi
 
 # TODO: refactor this function.. it got really ugly with the dockerizing of abigen
@@ -29,7 +29,7 @@ function create_binding {
     echo ${solc_bin} >data/tmp.bin
 
     rm -f $binding_dir/${contract}/binding.go
-    docker run -v $(realpath $binding_dir):/home/binding_dir -v .:/home/repo abigen-with-interfaces --bin=/home/repo/data/tmp.bin --abi=/home/repo/data/tmp.abi --pkg=contract${contract} --out=/home/binding_dir/${contract}/binding.go
+    docker run --rm -v $(realpath $binding_dir):/home/binding_dir -v .:/home/repo abigen --bin=/home/repo/data/tmp.bin --abi=/home/repo/data/tmp.abi --pkg=contract${contract} --out=/home/binding_dir/${contract}/binding.go
     rm -rf data/tmp.abi data/tmp.bin
 }
 
