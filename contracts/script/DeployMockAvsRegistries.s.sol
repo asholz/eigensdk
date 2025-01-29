@@ -23,6 +23,8 @@ import {EigenlayerContracts, EigenlayerContractsParser} from "./parsers/Eigenlay
 import {ConfigsReadWriter} from "./parsers/ConfigsReadWriter.sol";
 import {MockAvsServiceManager} from "../src/MockAvsServiceManager.sol";
 import {ContractsRegistry} from "../src/ContractsRegistry.sol";
+import {LegacyRegistryCoordinator} from "../src/LegacyRegistryCoordinator.sol";
+
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/StdJson.sol";
@@ -130,14 +132,16 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
             new SocketRegistry(IRegistryCoordinator(address(deployed.coordinator)));
         _upgradeProxy(address(registries.socketRegistry), address(registries.socketRegistryImplementation));
 
-        deployed.coordinatorImplementation = new RegistryCoordinator(
-            IServiceManager(address(manager)),
-            registries.stakeRegistry,
-            registries.blsApkRegistry,
-            registries.indexRegistry,
-            registries.socketRegistry,
-            eigen.allocationManager,
-            deployed.pauserReg
+        deployed.coordinatorImplementation = RegistryCoordinator(
+            new LegacyRegistryCoordinator(
+                IServiceManager(address(manager)),
+                registries.stakeRegistry,
+                registries.blsApkRegistry,
+                registries.indexRegistry,
+                registries.socketRegistry,
+                eigen.allocationManager,
+                deployed.pauserReg
+            )
         );
     }
 
@@ -154,6 +158,8 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
                 (config.communityMultisig, config.churner, config.ejector, 0, address(config.communityMultisig))
             )
         );
+        LegacyRegistryCoordinator(address(deployed.coordinator)).enableM2QuorumRegistration();
+        LegacyRegistryCoordinator(address(deployed.coordinator)).disableOperatorSets();
     }
 
     function _setupPermissions(address admin, EigenlayerContracts memory elContracts) internal {
