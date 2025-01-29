@@ -75,7 +75,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         _deployPauserRegistry(addressConfig);
         _deployProxies();
         deployed.stateRetriever = new OperatorStateRetriever();
-        _deployAndUpgradeImplementations(eigenlayerContracts);
+        _deployAndUpgradeImplementations(eigenlayerContracts, manager);
         _initializeRegistryCoordinator(addressConfig);
 
         _setupPermissions(addressConfig.communityMultisig, eigenlayerContracts);
@@ -112,7 +112,9 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
             address(new TransparentUpgradeableProxy(address(deployed.emptyContract), address(deployed.proxyAdmin), ""));
     }
 
-    function _deployAndUpgradeImplementations(EigenlayerContracts memory eigen) internal {
+    function _deployAndUpgradeImplementations(EigenlayerContracts memory eigen, MockAvsServiceManager manager)
+        internal
+    {
         registries.blsApkRegistryImplementation = new BLSApkRegistry(deployed.coordinator);
         _upgradeProxy(address(registries.blsApkRegistry), address(registries.blsApkRegistryImplementation));
 
@@ -129,6 +131,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         _upgradeProxy(address(registries.socketRegistry), address(registries.socketRegistryImplementation));
 
         deployed.coordinatorImplementation = new RegistryCoordinator(
+            IServiceManager(address(manager)),
             registries.stakeRegistry,
             registries.blsApkRegistry,
             registries.indexRegistry,
@@ -147,7 +150,7 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
             TransparentUpgradeableProxy(payable(address(deployed.coordinator))),
             address(deployed.coordinatorImplementation),
             abi.encodeCall(
-                RegistryCoordinator.initialize,
+                deployed.coordinator.initialize,
                 (config.communityMultisig, config.churner, config.ejector, 0, address(config.communityMultisig))
             )
         );
