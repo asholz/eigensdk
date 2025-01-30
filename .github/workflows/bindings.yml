@@ -60,6 +60,9 @@ jobs:
               - 'contracts/lib/**'
               - 'contracts/script/**'
               - 'contracts/src/**'
+            bindings:
+              - 'contracts/bindings/**'
+            
       
       # This step runs only if some contract changed.
       # It checks the diff in the bindings directory.
@@ -70,7 +73,9 @@ jobs:
         if: steps.filter.outputs.contracts == 'true'
         working-directory: contracts/
         run: |
-          if [ -z "$(git diff origin/${{ github.event.pull_request.base.ref }} -- bindings)" ]; then
+          BINDINGS_UPDATED=${{ steps.filter.outputs.bindings }}
+          echo $BINDINGS_UPDATED
+          if [ $BINDINGS_UPDATED -ne 'true' ]; then
             echo "The bindings are outdated";
             exit 1
           fi
