@@ -71,10 +71,8 @@ jobs:
       # Note: if the git diff fails to fetch the changes, then the step will also fail.
       - name: Check the anvil dump has changed
         if: steps.filter.outputs.contracts == 'true'
-        working-directory: contracts/
         run: |
           BINDINGS_UPDATED=${{ steps.filter.outputs.bindings }}
-          echo $BINDINGS_UPDATED
           if [[ "$BINDINGS_UPDATED" == "false" ]]; then
             echo "The bindings are outdated";
             exit 1
