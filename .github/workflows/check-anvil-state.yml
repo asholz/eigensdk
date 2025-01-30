@@ -1,19 +1,29 @@
-name: check anvil state up-to-date
-
+name: Check anvil state
 on:
   push:
-    branches: 
+    branches:
       - dev
-  merge_group:
   pull_request:
-    # This makes the job run only when any of these files has been changed
-    paths:
-      - 'contracts/lib/**'
-      - 'contracts/script/**'
-      - 'contracts/src/**'
+  merge_group:
 
 jobs:
-  check:
+  generate-anvil-state:
+    name: generate anvil state
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Generate anvil state
+        run: make deploy-contracts-to-anvil-and-save-state
+  
+  check-anvil-state:
     name: Check anvil dump is up-to-date
     runs-on: ubuntu-latest
     
@@ -22,14 +32,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      # This step checks the diff in the anvil state file.
-      # If the diff is null, that means the anvil state has not changed,
-      # i.e. the anvil state outdated and therefore this step will fail.
-      # Note: if the git diff fails to fetch the changes, then the step will also fail.
-      - name: Check the anvil dump has changed
-        working-directory: contracts/anvil
+      # This step is needed to know if the contracts were changed.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            contracts:
+              - 'contracts/lib/**'
+              - 'contracts/script/**'
+              - 'contracts/src/**'
+            anvil_state:
+              - 'contracts/anvil/contracts-deployed-anvil-state.json'
+
+      # This step runs only if some contract changed.
+      # It checks whether the anvil state has changed.
+      # If there are no changes, then the anvil state is outdated
+      # and therefore this step will fail.
+      - name: Check the anvil state is up-to-date
+        if: steps.filter.outputs.contracts == 'true'
         run: |
-          if [ -z "$(git diff origin/${{ github.event.pull_request.base.ref }} -- contracts_deployed_anvil_state.json)" ]; then
-            echo "The anvil dump is outdated";
+          ANVIL_STATE_UPDATED=${{ steps.filter.outputs.anvil_state }}
+          if [[ "$ANVIL_STATE_UPDATED" == "false" ]]; then
+            echo "The anvil state is outdated";
             exit 1
           fi
