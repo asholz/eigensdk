@@ -47,7 +47,6 @@ func NewBindingsFromConfig(
 	var (
 		err error
 
-		serviceManagerAddr    gethcommon.Address
 		stakeRegistryAddr     gethcommon.Address
 		blsApkRegistryAddr    gethcommon.Address
 		indexRegistryAddr     gethcommon.Address
@@ -125,7 +124,7 @@ func NewBindingsFromConfig(
 	}
 
 	if isZeroAddress(cfg.ServiceManagerAddress) {
-		logger.Info("ServiceManager address not provided, the calls to the contract will not work")
+		logger.Debug("ServiceManager address not provided, the calls to the contract will not work")
 	} else {
 		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
 			cfg.ServiceManagerAddress,
@@ -155,7 +154,7 @@ func NewBindingsFromConfig(
 	}
 
 	return &ContractBindings{
-		ServiceManagerAddr:         serviceManagerAddr,
+		ServiceManagerAddr:         cfg.ServiceManagerAddress,
 		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress,
 		StakeRegistryAddr:          stakeRegistryAddr,
 		BlsApkRegistryAddr:         blsApkRegistryAddr,
