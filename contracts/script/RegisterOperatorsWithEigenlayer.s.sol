@@ -52,7 +52,6 @@ contract RegisterOperators is ConfigsReadWriter, EigenlayerContractsParser, Toke
         for (uint256 i = 0; i < numberOfOperators; i++) {
             address delegationApprover = address(0); // anyone can delegate to this operator
             uint32 allocationDelay = 2; // 2 blocks
-            // uint32 stakerOptOutWindowBlocks = 100;
             string memory metadataURI = string.concat("https://coolstuff.com/operator/", vm.toString(i));
             (, uint256 privateKey) = deriveRememberKey(mnemonic, uint32(i));
             vm.startBroadcast(privateKey);
