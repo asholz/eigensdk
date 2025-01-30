@@ -278,9 +278,9 @@ func (w *ChainWriter) RegisterOperator(
 		return nil, err
 	}
 	sigValidForSeconds := int64(60 * 60) // 1 hour
-	operatorToAvsRegistrationSigExpiry := new(
-		big.Int,
-	).Add(new(big.Int).SetUint64(curBlock.Time()), big.NewInt(sigValidForSeconds))
+
+	curTime := new(big.Int).SetUint64(curBlock.Time())
+	operatorToAvsRegistrationSigExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
 
 	// params to register operator in delegation manager's operator-avs mapping
 	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(

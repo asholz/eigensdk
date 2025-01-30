@@ -33,5 +33,6 @@ contract MockAvsServiceManager is ServiceManagerBase, BLSSignatureChecker {
     function initialize(address _initialOwner) external initializer {
         // TODO: setting _rewardsInitiator to be _initialOwner for now.
         __ServiceManagerBase_init(_initialOwner, _initialOwner);
+        _permissionController.addPendingAdmin(address(this), _initialOwner);
     }
 }

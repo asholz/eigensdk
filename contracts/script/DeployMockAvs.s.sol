@@ -48,6 +48,10 @@ contract DeployMockAvs is DeployMockAvsRegistries {
         );
         require(Ownable(address(mockAvsServiceManager)).owner() != address(0), "Owner uninitialized");
 
+        address avsAddress = address(mockAvsServiceManager);
+        eigenlayerContracts.permissionController.acceptAdmin(avsAddress);
+        _setupPermissions(avsAddress, eigenlayerContracts);
+
         if (block.chainid == 31337 || block.chainid == 1337) {
             _writeContractsToRegistry(contractsRegistry, eigenlayerContracts, mockAvsContracts);
         }
