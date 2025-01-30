@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
 // ContractsRegistry store the address of all the contracts deployed for eigenlayer and avss
