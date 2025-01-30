@@ -65,10 +65,9 @@ jobs:
             
       
       # This step runs only if some contract changed.
-      # It checks the diff in the bindings directory.
-      # If the diff is null, that means the bindings have not changed,
-      # i.e. the bindings are outdated and therefore this step will fail.
-      # Note: if the git diff fails to fetch the changes, then the step will also fail.
+      # It checks whether the bindings directory have changed.
+      # If there are no changes, then the bindings are outdated
+      # and therefore this step will fail.
       - name: Check the bindings are up-to-date
         if: steps.filter.outputs.contracts == 'true'
         run: |
