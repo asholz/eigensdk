@@ -69,7 +69,7 @@ jobs:
       # If the diff is null, that means the bindings have not changed,
       # i.e. the bindings are outdated and therefore this step will fail.
       # Note: if the git diff fails to fetch the changes, then the step will also fail.
-      - name: Check the anvil dump has changed
+      - name: Check the bindings are up-to-date
         if: steps.filter.outputs.contracts == 'true'
         run: |
           BINDINGS_UPDATED=${{ steps.filter.outputs.bindings }}
