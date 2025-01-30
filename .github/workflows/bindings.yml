@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: Check bindings are up to date
+  generate_bindings:
+    name: Generate bindings
     runs-on: ubuntu-latest
     
     steps:
@@ -39,7 +39,38 @@ jobs:
         with:
           version: v0.3.0
 
-      - name: run make bindings and check for diffs
+      - name: Run make bindings
+        run: make bindings
+
+  check_bindings:
+    name: Check bindings are up-to-date
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+       # This step is needed to know if the contracts were changed.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            contracts:
+              - 'contracts/lib/**'
+              - 'contracts/script/**'
+              - 'contracts/src/**'
+      
+      # This step runs only if some contract changed.
+      # It checks the diff in the bindings directory.
+      # If the diff is null, that means the bindings have not changed,
+      # i.e. the bindings are outdated and therefore this step will fail.
+      # Note: if the git diff fails to fetch the changes, then the step will also fail.
+      - name: Check the anvil dump has changed
+        if: steps.filter.outputs.contracts == 'true'
+        working-directory: contracts/
         run: |
-          make bindings
-          sudo git diff --exit-code
+          if [ -z "$(git diff origin/${{ github.event.pull_request.base.ref }} -- bindings)" ]; then
+            echo "The bindings are outdated";
+            exit 1
+          fi
