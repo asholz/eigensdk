@@ -176,13 +176,17 @@ func BuildAll(
 		return nil, utils.WrapError("Failed to create transaction sender", err)
 	}
 	txMgr := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
+	avsCfg := avsregistry.Config{
+		RegistryCoordinatorAddress:    gethcommon.HexToAddress(config.RegistryCoordinatorAddr),
+		OperatorStateRetrieverAddress: gethcommon.HexToAddress(config.OperatorStateRetrieverAddr),
+	}
+	if config.ServiceManagerAddress != "" {
+		avsCfg.ServiceManagerAddress = gethcommon.HexToAddress(config.ServiceManagerAddress)
+	}
 
 	// creating AVS clients: Reader and Writer
 	avsRegistryChainReader, avsRegistryChainSubscriber, avsRegistryChainWriter, avsRegistryContractBindings, err := avsregistry.BuildClients(
-		avsregistry.Config{
-			RegistryCoordinatorAddress:    gethcommon.HexToAddress(config.RegistryCoordinatorAddr),
-			OperatorStateRetrieverAddress: gethcommon.HexToAddress(config.OperatorStateRetrieverAddr),
-		},
+		avsCfg,
 		ethHttpClient,
 		ethWsClient,
 		txMgr,

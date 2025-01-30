@@ -263,8 +263,8 @@ func (w *ChainWriter) RegisterOperator(
 	}
 
 	// generate a random salt and 1 hour expiry for the signature
-	var operatorToAvsRegistrationSigSalt [32]byte
-	_, err = rand.Read(operatorToAvsRegistrationSigSalt[:])
+	var signatureSalt [32]byte
+	_, err = rand.Read(signatureSalt[:])
 	if err != nil {
 		return nil, err
 	}
@@ -280,15 +280,15 @@ func (w *ChainWriter) RegisterOperator(
 	sigValidForSeconds := int64(60 * 60) // 1 hour
 
 	curTime := new(big.Int).SetUint64(curBlock.Time())
-	operatorToAvsRegistrationSigExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
+	signatureExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
 
 	// params to register operator in delegation manager's operator-avs mapping
 	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(
 		ctx,
 		operatorAddr,
 		w.serviceManagerAddr,
-		operatorToAvsRegistrationSigSalt,
-		operatorToAvsRegistrationSigExpiry,
+		signatureSalt,
+		signatureExpiry,
 	)
 	if err != nil {
 		return nil, err
@@ -303,8 +303,8 @@ func (w *ChainWriter) RegisterOperator(
 	operatorSignature[64] += 27
 	operatorSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: operatorSignature,
-		Salt:      operatorToAvsRegistrationSigSalt,
-		Expiry:    operatorToAvsRegistrationSigExpiry,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()

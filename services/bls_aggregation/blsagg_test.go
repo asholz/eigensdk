@@ -1698,11 +1698,10 @@ func TestIntegrationBlsAgg(t *testing.T) {
 			OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 			AvsName:                    "avs",
 			PromMetricsIpPortAddress:   "localhost:9090",
+			ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 		}, ecdsaPrivKey, logger)
 		require.NoError(t, err)
 		avsWriter := avsClients.AvsRegistryChainWriter
-		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
-		require.NoError(t, err)
 
 		// create aggregation service
 		operatorsInfoService := operatorsinfo.NewOperatorsInfoServiceInMemory(
@@ -1762,6 +1761,10 @@ func TestIntegrationBlsAgg(t *testing.T) {
 
 		// wait for the response from the aggregation service and check the signature
 		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+
+		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
+		require.NoError(t, err)
+
 		_, _, err = avsServiceManager.CheckSignatures(
 			&bind.CallOpts{},
 			taskResponseDigest,

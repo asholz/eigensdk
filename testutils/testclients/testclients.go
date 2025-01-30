@@ -48,6 +48,7 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	clients, err := clients.BuildAll(

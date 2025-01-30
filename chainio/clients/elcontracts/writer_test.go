@@ -51,6 +51,7 @@ func TestRegisterOperator(t *testing.T) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	t.Run("register as an operator", func(t *testing.T) {
