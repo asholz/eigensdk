@@ -844,7 +844,7 @@ func getPubkeyRegistrationParams(
 	return &pubkeyRegParams, nil
 }
 
-// Returns the ABI encode of the given registration params.
+// Returns the ABI encoding of the given registration params.
 func abiEncodeRegistrationParams(
 	socket string,
 	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
