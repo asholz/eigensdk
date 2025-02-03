@@ -196,6 +196,8 @@ func NewTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleT
 }
 
 // Creates an avsRegistry testing ChainWriter from an httpEndpoint, private key and config.
+// This is needed because the existing testclients.BuildTestClients returns a
+// ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
 func NewTestAvsRegistryWriterFromConfig(
 	httpEndpoint string,
 	privateKeyHex string,
