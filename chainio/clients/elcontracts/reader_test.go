@@ -1280,7 +1280,7 @@ func TestFailingNetwork(t *testing.T) {
 	t.Run("get operator details", func(t *testing.T) {
 		operatorDetails, err := read_clients.ElChainReader.GetOperatorDetails(subCtx, operator)
 		assert.Error(t, err)
-		assert.Equal(t, types.Operator{}, operatorDetails)
+		assert.Zero(t, operatorDetails)
 	})
 
 	t.Run("get strategy and underlying token", func(t *testing.T) {
@@ -1291,7 +1291,7 @@ func TestFailingNetwork(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, strategy)
-		assert.Equal(t, common.Address{}, underlyingTokenAddr)
+		assert.Zero(t, underlyingTokenAddr)
 	})
 
 	t.Run("get strategy and underlying ERC20 token", func(t *testing.T) {
@@ -1302,7 +1302,7 @@ func TestFailingNetwork(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, strategy)
-		assert.Equal(t, common.Address{}, underlyingTokenAddr)
+		assert.Zero(t, underlyingTokenAddr)
 		assert.Nil(t, contractUnderlyingToken)
 	})
 
@@ -1367,7 +1367,7 @@ func TestFailingNetwork(t *testing.T) {
 		)
 
 		assert.Error(t, err)
-		assert.Equal(t, address, common.Address{})
+		assert.Zero(t, address)
 	})
 
 	t.Run("GetOperatorShares", func(t *testing.T) {
