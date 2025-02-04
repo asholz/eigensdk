@@ -1370,6 +1370,22 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		assert.Nil(t, receipt)
 	})
 
+	t.Run("clear deallocation queue", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategies := []common.Address{strategyAddr}
+		numsToClear := []uint16{uint16(1)}
+
+		receipt, err := chainWriter.ClearDeallocationQueue(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			strategies,
+			numsToClear,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
 	t.Run("set allocation delay", func(t *testing.T) {
 		receipt, err := chainWriter.SetAllocationDelay(
 			context.Background(),
