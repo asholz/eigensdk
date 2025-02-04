@@ -742,6 +742,13 @@ func TestClearDeallocationQueue(t *testing.T) {
 	allocationInfo, err = chainReader.GetAllocationInfo(context.Background(), operatorAddr, strategyAddr)
 	require.NoError(t, err)
 	assert.Equal(t, big.NewInt(int64(newAllocation)), allocationInfo[0].CurrentMagnitude)
+
+	// Assert that ClearDeallocationQueue fails if strategies and numsToClear have different legths
+	numsToClear = []uint16{}
+	_, err = chainWriter.ClearDeallocationQueue(context.Background(), operatorAddr, strategies, numsToClear, true)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "execution reverted: custom error 0x43714afd")
+
 }
 
 func TestAddAndRemovePendingAdmin(t *testing.T) {
