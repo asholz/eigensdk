@@ -501,7 +501,8 @@ func (w *ChainWriter) UpdateSocket(
 	return receipt, nil
 }
 
-// Sets the rewards initiator as the address received as parameter
+// Sets the rewards initiator address as the received as parameter. This address is the only one
+// that can initiate rewards. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetRewardsInitiator(
 	ctx context.Context,
 	rewardsInitiatorAddr gethcommon.Address,
