@@ -100,6 +100,7 @@ func BuildClients(
 
 	chainWriter := NewChainWriter(
 		avsBindings.ServiceManagerAddr,
+		avsBindings.ServiceManager,
 		avsBindings.RegistryCoordinator,
 		avsBindings.OperatorStateRetriever,
 		avsBindings.StakeRegistry,

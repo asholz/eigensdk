@@ -18,6 +18,7 @@ import (
 	blsapkregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -39,6 +40,7 @@ type eLReader interface {
 // AVS registry contract's state-changing functions.
 type ChainWriter struct {
 	serviceManagerAddr     gethcommon.Address
+	serviceManager         *servicemanager.ContractServiceManagerBase
 	registryCoordinator    *regcoord.ContractRegistryCoordinator
 	operatorStateRetriever *opstateretriever.ContractOperatorStateRetriever
 	stakeRegistry          *stakeregistry.ContractStakeRegistry
@@ -52,6 +54,7 @@ type ChainWriter struct {
 // Returns a new instance of ChainWriter.
 func NewChainWriter(
 	serviceManagerAddr gethcommon.Address,
+	serviceManager *servicemanager.ContractServiceManagerBase,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
 	operatorStateRetriever *opstateretriever.ContractOperatorStateRetriever,
 	stakeRegistry *stakeregistry.ContractStakeRegistry,
@@ -65,6 +68,7 @@ func NewChainWriter(
 
 	return &ChainWriter{
 		serviceManagerAddr:     serviceManagerAddr,
+		serviceManager:         serviceManager,
 		registryCoordinator:    registryCoordinator,
 		operatorStateRetriever: operatorStateRetriever,
 		stakeRegistry:          stakeRegistry,
@@ -97,6 +101,7 @@ func NewWriterFromConfig(
 
 	return NewChainWriter(
 		bindings.ServiceManagerAddr,
+		bindings.ServiceManager,
 		bindings.RegistryCoordinator,
 		bindings.OperatorStateRetriever,
 		bindings.StakeRegistry,
