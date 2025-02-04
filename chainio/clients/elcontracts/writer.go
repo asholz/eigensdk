@@ -508,6 +508,35 @@ func (w *ChainWriter) ModifyAllocations(
 	return receipt, nil
 }
 
+func (w *ChainWriter) ClearDeallocationQueue(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	strategies []gethcommon.Address,
+	numsToClear []uint16,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	if w.allocationManager == nil {
+		return nil, errors.New("AllocationManager contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.allocationManager.ClearDeallocationQueue(noSendTxOpts, operatorAddress, strategies, numsToClear)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ClearDeallocationQueue tx", err)
+	}
+
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
 // Sets the allocation delay for an operator.
 // The allocation delay is the number of blocks between the operator
 // allocating a magnitude to an operator set, and the magnitude becoming
