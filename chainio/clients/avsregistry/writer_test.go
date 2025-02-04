@@ -123,6 +123,17 @@ func TestWriterMethods(t *testing.T) {
 		require.NotNil(t, receipt)
 	})
 
+	t.Run("set rewards initiator", func(t *testing.T) {
+		initiator_addr := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		receipt, err := chainWriter.SetRewardsInitiator(
+			context.Background(),
+			initiator_addr,
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+	})
+
 	// Error cases
 	t.Run("fail register operator cancelling context", func(t *testing.T) {
 		receipt, err := chainWriter.RegisterOperator(
