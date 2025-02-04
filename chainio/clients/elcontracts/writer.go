@@ -510,7 +510,8 @@ func (w *ChainWriter) ModifyAllocations(
 
 // Receives an operator address, and a list of strategies and numsToClear (number of elements to clear from queue),
 // and clears the operators deallocation queue in numbers to clear for the given strategies, by completing the
-// pending deallocations if their effect timestamps have passed.
+// pending deallocations if their effect timestamps have passed. Note that strategies and numsToClear should have
+// equal length, since there should be a number of elements to clear from queue for each strategy queue.
 func (w *ChainWriter) ClearDeallocationQueue(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
