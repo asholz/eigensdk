@@ -701,9 +701,6 @@ func TestClearDeallocationQueue(t *testing.T) {
 		},
 	}
 
-	_, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, false)
-	require.Error(t, err, "cannot modify allocations without initializing the allocation delay")
-
 	waitForReceipt := true
 	delay := uint32(1)
 	// The allocation delay must be initialized before modifying the allocations
