@@ -500,3 +500,25 @@ func (w *ChainWriter) UpdateSocket(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetRewardsInitiator(
+	ctx context.Context,
+	rewardsInitiatorAddr gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting rewards initiator with addr ", rewardsInitiatorAddr)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.serviceManager.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err.Error())
+	}
+	return receipt, nil
+}
