@@ -394,6 +394,21 @@ func (r *ChainReader) IsOperatorRegistered(
 	return registeredWithAvs, nil
 }
 
+func (r *ChainReader) IsOperatorSetQuorum(
+	opts *bind.CallOpts,
+	quorumNumber uint8,
+) (bool, error) {
+	if r.stakeRegistry == nil {
+		return false, errors.New("StakeRegistry contract not provided")
+	}
+	isOperatorSet, err := r.stakeRegistry.IsOperatorSetQuorum(opts, quorumNumber)
+	if err != nil {
+		return false, err
+	}
+
+	return isOperatorSet, nil
+}
+
 // Queries existing operators for a particular block range.
 // Returns two arrays. The first one contains the addresses
 // of the operators, and the second contains their corresponding public keys.
