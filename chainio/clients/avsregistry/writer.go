@@ -383,6 +383,144 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 
 }
 
+func (w *ChainWriter) RegisterOperatorWithChurn(
+	ctx context.Context,
+	operatorEcdsaPrivateKey *ecdsa.PrivateKey,
+	churnApprovalEcdsaPrivateKey *ecdsa.PrivateKey,
+	blsKeyPair *bls.KeyPair,
+	quorumNumbers types.QuorumNums,
+	quorumNumbersToKick types.QuorumNums,
+	operatorsToKick []gethcommon.Address,
+	socket string,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	operatorAddr := crypto.PubkeyToAddress(operatorEcdsaPrivateKey.PublicKey)
+	g1HashedMsgToSign, err := w.registryCoordinator.PubkeyRegistrationMessageHash(&bind.CallOpts{}, operatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	signedMsg := chainioutils.ConvertToBN254G1Point(
+		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
+	)
+	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
+	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
+		PubkeyRegistrationSignature: signedMsg,
+		PubkeyG1:                    G1pubkeyBN254,
+		PubkeyG2:                    G2pubkeyBN254,
+	}
+
+	// generate a random salt and 1 hour expiry for the signature
+	var signatureSalt [32]byte
+	_, err = rand.Read(signatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	curBlockNum, err := w.ethClient.BlockNumber(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	curBlock, err := w.ethClient.BlockByNumber(context.Background(), new(big.Int).SetUint64(curBlockNum))
+	if err != nil {
+		return nil, err
+	}
+	sigValidForSeconds := int64(60 * 60) // 1 hour
+
+	curTime := new(big.Int).SetUint64(curBlock.Time())
+	signatureExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
+
+	// params to register operator in delegation manager's operator-avs mapping
+	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(
+		ctx,
+		operatorAddr,
+		w.serviceManagerAddr,
+		signatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+	operatorSignature, err := crypto.Sign(msgToSign[:], operatorEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	operatorSignature[64] += 27
+	operatorSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: operatorSignature,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+	var operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam
+	for i, operatorToKick := range operatorsToKick {
+		operatorKickParams = append(operatorKickParams, regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam{
+			Operator:     operatorToKick,
+			QuorumNumber: quorumNumbersToKick[i].UnderlyingType(),
+		})
+	}
+	var churnSignatureSalt [32]byte
+	_, err = rand.Read(churnSignatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	operatorId, err := w.registryCoordinator.GetOperatorId(&bind.CallOpts{}, operatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	churnMsgToSign, err := w.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
+		&bind.CallOpts{},
+		operatorAddr,
+		operatorId,
+		operatorKickParams,
+		churnSignatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+	churnApprovalSignature, err := crypto.Sign(churnMsgToSign[:], churnApprovalEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	churnApprovalSignature[64] += 27
+	churnApproverSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: churnApprovalSignature,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	w.registryCoordinator.RegisterOperatorWithChurn(
+		noSendTxOpts,
+		quorumNumbers.UnderlyingType(),
+		socket,
+		pubkeyRegParams,
+		operatorKickParams,
+		operatorSignatureWithSaltAndExpiry,
+		churnApproverSignatureWithSaltAndExpiry,
+	)
+
+	return nil, nil
+}
+
 // Updates the stakes of a the given `operators` for all the quorums.
 // On success, returns the receipt of the transaction.
 func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(

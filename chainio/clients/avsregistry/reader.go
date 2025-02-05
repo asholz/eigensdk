@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	apkreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
@@ -26,11 +27,11 @@ import (
 var DefaultQueryBlockRange = big.NewInt(10_000)
 
 type Config struct {
-	RegistryCoordinatorAddress    common.Address
-	OperatorStateRetrieverAddress common.Address
+	RegistryCoordinatorAddress    gethcommon.Address
+	OperatorStateRetrieverAddress gethcommon.Address
 
 	/// The address of the ServiceManager contract.
-	ServiceManagerAddress common.Address
+	ServiceManagerAddress gethcommon.Address
 }
 
 // The ChainReader provides methods to call the
@@ -566,4 +567,27 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 		)
 	}
 	return operatorIdToSocketMap, nil
+}
+
+func (r *ChainReader) CalculateOperatorChurnApprovalDigestHash(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorId types.OperatorId,
+	operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam,
+	salt [32]byte,
+	expiry *big.Int,
+) ([32]byte, error) {
+	if r.registryCoordinator == nil {
+		return [32]byte{}, errors.New("RegistryCoordinator contract not provided")
+	}
+
+	return r.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
+		&bind.CallOpts{Context: ctx},
+		operator,
+		operatorId,
+		operatorKickParams,
+		salt,
+		expiry,
+	)
+
 }
