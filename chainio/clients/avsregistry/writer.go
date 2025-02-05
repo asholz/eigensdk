@@ -514,7 +514,15 @@ func (w *ChainWriter) SetRewardsInitiator(
 	if err != nil {
 		return nil, err
 	}
-	tx, err := w.serviceManager.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
+
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+	}
+	tx, err := serviceManagerContract.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
 	if err != nil {
 		return nil, err
 	}
