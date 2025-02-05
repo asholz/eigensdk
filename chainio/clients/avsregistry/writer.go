@@ -40,7 +40,6 @@ type eLReader interface {
 // AVS registry contract's state-changing functions.
 type ChainWriter struct {
 	serviceManagerAddr     gethcommon.Address
-	serviceManager         *servicemanager.ContractServiceManagerBase
 	registryCoordinator    *regcoord.ContractRegistryCoordinator
 	operatorStateRetriever *opstateretriever.ContractOperatorStateRetriever
 	stakeRegistry          *stakeregistry.ContractStakeRegistry
@@ -54,7 +53,6 @@ type ChainWriter struct {
 // Returns a new instance of ChainWriter.
 func NewChainWriter(
 	serviceManagerAddr gethcommon.Address,
-	serviceManager *servicemanager.ContractServiceManagerBase,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
 	operatorStateRetriever *opstateretriever.ContractOperatorStateRetriever,
 	stakeRegistry *stakeregistry.ContractStakeRegistry,
@@ -68,7 +66,6 @@ func NewChainWriter(
 
 	return &ChainWriter{
 		serviceManagerAddr:     serviceManagerAddr,
-		serviceManager:         serviceManager,
 		registryCoordinator:    registryCoordinator,
 		operatorStateRetriever: operatorStateRetriever,
 		stakeRegistry:          stakeRegistry,
@@ -101,7 +98,6 @@ func NewWriterFromConfig(
 
 	return NewChainWriter(
 		bindings.ServiceManagerAddr,
-		bindings.ServiceManager,
 		bindings.RegistryCoordinator,
 		bindings.OperatorStateRetriever,
 		bindings.StakeRegistry,
