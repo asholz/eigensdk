@@ -375,5 +375,4 @@ func TestEjectOperator(t *testing.T) {
 	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
 	require.False(t, isRegisterd)
-	// Maybe we could do something better than just checking if is registered, but did not found something more
 }
