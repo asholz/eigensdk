@@ -8,6 +8,7 @@ import (
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
 	regcoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
+	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
@@ -247,6 +248,49 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+	})
+
+	t.Run("set slashable stake lookahead", func(t *testing.T) {
+		// Create stakeRegistry contract
+		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+		require.NoError(t, err)
+
+		contractBlsRegistryCoordinator, err := regcoordinator.NewContractRegistryCoordinator(
+			contractAddrs.RegistryCoordinator,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+
+		stakeRegistryAddr, err := contractBlsRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
+		require.NoError(t, err)
+
+		stakeRegistry, err := stakeregistry.NewContractStakeRegistry(
+			stakeRegistryAddr,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+
+		// When not set, lookAheadPeriod is Zero
+		lookAheadPeriod, err := stakeRegistry.SlashableStakeLookAheadPerQuorum(&bind.CallOpts{}, 0)
+		require.NoError(t, err)
+		assert.Zero(t, lookAheadPeriod)
+
+		// Modify lookAheadPeriod, set it as 32
+		newLookAheadPeriod := 32
+		receipt, err := chainWriter.SetSlashableStakeLookahead(
+			context.Background(),
+			0,
+			uint32(newLookAheadPeriod),
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
+		// After modify, lookAheadPeriod's value is 32
+		lookAheadPeriod, err = stakeRegistry.SlashableStakeLookAheadPerQuorum(&bind.CallOpts{}, 0)
+		require.NoError(t, err)
+
+		assert.Equal(t, lookAheadPeriod, uint32(newLookAheadPeriod))
 	})
 }
 

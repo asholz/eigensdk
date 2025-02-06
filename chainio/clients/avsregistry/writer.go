@@ -528,3 +528,27 @@ func (w *ChainWriter) SetRewardsInitiator(
 	}
 	return receipt, nil
 }
+
+// Receives the quorum number to modify and the new look ahead period to set. Sets the look ahead
+// time for checking operator shares for a specific quorum, and returns the receipt of the
+// transaction in case of success.
+func (w *ChainWriter) SetSlashableStakeLookahead(
+	ctx context.Context,
+	quorumNumber uint8,
+	lookAheadPeriod uint32,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.SetSlashableStakeLookahead(noSendTxOpts, quorumNumber, lookAheadPeriod)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+	}
+	return receipt, nil
+}
