@@ -15,6 +15,7 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	gethcommon "github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
@@ -326,4 +327,46 @@ func TestBlsSignature(t *testing.T) {
 	// Values taken from previous run of this test
 	assert.Equal(t, x, "15790168376429033610067099039091292283117017641532256477437243974517959682102")
 	assert.Equal(t, y, "4960450323239587206117776989095741074887370703941588742100855592356200866613")
+}
+
+func TestEjectOperator(t *testing.T) {
+	// Test set up
+	clients, _ := testclients.BuildTestClients(t)
+
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+	chainWriter := clients.AvsRegistryChainWriter
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	ecdsaPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	operatorAddr := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	quorumNumbers := types.QuorumNums{0}
+
+	// At the beginning, operator is not registered
+	isRegisterd, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+
+	// After registration, operator is registered
+	receipt, err := chainWriter.RegisterOperator(context.Background(), ecdsaPrivateKey, keypair, quorumNumbers, "", true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.True(t, isRegisterd)
+
+	// After being ejected, operator is not registered anymore
+	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers.UnderlyingType(), true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+	// Maybe we could do something better than just checking if is registered, but did not found something more
 }
