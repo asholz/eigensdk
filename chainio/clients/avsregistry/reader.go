@@ -397,6 +397,24 @@ func (r *ChainReader) IsOperatorRegistered(
 	return registeredWithAvs, nil
 }
 
+// Receives a quorum number and returns if that quorum is an operator set quorum based
+// on its stake type, that means true if the quorum is an M2 quorum and the avs is an
+// operator set avs (new workflow)
+func (r *ChainReader) IsOperatorSetQuorum(
+	opts *bind.CallOpts,
+	quorumNumber uint8,
+) (bool, error) {
+	if r.stakeRegistry == nil {
+		return false, errors.New("StakeRegistry contract not provided")
+	}
+	isOperatorSet, err := r.stakeRegistry.IsOperatorSetQuorum(opts, quorumNumber)
+	if err != nil {
+		return false, err
+	}
+
+	return isOperatorSet, nil
+}
+
 // Queries existing operators for a particular block range.
 // Returns two arrays. The first one contains the addresses
 // of the operators, and the second contains their corresponding public keys.

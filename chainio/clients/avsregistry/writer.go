@@ -529,6 +529,30 @@ func (w *ChainWriter) SetRewardsInitiator(
 	return receipt, nil
 }
 
+// Receives the quorum number to modify and the new look ahead period to set. Sets the look ahead
+// time for checking operator shares for a specific quorum, and returns the receipt of the
+// transaction in case of success.
+func (w *ChainWriter) SetSlashableStakeLookahead(
+	ctx context.Context,
+	quorumNumber uint8,
+	lookAheadPeriod uint32,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.SetSlashableStakeLookahead(noSendTxOpts, quorumNumber, lookAheadPeriod)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
 // This function creates a new Quorum from the old flow (without staking). The operator set params contains
 // the max operator count for that quorum and some churn options, the strategy params contains the specified
 // strategy for that quorum and its corresponding multiplier and the minimum stake is the minimum required
