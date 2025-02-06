@@ -258,6 +258,7 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		contractBlsRegistryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+
 			contractAddrs.RegistryCoordinator,
 			ethHttpClient,
 		)
