@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -536,7 +537,7 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 // On success, returns the receipt of the transaction.
 func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	ctx context.Context,
-	operators []gethcommon.Address,
+	operators []common.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	w.logger.Info("updating stakes of operator subset for all quorums", "operators", operators)

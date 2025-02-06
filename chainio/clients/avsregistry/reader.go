@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	apkreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
@@ -27,11 +26,11 @@ import (
 var DefaultQueryBlockRange = big.NewInt(10_000)
 
 type Config struct {
-	RegistryCoordinatorAddress    gethcommon.Address
-	OperatorStateRetrieverAddress gethcommon.Address
+	RegistryCoordinatorAddress    common.Address
+	OperatorStateRetrieverAddress common.Address
 
 	/// The address of the ServiceManager contract.
-	ServiceManagerAddress gethcommon.Address
+	ServiceManagerAddress common.Address
 }
 
 // The ChainReader provides methods to call the
