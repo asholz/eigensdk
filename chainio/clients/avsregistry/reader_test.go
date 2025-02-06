@@ -135,4 +135,16 @@ func TestReaderMethods(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 0, len(address_to_sockets))
 		})
+
+	t.Run("Is operator set quorum", func(t *testing.T) {
+		// A quorum registered in the old workflow should return false
+		isOperatorSet, err := chainReader.IsOperatorSetQuorum(
+			&bind.CallOpts{},
+			0,
+		)
+		require.NoError(t, err)
+		require.False(t, isOperatorSet)
+
+		// TODO: Make a test with the new workflow testing a case returning true
+	})
 }
