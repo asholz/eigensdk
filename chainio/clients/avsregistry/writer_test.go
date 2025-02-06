@@ -361,7 +361,7 @@ func TestEjectOperator(t *testing.T) {
 	require.True(t, isRegisterd)
 
 	// After being ejected, operator is not registered anymore
-	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers.UnderlyingType(), true)
+	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers, true)
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 

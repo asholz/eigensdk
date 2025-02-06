@@ -558,7 +558,7 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 func (w *ChainWriter) EjectOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
-	quorumNumbers []byte,
+	quorumNumbers types.QuorumNums,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	w.logger.Info("ejecting operator with address ", operatorAddress, " from quorum numbers ", quorumNumbers)
@@ -567,7 +567,7 @@ func (w *ChainWriter) EjectOperator(
 	if err != nil {
 		return nil, err
 	}
-	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers)
+	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers.UnderlyingType())
 	if err != nil {
 		return nil, err
 	}
