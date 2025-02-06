@@ -352,7 +352,14 @@ func TestEjectOperator(t *testing.T) {
 	require.False(t, isRegisterd)
 
 	// After registration, operator is registered
-	receipt, err := chainWriter.RegisterOperator(context.Background(), ecdsaPrivateKey, keypair, quorumNumbers, "", true)
+	receipt, err := chainWriter.RegisterOperator(
+		context.Background(),
+		ecdsaPrivateKey,
+		keypair,
+		quorumNumbers,
+		"",
+		true,
+	)
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
