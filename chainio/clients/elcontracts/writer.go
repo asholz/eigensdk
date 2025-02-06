@@ -405,6 +405,33 @@ func (w *ChainWriter) SetOperatorPISplit(
 	return receipt, nil
 }
 
+func (w *ChainWriter) SetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+	split uint16,
+) (*gethtypes.Receipt, error) {
+	if w.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
+	if err != nil {
+		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, true)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
 // Processes the claims given by `claims`.
 // The rewards are transferred to the given `recipientAddress`.
 func (w *ChainWriter) ProcessClaims(
