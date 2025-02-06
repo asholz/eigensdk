@@ -455,12 +455,6 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		Expiry:    signatureExpiry,
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-
 	var operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam
 	for i, operatorToKick := range operatorsToKick {
 		operatorKickParams = append(operatorKickParams, regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam{
@@ -508,7 +502,7 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		return nil, err
 	}
 
-	w.registryCoordinator.RegisterOperatorWithChurn(
+	tx, err := w.registryCoordinator.RegisterOperatorWithChurn(
 		noSendTxOpts,
 		quorumNumbers.UnderlyingType(),
 		socket,
@@ -517,8 +511,25 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		operatorSignatureWithSaltAndExpiry,
 		churnApproverSignatureWithSaltAndExpiry,
 	)
-
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
+	}
+	w.logger.Info(
+		"successfully registered operator with AVS registry coordinator",
+		"txHash",
+		receipt.TxHash.String(),
+		"avs-service-manager",
+		w.serviceManagerAddr,
+		"operator",
+		operatorAddr,
+		"quorumNumbers",
+		quorumNumbers,
+	)
+	return receipt, nil
 }
 
 // Updates the stakes of a the given `operators` for all the quorums.
