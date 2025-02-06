@@ -553,6 +553,8 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 	return receipt, nil
 }
 
+// Receives an operator address and quorum numbers and ejects the operator from the given quorums.
+// Note: if the operator is not registered, the call will not fail, but will do nothing.
 func (w *ChainWriter) EjectOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
