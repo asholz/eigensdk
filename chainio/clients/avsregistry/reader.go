@@ -568,26 +568,3 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 	}
 	return operatorIdToSocketMap, nil
 }
-
-func (r *ChainReader) CalculateOperatorChurnApprovalDigestHash(
-	ctx context.Context,
-	operator gethcommon.Address,
-	operatorId types.OperatorId,
-	operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam,
-	salt [32]byte,
-	expiry *big.Int,
-) ([32]byte, error) {
-	if r.registryCoordinator == nil {
-		return [32]byte{}, errors.New("RegistryCoordinator contract not provided")
-	}
-
-	return r.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
-		&bind.CallOpts{Context: ctx},
-		operator,
-		operatorId,
-		operatorKickParams,
-		salt,
-		expiry,
-	)
-
-}
