@@ -553,11 +553,44 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 	return receipt, nil
 }
 
+// Creates a new quorum that tracks total delegated stake for operators.
+// It receives the operator set parameters for the given quorum and the minimum stake required to register.
+// Returns the transaction receipt in case of success.
+func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
+	ctx context.Context,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	minimumStakeRequired *big.Int,
+	strategyParams []regcoord.IStakeRegistryTypesStrategyParams,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("Creating total delegated stake quorum")
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.CreateTotalDelegatedStakeQuorum(
+		noSendTxOpts,
+		operatorSetParams,
+		minimumStakeRequired,
+		strategyParams,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
 // Creates a new quorum that tracks slashable stake for operators.
 // It receives the operator set parameters for the given quorum, the minimum stake required to register,
 // and the number of blocks to look ahead when calculating slashable stake.
 // Returns the transaction receipt in case of success.
-// Note: This function does not work on M2 AVSs.
+// Note: This function only works on M2 AVSs.
 func (w *ChainWriter) CreateSlashableStakeQuorum(
 	ctx context.Context,
 	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
@@ -611,6 +644,56 @@ func (w *ChainWriter) EjectOperator(
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the operator set params for the quorum which id matches the quorum number.
+// Params consists in a new max operator count and operator churn parameters
+// Returns the transaction receipt in case of success.
+func (w *ChainWriter) SetOperatorSetParams(
+	ctx context.Context,
+	quorumNumber uint8,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting operator set params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetOperatorSetParams(noSendTxOpts, quorumNumber, operatorSetParams)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the churnApprover as the address received as parameter. The churnApprover's signature is required in
+// churn related methods (like churn registration). Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetChurnApprover(
+	ctx context.Context,
+	churnApproverAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting churn approver with address ", churnApproverAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetChurnApprover(noSendTxOpts, churnApproverAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
 	}
 	return receipt, nil
 }

@@ -258,7 +258,6 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		contractBlsRegistryCoordinator, err := regcoord.NewContractRegistryCoordinator(
-
 			contractAddrs.RegistryCoordinator,
 			ethHttpClient,
 		)
@@ -331,8 +330,7 @@ func TestBlsSignature(t *testing.T) {
 	assert.Equal(t, y, "4960450323239587206117776989095741074887370703941588742100855592356200866613")
 }
 
-func TestCreateSlashableStakeQuorum(t *testing.T) {
-	// Test set up
+func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	chainReader := clients.ReadClients.AvsRegistryChainReader
 
@@ -340,11 +338,8 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 
 	chainWriter := clients.AvsRegistryChainWriter
 
-	// Beyond MaxOperatorCount, the other params are not used anywhere other than in registerOperatorWithChurn
 	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
-		MaxOperatorCount:        192,
-		KickBIPsOfOperatorStake: 0,
-		KickBIPsOfTotalStake:    0,
+		MaxOperatorCount: 5,
 	}
 	minimumStakeNeeded := big.NewInt(0)
 
@@ -361,6 +356,23 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(1))
 
+	// Create a new total delegated stake quorum
+	receipt, err := chainWriter.CreateTotalDelegatedStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After creating first quorum, count is 2
+	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(2))
+
+	// Enabling operator sets to create slashable stake quorums
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
 		registryCoordinatorAddress,
@@ -379,7 +391,7 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a new slashable stake quorum
-	receipt, err := chainWriter.CreateSlashableStakeQuorum(
+	receipt, err = chainWriter.CreateSlashableStakeQuorum(
 		context.Background(),
 		operatorSetParams,
 		minimumStakeNeeded,
@@ -390,10 +402,10 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	// After creating a new one, quorum count is 2
+	// After creating a new one, quorum count is 3
 	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
-	assert.Equal(t, count, uint8(2))
+	assert.Equal(t, count, uint8(3))
 }
 
 func TestEjectOperator(t *testing.T) {
@@ -442,4 +454,84 @@ func TestEjectOperator(t *testing.T) {
 	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
 	require.False(t, isRegisterd)
+}
+
+func TestSetOperatorSetParams(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	// This parameters are seted to the quorum created on reg coordinator initialization
+	initialParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount:        10000,
+		KickBIPsOfOperatorStake: 15000,
+		KickBIPsOfTotalStake:    100,
+	}
+
+	// At the beginning, params are the set on initialization
+	params, err := registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, initialParams)
+
+	newOperatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount: 5,
+	}
+
+	receipt, err := chainWriter.SetOperatorSetParams(
+		context.Background(),
+		0,
+		newOperatorSetParams,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After setting operator set params, params are the setted ones
+	params, err = registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, newOperatorSetParams)
+}
+
+func TestSetChurnApprover(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, churnApprover is anvil first address
+	approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set a new churnApprover
+	receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, churnApprover is the setted value
+	newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 }

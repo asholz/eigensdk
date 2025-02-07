@@ -530,6 +530,120 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	require.Error(t, err, "split must be less than 10000")
 }
 
+func TestSetOperatorSetSplit(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
+	operatorAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	activationDelay := uint32(0)
+
+	// Set activation delay to zero so that the new AVS split can be retrieved immediately after setting it
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: contractAddrs.RewardsCoordinator,
+	}
+
+	// Create operator clients
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	operatorSetId := uint32(1)
+	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
+
+	// Create an operator set to register an operator on it
+	err = createOperatorSet(
+		anvilHttpEndpoint,
+		privateKeyHex,
+		avsAddress,
+		operatorSetId,
+		erc20MockStrategyAddr,
+	)
+	require.NoError(t, err)
+
+	//SPLIT TEST START
+
+	operatorSetType1 := allocationmanager.OperatorSet{
+		Avs: avsAddress,
+		Id:  uint32(operatorSetId),
+	}
+
+	//REGISTER OPERATOR IN OPERATOR SET
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	request := elcontracts.RegistrationRequest{
+		OperatorAddress: operatorAddress,
+		AVSAddress:      avsAddress,
+		OperatorSetIds:  []uint32{operatorSetId},
+		WaitForReceipt:  true,
+		Socket:          "socket",
+		BlsKeyPair:      keypair,
+	}
+
+	receipt, err = chainWriter.RegisterForOperatorSets(
+		context.Background(),
+		contractAddrs.RegistryCoordinator,
+		request,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	isRegistered, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+		context.Background(),
+		operatorAddress,
+		operatorSetType1,
+	)
+	require.NoError(t, err)
+	require.Equal(t, true, isRegistered)
+
+	//FIRST GET
+	operatorSetType2 := rewardscoordinator.OperatorSet{
+		Avs: avsAddress,
+		Id:  uint32(operatorSetId),
+	}
+
+	expectedInitialSplit := uint16(1000)
+	initialSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddress, operatorSetType2)
+	require.NoError(t, err)
+	require.Equal(t, expectedInitialSplit, initialSplit)
+
+	//FIRST SET
+	newSplit := initialSplit + 1
+	waitForReceipt := true
+	// Set a new operator set split
+	receipt, err = chainWriter.SetOperatorSetSplit(
+		context.Background(),
+		operatorAddress,
+		operatorSetType2,
+		newSplit,
+		waitForReceipt,
+	)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	//SECOND GET
+	updatedSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddress, operatorSetType2)
+	require.NoError(t, err)
+	require.Equal(t, newSplit, updatedSplit)
+}
+
 func TestSetAllocationDelay(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)

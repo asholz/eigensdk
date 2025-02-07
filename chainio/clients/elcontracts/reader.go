@@ -399,6 +399,21 @@ func (r *ChainReader) GetOperatorPISplit(
 	return r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
 }
 
+// Returns the split for an operator in an operator set.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
+func (r *ChainReader) GetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+) (uint16, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+
+	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
+}
+
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
 // by an operator.
 // Can return an error if the `AllocationManager` contract address was not provided, or due to
