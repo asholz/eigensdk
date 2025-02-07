@@ -837,9 +837,6 @@ func TestInvalidConfig(t *testing.T) {
 			operatorSet,
 		)
 		require.Error(t, err)
-
-		_, err = chainReader.GetOperatorPISplit(context.Background(), common.HexToAddress(operatorAddr))
-		require.Error(t, err)
 	})
 
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {

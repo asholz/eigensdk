@@ -597,7 +597,8 @@ func TestSetOperatorSetSplit(t *testing.T) {
 
 	// // Set a invalid operator PI split
 	// invalidSplit := uint16(10001)
-	// _, err = chainWriter.SetOperatorSetSplit(context.Background(), operatorAddr, operatorSet, invalidSplit, waitForReceipt)
+	// _, err = chainWriter.SetOperatorSetSplit(context.Background(), operatorAddr, operatorSet, invalidSplit,
+	// waitForReceipt)
 	// require.Error(t, err, "split must be less than 10000")
 }
 
