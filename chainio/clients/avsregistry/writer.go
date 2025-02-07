@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,10 +18,12 @@ import (
 	blsapkregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type eLReader interface {
@@ -35,6 +36,8 @@ type eLReader interface {
 	) ([32]byte, error)
 }
 
+// The ChainWriter provides methods to call the
+// AVS registry contract's state-changing functions.
 type ChainWriter struct {
 	serviceManagerAddr     gethcommon.Address
 	registryCoordinator    *regcoord.ContractRegistryCoordinator
@@ -47,6 +50,7 @@ type ChainWriter struct {
 	txMgr                  txmgr.TxManager
 }
 
+// Returns a new instance of ChainWriter.
 func NewChainWriter(
 	serviceManagerAddr gethcommon.Address,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
@@ -154,7 +158,7 @@ func (w *ChainWriter) RegisterOperatorInQuorumWithAVSRegistryCoordinator(
 	)
 	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
 	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
-	pubkeyRegParams := regcoord.IBLSApkRegistryPubkeyRegistrationParams{
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
 		PubkeyRegistrationSignature: signedMsg,
 		PubkeyG1:                    G1pubkeyBN254,
 		PubkeyG2:                    G2pubkeyBN254,
@@ -203,7 +207,7 @@ func (w *ChainWriter) RegisterOperatorInQuorumWithAVSRegistryCoordinator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
 	}
 	w.logger.Info(
 		"successfully registered operator with AVS registry coordinator",
@@ -256,15 +260,15 @@ func (w *ChainWriter) RegisterOperator(
 	)
 	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
 	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
-	pubkeyRegParams := regcoord.IBLSApkRegistryPubkeyRegistrationParams{
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
 		PubkeyRegistrationSignature: signedMsg,
 		PubkeyG1:                    G1pubkeyBN254,
 		PubkeyG2:                    G2pubkeyBN254,
 	}
 
 	// generate a random salt and 1 hour expiry for the signature
-	var operatorToAvsRegistrationSigSalt [32]byte
-	_, err = rand.Read(operatorToAvsRegistrationSigSalt[:])
+	var signatureSalt [32]byte
+	_, err = rand.Read(signatureSalt[:])
 	if err != nil {
 		return nil, err
 	}
@@ -278,17 +282,17 @@ func (w *ChainWriter) RegisterOperator(
 		return nil, err
 	}
 	sigValidForSeconds := int64(60 * 60) // 1 hour
-	operatorToAvsRegistrationSigExpiry := new(
-		big.Int,
-	).Add(new(big.Int).SetUint64(curBlock.Time()), big.NewInt(sigValidForSeconds))
+
+	curTime := new(big.Int).SetUint64(curBlock.Time())
+	signatureExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
 
 	// params to register operator in delegation manager's operator-avs mapping
 	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(
 		ctx,
 		operatorAddr,
 		w.serviceManagerAddr,
-		operatorToAvsRegistrationSigSalt,
-		operatorToAvsRegistrationSigExpiry,
+		signatureSalt,
+		signatureExpiry,
 	)
 	if err != nil {
 		return nil, err
@@ -303,8 +307,8 @@ func (w *ChainWriter) RegisterOperator(
 	operatorSignature[64] += 27
 	operatorSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: operatorSignature,
-		Salt:      operatorToAvsRegistrationSigSalt,
-		Expiry:    operatorToAvsRegistrationSigExpiry,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
@@ -325,7 +329,7 @@ func (w *ChainWriter) RegisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
 	}
 	w.logger.Info(
 		"successfully registered operator with AVS registry coordinator",
@@ -367,7 +371,7 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err: ", err.Error())
 	}
 	w.logger.Info(
 		"successfully updated stakes for entire operator set",
@@ -380,6 +384,8 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 
 }
 
+// Updates the stakes of a the given `operators` for all the quorums.
+// On success, returns the receipt of the transaction.
 func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	ctx context.Context,
 	operators []gethcommon.Address,
@@ -396,7 +402,7 @@ func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
 	}
 	w.logger.Info(
 		"successfully updated stakes of operator subset for all quorums",
@@ -408,6 +414,8 @@ func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	return receipt, nil
 }
 
+// Deregisters the caller from the quorums given by `quorumNumbers`.
+// On success, returns the receipt of the transaction.
 func (w *ChainWriter) DeregisterOperator(
 	ctx context.Context,
 	quorumNumbers types.QuorumNums,
@@ -425,7 +433,7 @@ func (w *ChainWriter) DeregisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
 	}
 	w.logger.Info(
 		"successfully deregistered operator with the AVS's registry coordinator",
@@ -435,6 +443,8 @@ func (w *ChainWriter) DeregisterOperator(
 	return receipt, nil
 }
 
+// Deregisters an operator from the given operator sets.
+// On success, returns the receipt of the transaction.
 func (w *ChainWriter) DeregisterOperatorOperatorSets(
 	ctx context.Context,
 	operatorSetIds types.OperatorSetIds,
@@ -455,7 +465,7 @@ func (w *ChainWriter) DeregisterOperatorOperatorSets(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
 	}
 	w.logger.Info(
 		"successfully deregistered operator with the AVS's registry coordinator",
@@ -465,6 +475,8 @@ func (w *ChainWriter) DeregisterOperatorOperatorSets(
 	return receipt, nil
 }
 
+// Updates the socket of the sender (if it is a registered operator).
+// On success, returns the receipt of the transaction.
 func (w *ChainWriter) UpdateSocket(
 	ctx context.Context,
 	socket types.Socket,
@@ -480,7 +492,208 @@ func (w *ChainWriter) UpdateSocket(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send UpdateSocket tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send UpdateSocket tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the rewards initiator address as the received as parameter. This address is the only one
+// that can initiate rewards. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetRewardsInitiator(
+	ctx context.Context,
+	rewardsInitiatorAddr gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting rewards initiator with addr ", rewardsInitiatorAddr)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+	}
+	tx, err := serviceManagerContract.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Receives the quorum number to modify and the new look ahead period to set. Sets the look ahead
+// time for checking operator shares for a specific quorum, and returns the receipt of the
+// transaction in case of success.
+func (w *ChainWriter) SetSlashableStakeLookahead(
+	ctx context.Context,
+	quorumNumber uint8,
+	lookAheadPeriod uint32,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.SetSlashableStakeLookahead(noSendTxOpts, quorumNumber, lookAheadPeriod)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Creates a new quorum that tracks total delegated stake for operators.
+// It receives the operator set parameters for the given quorum and the minimum stake required to register.
+// Returns the transaction receipt in case of success.
+func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
+	ctx context.Context,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	minimumStakeRequired *big.Int,
+	strategyParams []regcoord.IStakeRegistryTypesStrategyParams,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("Creating total delegated stake quorum")
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.CreateTotalDelegatedStakeQuorum(
+		noSendTxOpts,
+		operatorSetParams,
+		minimumStakeRequired,
+		strategyParams,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Creates a new quorum that tracks slashable stake for operators.
+// It receives the operator set parameters for the given quorum, the minimum stake required to register,
+// and the number of blocks to look ahead when calculating slashable stake.
+// Returns the transaction receipt in case of success.
+// Note: This function only works on M2 AVSs.
+func (w *ChainWriter) CreateSlashableStakeQuorum(
+	ctx context.Context,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	minimumStakeRequired *big.Int,
+	strategyParams []regcoord.IStakeRegistryTypesStrategyParams,
+	lookAheadPeriod uint32,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("Creating slashable stake quorum")
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.CreateSlashableStakeQuorum(
+		noSendTxOpts,
+		operatorSetParams,
+		minimumStakeRequired,
+		strategyParams,
+		lookAheadPeriod,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Receives an operator address and quorum numbers and ejects the operator from the given quorums.
+// Note: if the operator is not registered, the call will not fail, but will do nothing.
+func (w *ChainWriter) EjectOperator(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	quorumNumbers types.QuorumNums,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("ejecting operator with address ", operatorAddress, " from quorum numbers ", quorumNumbers)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers.UnderlyingType())
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the operator set params for the quorum which id matches the quorum number.
+// Params consists in a new max operator count and operator churn parameters
+// Returns the transaction receipt in case of success.
+func (w *ChainWriter) SetOperatorSetParams(
+	ctx context.Context,
+	quorumNumber uint8,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting operator set params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetOperatorSetParams(noSendTxOpts, quorumNumber, operatorSetParams)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the churnApprover as the address received as parameter. The churnApprover's signature is required in
+// churn related methods (like churn registration). Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetChurnApprover(
+	ctx context.Context,
+	churnApproverAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting churn approver with address ", churnApproverAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetChurnApprover(noSendTxOpts, churnApproverAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
 	}
 	return receipt, nil
 }
