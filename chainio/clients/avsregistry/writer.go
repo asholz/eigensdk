@@ -577,3 +577,25 @@ func (w *ChainWriter) EjectOperator(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetChurnApprover(
+	ctx context.Context,
+	churnApproverAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting churn approver with address ", churnApproverAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetChurnApprover(noSendTxOpts, churnApproverAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
+	}
+	return receipt, nil
+}
