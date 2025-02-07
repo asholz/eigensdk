@@ -577,7 +577,13 @@ func TestSetOperatorSetSplit(t *testing.T) {
 
 	newSplit := initialSplit + 1
 	// Set a new operator PI split
-	receipt, err = chainWriter.SetOperatorSetSplit(context.Background(), operatorAddr, operatorSet, newSplit, waitForReceipt)
+	receipt, err = chainWriter.SetOperatorSetSplit(
+		context.Background(),
+		operatorAddr,
+		operatorSet,
+		newSplit,
+		waitForReceipt,
+	)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
