@@ -570,6 +570,40 @@ func TestSetEjector(t *testing.T) {
 	assert.Equal(t, newEjector.String(), testutils.ANVIL_SECOND_ADDRESS)
 }
 
+func TestSetAccountIdentifier(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	accountIdentifierAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, accountIdentifier is service manager address
+	accountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, accountIdentifier, contractAddrs.ServiceManager)
+
+	// Set a new accountIdentifier
+	receipt, err := chainWriter.SetAccountIdentifier(context.Background(), accountIdentifierAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, accountIdentifier is the value set
+	newAccountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newAccountIdentifier.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
+
 func TestSetEjectionCooldown(t *testing.T) {
 	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
