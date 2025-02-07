@@ -48,6 +48,7 @@ func NewSubscriberFromConfig(
 	return NewChainSubscriber(bindings.RegistryCoordinator, bindings.BlsApkRegistry, logger), nil
 }
 
+// Returns a channel that receives new BLS pubkey registration events.
 func (s *ChainSubscriber) SubscribeToNewPubkeyRegistrations() (chan *blsapkreg.ContractBLSApkRegistryNewPubkeyRegistration, event.Subscription, error) {
 	newPubkeyRegistrationChan := make(chan *blsapkreg.ContractBLSApkRegistryNewPubkeyRegistration)
 	sub, err := s.blsApkRegistry.WatchNewPubkeyRegistration(
@@ -59,6 +60,7 @@ func (s *ChainSubscriber) SubscribeToNewPubkeyRegistrations() (chan *blsapkreg.C
 	return newPubkeyRegistrationChan, sub, nil
 }
 
+// Returns a channel that receives operator socket update events.
 func (s *ChainSubscriber) SubscribeToOperatorSocketUpdates() (chan *regcoord.ContractRegistryCoordinatorOperatorSocketUpdate, event.Subscription, error) {
 	operatorSocketUpdateChan := make(chan *regcoord.ContractRegistryCoordinatorOperatorSocketUpdate)
 	sub, err := s.regCoord.WatchOperatorSocketUpdate(
