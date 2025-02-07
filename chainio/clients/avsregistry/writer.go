@@ -647,3 +647,53 @@ func (w *ChainWriter) EjectOperator(
 	}
 	return receipt, nil
 }
+
+// Sets the operator set params for the quorum which id matches the quorum number.
+// Params consists in a new max operator count and operator churn parameters
+// Returns the transaction receipt in case of success.
+func (w *ChainWriter) SetOperatorSetParams(
+	ctx context.Context,
+	quorumNumber uint8,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting operator set params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetOperatorSetParams(noSendTxOpts, quorumNumber, operatorSetParams)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Sets the churnApprover as the address received as parameter. The churnApprover's signature is required in
+// churn related methods (like churn registration). Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetChurnApprover(
+	ctx context.Context,
+	churnApproverAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting churn approver with address ", churnApproverAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetChurnApprover(noSendTxOpts, churnApproverAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
+	}
+	return receipt, nil
+}
