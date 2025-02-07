@@ -632,7 +632,7 @@ func TestSetEjectionCooldown(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	// After change, ejectionCooldown is the setted value
+	// After change, ejectionCooldown is the value set
 	newCooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, newCooldown, ejectionCooldown)
