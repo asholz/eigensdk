@@ -672,6 +672,8 @@ func (w *ChainWriter) SetChurnApprover(
 	return receipt, nil
 }
 
+// Sets the accountIdentifier as the address received as parameter. Identifier should only be set once, since
+// changing it could break existing operator sets. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetAccountIdentifier(
 	ctx context.Context,
 	accountIdentifierAddress gethcommon.Address,
