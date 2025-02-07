@@ -351,10 +351,12 @@ func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
 
 	lookAheadPeriod := uint32(0)
 
+	// First, quorum count is 1 because Registry is initialized with 1 quorum
 	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(1))
 
+	// Create a new total delegated stake quorum
 	receipt, err := chainWriter.CreateTotalDelegatedStakeQuorum(
 		context.Background(),
 		operatorSetParams,
@@ -365,10 +367,12 @@ func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
+	// After creating first quorum, count is 2
 	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(2))
 
+	// Enabling operator sets to create slashable stake quorums
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
 		registryCoordinatorAddress,
