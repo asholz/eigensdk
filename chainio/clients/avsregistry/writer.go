@@ -647,3 +647,25 @@ func (w *ChainWriter) EjectOperator(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetEjector(
+	ctx context.Context,
+	ejectorAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting ejector with address ", ejectorAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetEjector(noSendTxOpts, ejectorAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetEjector tx with err", err.Error())
+	}
+	return receipt, nil
+}
