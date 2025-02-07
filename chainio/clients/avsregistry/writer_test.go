@@ -332,6 +332,7 @@ func TestBlsSignature(t *testing.T) {
 }
 
 func TestCreateSlashableStakeQuorum(t *testing.T) {
+	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	chainReader := clients.ReadClients.AvsRegistryChainReader
 
@@ -355,6 +356,7 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 
 	lookAheadPeriod := uint32(0)
 
+	// First, quorum count is 1 because Registry is initialized with 1 quorum
 	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(1))
@@ -376,6 +378,7 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	_, err = txManager.Send(context.Background(), tx, true)
 	require.NoError(t, err)
 
+	// Create a new slashable stake quorum
 	receipt, err := chainWriter.CreateSlashableStakeQuorum(
 		context.Background(),
 		operatorSetParams,
@@ -387,6 +390,7 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
+	// After creating a new one, quorum count is 2
 	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(2))
