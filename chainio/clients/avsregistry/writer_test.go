@@ -489,3 +489,37 @@ func TestSetChurnApprover(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 }
+
+func TestSetAccountIdentifier(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	accountIdentifierAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, accountIdentifier is bls-pubkey-registry address
+	accountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, accountIdentifier.String(), "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9")
+
+	// Set a new accountIdentifier
+	receipt, err := chainWriter.SetAccountIdentifier(context.Background(), accountIdentifierAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, accountIdentifier is the setted value
+	newAccountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newAccountIdentifier.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
