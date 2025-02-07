@@ -330,49 +330,7 @@ func TestBlsSignature(t *testing.T) {
 	assert.Equal(t, y, "4960450323239587206117776989095741074887370703941588742100855592356200866613")
 }
 
-func TestCreateDelegatedStakeQuorum(t *testing.T) {
-	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
-	chainReader := clients.ReadClients.AvsRegistryChainReader
-
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	chainWriter := clients.AvsRegistryChainWriter
-
-	// Beyond MaxOperatorCount, the other params are not used anywhere other than in registerOperatorWithChurn
-	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
-		MaxOperatorCount:        192,
-		KickBIPsOfOperatorStake: 0,
-		KickBIPsOfTotalStake:    0,
-	}
-	minimumStakeNeeded := big.NewInt(0)
-
-	strategyAddr := contractAddrs.Erc20MockStrategy
-	strategyParam := regcoord.IStakeRegistryTypesStrategyParams{
-		Strategy:   strategyAddr,
-		Multiplier: big.NewInt(1e18),
-	}
-
-	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
-	require.NoError(t, err)
-	assert.Equal(t, count, uint8(1))
-
-	receipt, err := chainWriter.CreateTotalDelegatedStakeQuorum(
-		context.Background(),
-		operatorSetParams,
-		minimumStakeNeeded,
-		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
-		true,
-	)
-	require.NoError(t, err)
-	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
-
-	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
-	require.NoError(t, err)
-	assert.Equal(t, count, uint8(2))
-}
-
-func TestCreateSlashableStakeQuorum(t *testing.T) {
-	// Test set up
+func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	chainReader := clients.ReadClients.AvsRegistryChainReader
 
@@ -396,10 +354,23 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 
 	lookAheadPeriod := uint32(0)
 
-	// First, quorum count is 1 because Registry is initialized with 1 quorum
 	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(1))
+
+	receipt, err := chainWriter.CreateTotalDelegatedStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(2))
 
 	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
@@ -419,7 +390,7 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a new slashable stake quorum
-	receipt, err := chainWriter.CreateSlashableStakeQuorum(
+	receipt, err = chainWriter.CreateSlashableStakeQuorum(
 		context.Background(),
 		operatorSetParams,
 		minimumStakeNeeded,
@@ -430,10 +401,10 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	// After creating a new one, quorum count is 2
+	// After creating a new one, quorum count is 3
 	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
 	require.NoError(t, err)
-	assert.Equal(t, count, uint8(2))
+	assert.Equal(t, count, uint8(3))
 }
 
 func TestEjectOperator(t *testing.T) {
