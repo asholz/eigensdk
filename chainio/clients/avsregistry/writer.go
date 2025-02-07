@@ -648,6 +648,9 @@ func (w *ChainWriter) EjectOperator(
 	return receipt, nil
 }
 
+// Sets the operator set params for the quorum which id matches the quorum number.
+// Params consists in a new max operator count and operator churn parameters
+// Returns the transaction receipt in case of success.
 func (w *ChainWriter) SetOperatorSetParams(
 	ctx context.Context,
 	quorumNumber uint8,
