@@ -598,7 +598,7 @@ func TestSetAccountIdentifier(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	// After change, accountIdentifier is the setted value
+	// After change, accountIdentifier is the value set
 	newAccountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, newAccountIdentifier.String(), testutils.ANVIL_SECOND_ADDRESS)
