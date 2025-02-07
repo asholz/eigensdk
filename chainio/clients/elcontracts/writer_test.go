@@ -627,7 +627,7 @@ func TestSetOperatorSetSplit(t *testing.T) {
 	//FIRST SET
 	newSplit := initialSplit + 1
 	waitForReceipt := true
-	// Set a new operator PI split
+	// Set a new operator set split
 	receipt, err = chainWriter.SetOperatorSetSplit(
 		context.Background(),
 		operatorAddress,
