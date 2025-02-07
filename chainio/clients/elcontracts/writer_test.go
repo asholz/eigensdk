@@ -530,6 +530,68 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	require.Error(t, err, "split must be less than 10000")
 }
 
+func TestSetOperatorSetSplit(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	avsAddr := contractAddrs.ServiceManager
+
+	operatorSet := rewardscoordinator.OperatorSet{
+		Avs: avsAddr,
+		Id:  uint32(1),
+	}
+
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	waitForReceipt := true
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the new PI split can be retrieved immediately after setting it
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Create ChainWriter
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	expectedInitialSplit := uint16(1000)
+	initialSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddr, operatorSet)
+	require.NoError(t, err)
+	require.Equal(t, expectedInitialSplit, initialSplit)
+
+	newSplit := initialSplit + 1
+	// Set a new operator PI split
+	receipt, err = chainWriter.SetOperatorSetSplit(context.Background(), operatorAddr, operatorSet, newSplit, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Retrieve the operator PI split to check it has been set
+	updatedSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddr, operatorSet)
+	require.NoError(t, err)
+	require.Equal(t, newSplit, updatedSplit)
+
+	// Set a invalid operator PI split
+	invalidSplit := uint16(10001)
+	_, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, invalidSplit, waitForReceipt)
+	require.Error(t, err, "split must be less than 10000")
+}
+
 func TestSetAllocationDelay(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)

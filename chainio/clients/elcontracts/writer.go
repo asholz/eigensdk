@@ -410,6 +410,7 @@ func (w *ChainWriter) SetOperatorSetSplit(
 	operator gethcommon.Address,
 	operatorSet rewardscoordinator.OperatorSet,
 	split uint16,
+	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
@@ -424,7 +425,7 @@ func (w *ChainWriter) SetOperatorSetSplit(
 	if err != nil {
 		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
 	}
-	receipt, err := w.txMgr.Send(ctx, tx, true)
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, utils.WrapError("failed to send tx", err)
 	}
