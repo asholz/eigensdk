@@ -824,6 +824,21 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("get operator set", func(t *testing.T) {
+		testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorSetId := uint32(1)
+		operatorSet := rewardscoordinator.OperatorSet{
+			Avs: testAddr,
+			Id:  operatorSetId,
+		}
+		_, err = chainReader.GetOperatorSetSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			operatorSet,
+		)
+		require.Error(t, err)
+	})
+
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
 		// Invalid strategy address
 		strategyAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
@@ -1059,18 +1074,18 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	avsAdrr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	avsPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	operatorSetId := uint32(1)
 	operatorSet := allocationmanager.OperatorSet{
-		Avs: avsAdrr,
+		Avs: avsAddr,
 		Id:  operatorSetId,
 	}
 
 	strategyAddr := contractAddrs.Erc20MockStrategy
 	strategies := []common.Address{strategyAddr}
 
-	err = createOperatorSet(anvilHttpEndpoint, avsPrivateKeyHex, avsAdrr, operatorSetId, strategyAddr)
+	err = createOperatorSet(anvilHttpEndpoint, avsPrivateKeyHex, avsAddr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
@@ -1078,7 +1093,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 
 	request := elcontracts.RegistrationRequest{
 		OperatorAddress: operatorAddr,
-		AVSAddress:      avsAdrr,
+		AVSAddress:      avsAddr,
 		OperatorSetIds:  []uint32{operatorSetId},
 		WaitForReceipt:  true,
 		Socket:          "socket",
@@ -1254,6 +1269,146 @@ func TestOperatorSetsWithWrongInput(t *testing.T) {
 
 		_, err = chainReader.GetSlashableSharesForOperatorSetsBefore(context.Background(), operatorSets, 10)
 		require.Error(t, err)
+	})
+}
+
+// The idea is to cover some cases where network can fail by passing a
+// cancelled context, so the binding returns an error
+func TestFailingNetwork(t *testing.T) {
+	read_clients, anvilHttpEndpoint := testclients.BuildTestReadClients(t)
+	ctx := context.Background()
+
+	subCtx, cancelFn := context.WithCancel(ctx)
+	cancelFn()
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	operator := types.Operator{
+		Address: testutils.ANVIL_FIRST_ADDRESS,
+	}
+
+	t.Run("is operator registered", func(t *testing.T) {
+		isOperator, err := read_clients.ElChainReader.IsOperatorRegistered(subCtx, operator)
+		assert.Error(t, err)
+		assert.False(t, isOperator)
+	})
+
+	t.Run("get operator details", func(t *testing.T) {
+		operatorDetails, err := read_clients.ElChainReader.GetOperatorDetails(subCtx, operator)
+		assert.Error(t, err)
+		assert.Zero(t, operatorDetails)
+	})
+
+	t.Run("get strategy and underlying token", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategy, underlyingTokenAddr, err := read_clients.ElChainReader.GetStrategyAndUnderlyingToken(
+			subCtx,
+			strategyAddr,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, strategy)
+		assert.Zero(t, underlyingTokenAddr)
+	})
+
+	t.Run("get strategy and underlying ERC20 token", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategy, contractUnderlyingToken, underlyingTokenAddr, err := read_clients.ElChainReader.GetStrategyAndUnderlyingERC20Token(
+			subCtx,
+			strategyAddr,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, strategy)
+		assert.Zero(t, underlyingTokenAddr)
+		assert.Nil(t, contractUnderlyingToken)
+	})
+
+	t.Run("get operator shares in strategy", func(t *testing.T) {
+		shares, err := read_clients.ElChainReader.GetOperatorSharesInStrategy(
+			subCtx,
+			common.HexToAddress(operator.Address),
+			contractAddrs.Erc20MockStrategy,
+		)
+		assert.Error(t, err)
+		assert.Zero(t, shares)
+	})
+
+	t.Run("calculate delegation approval digest hash", func(t *testing.T) {
+		staker := common.Address{0x0}
+		delegationApprover := common.Address{0x0}
+		approverSalt := [32]byte{}
+		expiry := big.NewInt(0)
+		digest, err := read_clients.ElChainReader.CalculateDelegationApprovalDigestHash(
+			subCtx,
+			staker,
+			common.HexToAddress(operator.Address),
+			delegationApprover,
+			approverSalt,
+			expiry,
+		)
+		assert.Error(t, err)
+		assert.Empty(t, digest)
+	})
+
+	t.Run("calculate operator AVS registration digest hash", func(t *testing.T) {
+		avs := common.Address{0x0}
+		salt := [32]byte{}
+		expiry := big.NewInt(0)
+		digest, err := read_clients.ElChainReader.CalculateOperatorAVSRegistrationDigestHash(
+			subCtx,
+			common.HexToAddress(operator.Address),
+			avs,
+			salt,
+			expiry,
+		)
+		assert.Error(t, err)
+		assert.Empty(t, digest)
+	})
+
+	t.Run("get staker shares", func(t *testing.T) {
+		strategies, shares, err := read_clients.ElChainReader.GetStakerShares(
+			subCtx,
+			common.HexToAddress(operator.Address),
+		)
+		assert.Empty(t, strategies)
+		assert.Empty(t, shares)
+		assert.Error(t, err)
+	})
+
+	t.Run("get delegated operator", func(t *testing.T) {
+		blockNumber := big.NewInt(0)
+		address, err := read_clients.ElChainReader.GetDelegatedOperator(
+			subCtx,
+			common.HexToAddress(operator.Address),
+			blockNumber,
+		)
+
+		assert.Error(t, err)
+		assert.Zero(t, address)
+	})
+
+	t.Run("GetOperatorShares", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategies := []common.Address{strategyAddr}
+		shares, err := read_clients.ElChainReader.GetOperatorShares(
+			subCtx,
+			common.HexToAddress(operator.Address),
+			strategies,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, shares)
+	})
+
+	t.Run("GetOperatorsShares", func(t *testing.T) {
+		operatorAddr := common.HexToAddress(operator.Address)
+		operators := []common.Address{operatorAddr}
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategies := []common.Address{strategyAddr}
+		shares, err := read_clients.ElChainReader.GetOperatorsShares(
+			subCtx,
+			operators,
+			strategies,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, shares)
 	})
 }
 

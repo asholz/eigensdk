@@ -1644,11 +1644,10 @@ func TestIntegrationBlsAgg(t *testing.T) {
 			OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 			AvsName:                    "avs",
 			PromMetricsIpPortAddress:   "localhost:9090",
+			ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 		}, ecdsaPrivKey, logger)
 		require.NoError(t, err)
 		avsWriter := avsClients.AvsRegistryChainWriter
-		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
-		require.NoError(t, err)
 
 		// create aggregation service
 		operatorsInfoService := operatorsinfo.NewOperatorsInfoServiceInMemory(
@@ -1709,6 +1708,10 @@ func TestIntegrationBlsAgg(t *testing.T) {
 
 		// wait for the response from the aggregation service and check the signature
 		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+
+		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
+		require.NoError(t, err)
+
 		_, _, err = avsServiceManager.CheckSignatures(
 			&bind.CallOpts{},
 			taskResponseDigest,
@@ -1732,7 +1735,7 @@ func newBlsKeyPairPanics(hexKey string) *bls.KeyPair {
 	return keypair
 }
 
-func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerNonSignerStakesAndSignature {
+func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature {
 	nonSignerPubkeys := []avssm.BN254G1Point{}
 	for _, nonSignerPubkey := range blsAggServiceResp.NonSignersPubkeysG1 {
 		nonSignerPubkeys = append(nonSignerPubkeys, avssm.BN254G1Point(utils.ConvertToBN254G1Point(nonSignerPubkey)))
@@ -1741,7 +1744,7 @@ func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSign
 	for _, quorumApk := range blsAggServiceResp.QuorumApksG1 {
 		quorumApks = append(quorumApks, avssm.BN254G1Point(utils.ConvertToBN254G1Point(quorumApk)))
 	}
-	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerNonSignerStakesAndSignature{
+	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature{
 		NonSignerPubkeys: nonSignerPubkeys,
 		QuorumApks:       quorumApks,
 		ApkG2:            avssm.BN254G2Point(utils.ConvertToBN254G2Point(blsAggServiceResp.SignersApkG2)),
