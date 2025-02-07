@@ -338,11 +338,8 @@ func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
 
 	chainWriter := clients.AvsRegistryChainWriter
 
-	// Beyond MaxOperatorCount, the other params are not used anywhere other than in registerOperatorWithChurn
 	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
-		MaxOperatorCount:        192,
-		KickBIPsOfOperatorStake: 0,
-		KickBIPsOfTotalStake:    0,
+		MaxOperatorCount: 5,
 	}
 	minimumStakeNeeded := big.NewInt(0)
 
