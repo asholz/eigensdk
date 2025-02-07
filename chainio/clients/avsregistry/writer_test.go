@@ -456,6 +456,52 @@ func TestEjectOperator(t *testing.T) {
 	require.False(t, isRegisterd)
 }
 
+func TestSetOperatorSetParams(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	// This parameters are seted to the quorum created on reg coordinator initialization
+	initialParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount:        10000,
+		KickBIPsOfOperatorStake: 15000,
+		KickBIPsOfTotalStake:    100,
+	}
+
+	// At the beginning, params are the set on initialization
+	params, err := registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, initialParams)
+
+	newOperatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount: 5,
+	}
+
+	receipt, err := chainWriter.SetOperatorSetParams(
+		context.Background(),
+		0,
+		newOperatorSetParams,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After setting operator set params, params are the setted ones
+	params, err = registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, newOperatorSetParams)
+}
+
 func TestSetChurnApprover(t *testing.T) {
 	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
