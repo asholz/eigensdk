@@ -792,7 +792,7 @@ func (r *ChainReader) GetRegisteredSets(
 }
 
 // Returns `true` if `appointeeAddress` has permission to call the function with the given
-// `selector` on the `target` contract, in place of `accountAddress`, and `false` otherwise.
+// `selector` on the `target` contract, on behalf of `accountAddress`, and `false` otherwise.
 // Can return an error if the `PermissionController` contract address was not provided, or due to
 // errors in the underlying contract call.
 func (r *ChainReader) CanCall(
