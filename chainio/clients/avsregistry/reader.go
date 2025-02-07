@@ -275,6 +275,101 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 	return quorumStakes, nil
 }
 
+func (r *ChainReader) WeightOfOperatorForQuorum(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	operatorAddr common.Address,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.WeightOfOperatorForQuorum(opts, quorumNumber.UnderlyingType(), operatorAddr)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get operator stake", err)
+	}
+	return stake, nil
+}
+
+func (r *ChainReader) StrategyParamsLength(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (*big.Int, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	length, err := r.stakeRegistry.StrategyParamsLength(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get strategy params length", err)
+	}
+	return length, nil
+}
+
+func (r *ChainReader) StrategyParamsByIndex(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	index *big.Int,
+) (stakeregistry.IStakeRegistryTypesStrategyParams, error) {
+	if r.stakeRegistry == nil {
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	param, err := r.stakeRegistry.StrategyParamsByIndex(opts, quorumNumber.UnderlyingType(), index)
+	if err != nil {
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError("Failed to get strategy params by index", err)
+	}
+	return param, nil
+}
+
+func (r *ChainReader) GetStakeHistoryLength(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+) (*big.Int, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	length, err := r.stakeRegistry.GetStakeHistoryLength(opts, operatorId, quorumNumber.UnderlyingType())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get stake history length", err)
+	}
+	return length, nil
+}
+
+func (r *ChainReader) GetStakeHistory(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+) ([]stakeregistry.IStakeRegistryTypesStakeUpdate, error) {
+	if r.stakeRegistry == nil {
+		return []stakeregistry.IStakeRegistryTypesStakeUpdate{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	stakeHistory, err := r.stakeRegistry.GetStakeHistory(opts, operatorId, quorumNumber.UnderlyingType())
+	if err != nil {
+		return []stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError("Failed to get stake history", err)
+	}
+	return stakeHistory, nil
+}
+
+func (r *ChainReader) GetLatestStakeUpdate(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+) (stakeregistry.IStakeRegistryTypesStakeUpdate, error) {
+	if r.stakeRegistry == nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	stakeUpdate, err := r.stakeRegistry.GetLatestStakeUpdate(opts, operatorId, quorumNumber.UnderlyingType())
+	if err != nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError("Failed to get latest stake update", err)
+	}
+	return stakeUpdate, nil
+}
+
 // Returns a struct containing the indices of the quorum members that signed,
 // and the ones that didn't.
 func (r *ChainReader) GetCheckSignaturesIndices(
