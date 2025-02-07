@@ -1074,18 +1074,18 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	avsAdrr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	avsPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	operatorSetId := uint32(1)
 	operatorSet := allocationmanager.OperatorSet{
-		Avs: avsAdrr,
+		Avs: avsAddr,
 		Id:  operatorSetId,
 	}
 
 	strategyAddr := contractAddrs.Erc20MockStrategy
 	strategies := []common.Address{strategyAddr}
 
-	err = createOperatorSet(anvilHttpEndpoint, avsPrivateKeyHex, avsAdrr, operatorSetId, strategyAddr)
+	err = createOperatorSet(anvilHttpEndpoint, avsPrivateKeyHex, avsAddr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
@@ -1093,7 +1093,7 @@ func TestOperatorSetsAndSlashableShares(t *testing.T) {
 
 	request := elcontracts.RegistrationRequest{
 		OperatorAddress: operatorAddr,
-		AVSAddress:      avsAdrr,
+		AVSAddress:      avsAddr,
 		OperatorSetIds:  []uint32{operatorSetId},
 		WaitForReceipt:  true,
 		Socket:          "socket",
