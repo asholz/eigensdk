@@ -317,7 +317,10 @@ func (r *ChainReader) StrategyParamsByIndex(
 
 	param, err := r.stakeRegistry.StrategyParamsByIndex(opts, quorumNumber.UnderlyingType(), index)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError("Failed to get strategy params by index", err)
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError(
+			"Failed to get strategy params by index",
+			err,
+		)
 	}
 	return param, nil
 }
@@ -370,6 +373,105 @@ func (r *ChainReader) GetLatestStakeUpdate(
 	return stakeUpdate, nil
 }
 
+func (r *ChainReader) GetStakeUpdateAtIndex(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+	index *big.Int,
+) (stakeregistry.IStakeRegistryTypesStakeUpdate, error) {
+	if r.stakeRegistry == nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	stakeUpdate, err := r.stakeRegistry.GetStakeUpdateAtIndex(opts, quorumNumber.UnderlyingType(), operatorId, index)
+	if err != nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError(
+			"Failed to get stake update at index",
+			err,
+		)
+	}
+	return stakeUpdate, nil
+}
+
+func (r *ChainReader) GetStakeAtBlockNumber(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+	blockNumber uint32,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.GetStakeAtBlockNumber(opts, operatorId, quorumNumber.UnderlyingType(), blockNumber)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get stake at block number", err)
+	}
+	return stake, nil
+}
+
+func (r *ChainReader) GetStakeUpdateIndexAtBlockNumber(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+	blockNumber uint32,
+) (uint32, error) {
+	if r.stakeRegistry == nil {
+		return 0, errors.New("StakeRegistry contract not provided")
+	}
+
+	index, err := r.stakeRegistry.GetStakeUpdateIndexAtBlockNumber(
+		opts,
+		operatorId,
+		quorumNumber.UnderlyingType(),
+		blockNumber,
+	)
+	if err != nil {
+		return 0, utils.WrapError("Failed to get stake update index at block number", err)
+	}
+	return index, nil
+}
+
+func (r *ChainReader) GetStakeAtBlockNumberAndIndex(
+	opts *bind.CallOpts,
+	operatorId types.OperatorId,
+	quorumNumber types.QuorumNum,
+	blockNumber uint32,
+	index *big.Int,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.GetStakeAtBlockNumberAndIndex(
+		opts,
+		quorumNumber.UnderlyingType(),
+		blockNumber,
+		operatorId,
+		index,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get stake at block number and index", err)
+	}
+	return stake, nil
+}
+
+func (r *ChainReader) GetTotalStakeHistoryLength(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (*big.Int, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	length, err := r.stakeRegistry.GetTotalStakeHistoryLength(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get total stake history length", err)
+	}
+
+	return length, nil
+}
+
 // Returns a struct containing the indices of the quorum members that signed,
 // and the ones that didn't.
 func (r *ChainReader) GetCheckSignaturesIndices(
@@ -402,6 +504,73 @@ func (r *ChainReader) GetCheckSignaturesIndices(
 		)
 	}
 	return checkSignatureIndices, nil
+}
+
+func (r *ChainReader) GetCurrentTotalStake(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.GetCurrentTotalStake(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get current total stake", err)
+	}
+	return stake, nil
+}
+
+func (r *ChainReader) GetTotalStakeUpdateAtIndex(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	index *big.Int,
+) (stakeregistry.IStakeRegistryTypesStakeUpdate, error) {
+	if r.stakeRegistry == nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	stakeUpdate, err := r.stakeRegistry.GetTotalStakeUpdateAtIndex(opts, quorumNumber.UnderlyingType(), index)
+	if err != nil {
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError(
+			"Failed to get total stake update at index",
+			err,
+		)
+	}
+	return stakeUpdate, nil
+}
+
+func (r *ChainReader) GetTotalStakeAtBlockNumberFromIndex(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	blockNumber uint32,
+	index *big.Int,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.GetTotalStakeAtBlockNumberFromIndex(opts, quorumNumber.UnderlyingType(), blockNumber, index)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get total stake at block number from index", err)
+	}
+	return stake, nil
+}
+
+func (r *ChainReader) GetTotalStakeIndicesAtBlockNumber(
+	opts *bind.CallOpts,
+	quorumNumbers types.QuorumNums,
+	blockNumber uint32,
+) ([]uint32, error) {
+	if r.stakeRegistry == nil {
+		return []uint32{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	indices, err := r.stakeRegistry.GetTotalStakeIndicesAtBlockNumber(opts, blockNumber, quorumNumbers.UnderlyingType())
+	if err != nil {
+		return []uint32{}, utils.WrapError("Failed to get total stake indices at block number", err)
+	}
+	return indices, nil
 }
 
 // Given an operator address, returns its ID.
