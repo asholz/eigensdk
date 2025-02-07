@@ -550,7 +550,12 @@ func (r *ChainReader) GetTotalStakeAtBlockNumberFromIndex(
 		return nil, errors.New("StakeRegistry contract not provided")
 	}
 
-	stake, err := r.stakeRegistry.GetTotalStakeAtBlockNumberFromIndex(opts, quorumNumber.UnderlyingType(), blockNumber, index)
+	stake, err := r.stakeRegistry.GetTotalStakeAtBlockNumberFromIndex(
+		opts,
+		quorumNumber.UnderlyingType(),
+		blockNumber,
+		index,
+	)
 	if err != nil {
 		return nil, utils.WrapError("Failed to get total stake at block number from index", err)
 	}
