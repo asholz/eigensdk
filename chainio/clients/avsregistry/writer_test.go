@@ -489,3 +489,37 @@ func TestSetChurnApprover(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 }
+
+func TestSetEjectionCooldown(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	ejectionCooldown := big.NewInt(2873)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, ejectionCooldown is zero
+	cooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, cooldown.Int64(), int64(0))
+
+	// Set a new ejectionCooldown
+	receipt, err := chainWriter.SetEjectionCooldown(context.Background(), ejectionCooldown, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, ejectionCooldown is the setted value
+	newCooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newCooldown, ejectionCooldown)
+}
