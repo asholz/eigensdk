@@ -542,6 +542,12 @@ func TestSetOperatorSetSplit(t *testing.T) {
 	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 	operatorAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	activationDelay := uint32(0)
+
+	// Set activation delay to zero so that the new AVS split can be retrieved immediately after setting it
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	config := elcontracts.Config{
 		DelegationManagerAddress:  contractAddrs.DelegationManager,
@@ -590,7 +596,7 @@ func TestSetOperatorSetSplit(t *testing.T) {
 		BlsKeyPair:      keypair,
 	}
 
-	receipt, err := chainWriter.RegisterForOperatorSets(
+	receipt, err = chainWriter.RegisterForOperatorSets(
 		context.Background(),
 		contractAddrs.RegistryCoordinator,
 		request,
@@ -612,6 +618,7 @@ func TestSetOperatorSetSplit(t *testing.T) {
 		Avs: avsAddress,
 		Id:  uint32(operatorSetId),
 	}
+
 	expectedInitialSplit := uint16(1000)
 	initialSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddress, operatorSetType2)
 	require.NoError(t, err)
