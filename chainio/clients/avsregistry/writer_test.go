@@ -80,6 +80,41 @@ func TestWriterMethods(t *testing.T) {
 		require.NotNil(t, receipt)
 	})
 
+	t.Run("register operator with churn", func(t *testing.T) {
+		firstOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		firstOperatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+
+		//register once
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			firstOperatorPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
+		secondOperatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+		operatorsToKick := []gethcommon.Address{firstOperatorAddress}
+
+		churnApprovalPrivateKey := testutils.ANVIL_THIRD_PRIVATE_KEY
+
+		receipt, err = chainWriter.RegisterOperatorWithChurn(
+			context.Background(),
+			secondOperatorPrivateKey,
+			keypair,
+			quorumNumbers,
+			quorumNumbers,
+			operatorsToKick,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+	})
+
 	t.Run("update stake of operator subset", func(t *testing.T) {
 		receipt, err := chainWriter.UpdateStakesOfOperatorSubsetForAllQuorums(
 			context.Background(),
