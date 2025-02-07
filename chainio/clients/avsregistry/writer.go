@@ -671,3 +671,25 @@ func (w *ChainWriter) SetChurnApprover(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetEjectionCooldown(
+	ctx context.Context,
+	ejectionCooldown *big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting ejection cooldown with value ", ejectionCooldown)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetEjectionCooldown(noSendTxOpts, ejectionCooldown)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err.Error())
+	}
+	return receipt, nil
+}
