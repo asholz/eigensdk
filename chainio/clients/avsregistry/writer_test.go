@@ -588,10 +588,10 @@ func TestSetAccountIdentifier(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// At first, accountIdentifier is bls-pubkey-registry address
+	// At first, accountIdentifier is service manager address
 	accountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
 	require.NoError(t, err)
-	assert.Equal(t, accountIdentifier.String(), "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9")
+	assert.Equal(t, accountIdentifier, contractAddrs.ServiceManager)
 
 	// Set a new accountIdentifier
 	receipt, err := chainWriter.SetAccountIdentifier(context.Background(), accountIdentifierAddress, true)
