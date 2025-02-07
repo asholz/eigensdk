@@ -405,6 +405,38 @@ func (w *ChainWriter) SetOperatorPISplit(
 	return receipt, nil
 }
 
+// Sets the split for an operator in an operator set.
+// The caller must be a registered operator.
+// The split has to be between 0 and 10000 bips (inclusive).
+// The split will be activated after activation delay.
+func (w *ChainWriter) SetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+	split uint16,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	if w.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
+	if err != nil {
+		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
 // Processes the claims given by `claims`.
 // The rewards are transferred to the given `recipientAddress`.
 func (w *ChainWriter) ProcessClaims(
