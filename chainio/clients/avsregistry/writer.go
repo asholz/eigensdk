@@ -578,6 +578,8 @@ func (w *ChainWriter) EjectOperator(
 	return receipt, nil
 }
 
+// Sets the churnApprover as the address received as parameter. The churnApprover's signature is required in
+// churn related methods (like churn registration). Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetChurnApprover(
 	ctx context.Context,
 	churnApproverAddress gethcommon.Address,
