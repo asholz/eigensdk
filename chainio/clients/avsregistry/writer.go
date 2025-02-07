@@ -671,3 +671,25 @@ func (w *ChainWriter) SetChurnApprover(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetAccountIdentifier(
+	ctx context.Context,
+	accountIdentifierAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting account identifier with address ", accountIdentifierAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetAccountIdentifier(noSendTxOpts, accountIdentifierAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err.Error())
+	}
+	return receipt, nil
+}
