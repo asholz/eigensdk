@@ -456,7 +456,7 @@ func TestSetChurnApprover(t *testing.T) {
 
 	ethHttpClient := clients.EthHttpClient
 
-	registryCoordinatorContract, err := regcoordinator.NewContractRegistryCoordinator(
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
 		contractAddrs.RegistryCoordinator,
 		ethHttpClient,
 	)
