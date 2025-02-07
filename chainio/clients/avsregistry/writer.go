@@ -574,3 +574,27 @@ func (w *ChainWriter) SetEjector(
 	}
 	return receipt, nil
 }
+
+// Sets the accountIdentifier as the address received as parameter. Identifier should only be set once, since
+// changing it could break existing operator sets. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetAccountIdentifier(
+	ctx context.Context,
+	accountIdentifierAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting account identifier with address ", accountIdentifierAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetAccountIdentifier(noSendTxOpts, accountIdentifierAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err.Error())
+	}
+	return receipt, nil
+}
