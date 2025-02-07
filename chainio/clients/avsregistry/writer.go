@@ -672,6 +672,8 @@ func (w *ChainWriter) SetChurnApprover(
 	return receipt, nil
 }
 
+// Sets the ejection cooldown with the value received by parameter. The ejection cooldown is the time an operator has to
+// wait to join any quorum after being rejected. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetEjectionCooldown(
 	ctx context.Context,
 	ejectionCooldown *big.Int,
