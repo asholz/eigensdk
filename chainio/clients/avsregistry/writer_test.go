@@ -537,7 +537,7 @@ func TestSetChurnApprover(t *testing.T) {
 }
 
 func TestSetEjector(t *testing.T) {
-	//  Test set up
+	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
