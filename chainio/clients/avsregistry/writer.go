@@ -648,6 +648,8 @@ func (w *ChainWriter) EjectOperator(
 	return receipt, nil
 }
 
+// Sets the ejector address as the received as parameter. This address is the only one
+// that can eject operators. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetEjector(
 	ctx context.Context,
 	ejectorAddress gethcommon.Address,
