@@ -84,7 +84,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xa",
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
-				MetadataUrl:               "https://example.com/metadata.json",
+				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			},
 			wantErr:     true,
 			expectedErr: ErrInvalidOperatorAddress,
@@ -94,7 +94,7 @@ func TestOperatorValidate(t *testing.T) {
 			operator: Operator{
 				Address:                   "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				DelegationApproverAddress: "0x12",
-				MetadataUrl:               "https://example.com/metadata.json",
+				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
 			},
 			wantErr:     true,
 			expectedErr: ErrInvalidDelegationApproverAddress,
