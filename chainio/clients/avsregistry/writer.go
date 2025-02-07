@@ -614,3 +614,26 @@ func (w *ChainWriter) EjectOperator(
 	}
 	return receipt, nil
 }
+
+func (w *ChainWriter) SetOperatorSetParams(
+	ctx context.Context,
+	quorumNumber uint8,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting operator set params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetOperatorSetParams(noSendTxOpts, quorumNumber, operatorSetParams)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+	}
+	return receipt, nil
+}
