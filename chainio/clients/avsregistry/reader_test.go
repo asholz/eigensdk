@@ -2,9 +2,11 @@ package avsregistry_test
 
 import (
 	"context"
+	"log"
 	"math/big"
 	"testing"
 
+	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,8 +15,11 @@ import (
 )
 
 func TestReaderMethods(t *testing.T) {
-	clients, _ := testclients.BuildTestClients(t)
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	chainReader := clients.ReadClients.AvsRegistryChainReader
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	strategy := contractAddrs.Erc20MockStrategy
+	quorumNumber := types.QuorumNum(0)
 
 	quorumNumbers := types.QuorumNums{0}
 
@@ -147,4 +152,58 @@ func TestReaderMethods(t *testing.T) {
 
 		// TODO: Make a test with the new workflow testing a case returning true
 	})
+
+	t.Run("Get weight of operator for quorum", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		// A quorum registered in the old workflow should return 0
+		weight, err := chainReader.WeightOfOperatorForQuorum(
+			&bind.CallOpts{},
+			0,
+			operatorAddress,
+		)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), weight.Int64())
+	})
+
+	t.Run("Get strategy params length", func(t *testing.T) {
+		quorumNumber := types.QuorumNum(0)
+		length, err := chainReader.StrategyParamsLength(&bind.CallOpts{}, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, int64(1), length.Int64())
+	})
+
+	t.Run("Get strategy params by index", func(t *testing.T) {
+		params, err := chainReader.StrategyParamsByIndex(&bind.CallOpts{}, quorumNumber, big.NewInt(0))
+		require.NoError(t, err)
+		log.Println("params", params)
+		require.Equal(t, strategy, params.Strategy)
+	})
+
+	t.Run("Get stakeHistory length", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), length.Int64())
+	})
+
+	t.Run("Get Stake History", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		stakeHistory, err := chainReader.GetStakeHistory(&bind.CallOpts{}, operatorId, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(stakeHistory))
+	})
+
+	t.Run("Get latest stake update", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		stakeUpdate, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, uint32(0), stakeUpdate.NextUpdateBlockNumber)
+	})
+
 }
