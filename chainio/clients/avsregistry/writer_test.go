@@ -395,3 +395,51 @@ func TestCreateSlashableStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(2))
 }
+
+func TestEjectOperator(t *testing.T) {
+	// Test set up
+	clients, _ := testclients.BuildTestClients(t)
+
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+	chainWriter := clients.AvsRegistryChainWriter
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	ecdsaPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	operatorAddr := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	quorumNumbers := types.QuorumNums{0}
+
+	// At the beginning, operator is not registered
+	isRegisterd, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+
+	// After registration, operator is registered
+	receipt, err := chainWriter.RegisterOperator(
+		context.Background(),
+		ecdsaPrivateKey,
+		keypair,
+		quorumNumbers,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.True(t, isRegisterd)
+
+	// After being ejected, operator is not registered anymore
+	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+}

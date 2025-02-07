@@ -589,3 +589,28 @@ func (w *ChainWriter) CreateSlashableStakeQuorum(
 	}
 	return receipt, nil
 }
+
+// Receives an operator address and quorum numbers and ejects the operator from the given quorums.
+// Note: if the operator is not registered, the call will not fail, but will do nothing.
+func (w *ChainWriter) EjectOperator(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	quorumNumbers types.QuorumNums,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("ejecting operator with address ", operatorAddress, " from quorum numbers ", quorumNumbers)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers.UnderlyingType())
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+	}
+	return receipt, nil
+}
