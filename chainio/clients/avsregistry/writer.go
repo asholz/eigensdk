@@ -591,7 +591,7 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 // It receives the operator set parameters for the given quorum, the minimum stake required to register,
 // and the number of blocks to look ahead when calculating slashable stake.
 // Returns the transaction receipt in case of success.
-// Note: This function does not work on M2 AVSs.
+// Note: This function only works on M2 AVSs.
 func (w *ChainWriter) CreateSlashableStakeQuorum(
 	ctx context.Context,
 	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
