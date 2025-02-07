@@ -824,6 +824,24 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("get operator set", func(t *testing.T) {
+		testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorSetId := uint32(1)
+		operatorSet := rewardscoordinator.OperatorSet{
+			Avs: testAddr,
+			Id:  operatorSetId,
+		}
+		_, err = chainReader.GetOperatorSetSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			operatorSet,
+		)
+		require.Error(t, err)
+
+		_, err = chainReader.GetOperatorPISplit(context.Background(), common.HexToAddress(operatorAddr))
+		require.Error(t, err)
+	})
+
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {
 		// Invalid strategy address
 		strategyAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
