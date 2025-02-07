@@ -598,3 +598,27 @@ func (w *ChainWriter) SetAccountIdentifier(
 	}
 	return receipt, nil
 }
+
+// Sets the ejection cooldown with the value received by parameter. The ejection cooldown is the time an operator has to
+// wait to join any quorum after being rejected. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetEjectionCooldown(
+	ctx context.Context,
+	ejectionCooldown *big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting ejection cooldown with value ", ejectionCooldown)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetEjectionCooldown(noSendTxOpts, ejectionCooldown)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err.Error())
+	}
+	return receipt, nil
+}
