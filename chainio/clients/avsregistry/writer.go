@@ -586,3 +586,65 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 	}
 	return receipt, nil
 }
+
+// Creates a new quorum that tracks slashable stake for operators.
+// It receives the operator set parameters for the given quorum, the minimum stake required to register,
+// and the number of blocks to look ahead when calculating slashable stake.
+// Returns the transaction receipt in case of success.
+// Note: This function does not work on M2 AVSs.
+func (w *ChainWriter) CreateSlashableStakeQuorum(
+	ctx context.Context,
+	operatorSetParams regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam,
+	minimumStakeRequired *big.Int,
+	strategyParams []regcoord.IStakeRegistryTypesStrategyParams,
+	lookAheadPeriod uint32,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("Creating slashable stake quorum")
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.CreateSlashableStakeQuorum(
+		noSendTxOpts,
+		operatorSetParams,
+		minimumStakeRequired,
+		strategyParams,
+		lookAheadPeriod,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Receives an operator address and quorum numbers and ejects the operator from the given quorums.
+// Note: if the operator is not registered, the call will not fail, but will do nothing.
+func (w *ChainWriter) EjectOperator(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	quorumNumbers types.QuorumNums,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("ejecting operator with address ", operatorAddress, " from quorum numbers ", quorumNumbers)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers.UnderlyingType())
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+	}
+	return receipt, nil
+}

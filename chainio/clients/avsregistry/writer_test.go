@@ -370,3 +370,116 @@ func TestCreateDelegatedStakeQuorum(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, count, uint8(2))
 }
+
+func TestCreateSlashableStakeQuorum(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	// Beyond MaxOperatorCount, the other params are not used anywhere other than in registerOperatorWithChurn
+	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount:        192,
+		KickBIPsOfOperatorStake: 0,
+		KickBIPsOfTotalStake:    0,
+	}
+	minimumStakeNeeded := big.NewInt(0)
+
+	strategyAddr := contractAddrs.Erc20MockStrategy
+	strategyParam := regcoord.IStakeRegistryTypesStrategyParams{
+		Strategy:   strategyAddr,
+		Multiplier: big.NewInt(1e18),
+	}
+
+	lookAheadPeriod := uint32(0)
+
+	// First, quorum count is 1 because Registry is initialized with 1 quorum
+	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(1))
+
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	txManager := clients.TxManager
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	tx, err := registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	require.NoError(t, err)
+
+	_, err = txManager.Send(context.Background(), tx, true)
+	require.NoError(t, err)
+
+	// Create a new slashable stake quorum
+	receipt, err := chainWriter.CreateSlashableStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		lookAheadPeriod,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After creating a new one, quorum count is 2
+	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(2))
+}
+
+func TestEjectOperator(t *testing.T) {
+	// Test set up
+	clients, _ := testclients.BuildTestClients(t)
+
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+	chainWriter := clients.AvsRegistryChainWriter
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	ecdsaPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	operatorAddr := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	quorumNumbers := types.QuorumNums{0}
+
+	// At the beginning, operator is not registered
+	isRegisterd, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+
+	// After registration, operator is registered
+	receipt, err := chainWriter.RegisterOperator(
+		context.Background(),
+		ecdsaPrivateKey,
+		keypair,
+		quorumNumbers,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.True(t, isRegisterd)
+
+	// After being ejected, operator is not registered anymore
+	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	require.NoError(t, err)
+	require.False(t, isRegisterd)
+}
