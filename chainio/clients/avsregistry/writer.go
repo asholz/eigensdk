@@ -698,6 +698,30 @@ func (w *ChainWriter) SetChurnApprover(
 	return receipt, nil
 }
 
+// Sets the ejector address to the one received by parameter. This address is the only one
+// that can eject operators. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) SetEjector(
+	ctx context.Context,
+	ejectorAddress gethcommon.Address,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("setting ejector with address ", ejectorAddress)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.registryCoordinator.SetEjector(noSendTxOpts, ejectorAddress)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetEjector tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
 // Sets the accountIdentifier as the address received as parameter. Identifier should only be set once, since
 // changing it could break existing operator sets. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetAccountIdentifier(

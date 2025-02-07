@@ -536,6 +536,40 @@ func TestSetChurnApprover(t *testing.T) {
 	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 }
 
+func TestSetEjector(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	ejectorAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, ejector is anvil first address
+	ejector, err := registryCoordinatorContract.Ejector(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, ejector.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set a new ejector
+	receipt, err := chainWriter.SetEjector(context.Background(), ejectorAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, ejector is the setted value
+	newEjector, err := registryCoordinatorContract.Ejector(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newEjector.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
+
 func TestSetAccountIdentifier(t *testing.T) {
 	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
