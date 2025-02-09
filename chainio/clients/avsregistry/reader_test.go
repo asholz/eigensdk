@@ -2,15 +2,19 @@ package avsregistry_test
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"math/big"
 	"testing"
 
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	gethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,8 +24,25 @@ func TestReaderMethods(t *testing.T) {
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	strategy := contractAddrs.Erc20MockStrategy
 	quorumNumber := types.QuorumNum(0)
-
 	quorumNumbers := types.QuorumNums{0}
+
+	operatorPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+
+	config := avsregistry.Config{
+		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
+		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
+		ServiceManagerAddress:         contractAddrs.ServiceManager,
+	}
+
+	chainWriter, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
+	require.NoError(t, err)
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
 
 	t.Run("get quorum state", func(t *testing.T) {
 		count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
@@ -175,17 +196,15 @@ func TestReaderMethods(t *testing.T) {
 	t.Run("Get strategy params by index", func(t *testing.T) {
 		params, err := chainReader.StrategyParamsByIndex(&bind.CallOpts{}, quorumNumber, big.NewInt(0))
 		require.NoError(t, err)
-		log.Println("params", params)
 		require.Equal(t, strategy, params.Strategy)
 	})
 
 	t.Run("Get stakeHistory length", func(t *testing.T) {
-		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber)
 		require.NoError(t, err)
-		require.Equal(t, int64(0), length.Int64())
+		require.Equal(t, int64(1), length.Int64())
 	})
 
 	t.Run("Get Stake History", func(t *testing.T) {
@@ -198,12 +217,38 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+
+		// stakeUpdate, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
+
+		//REGISTER OPERATOR
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			operatorPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
-		stakeUpdate, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
+
+		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
+		fmt.Println("STAKE", stakeUpdate2.Stake)
 		require.NoError(t, err)
-		require.Equal(t, uint32(0), stakeUpdate.NextUpdateBlockNumber)
+		require.NotEqual(t, uint32(0), stakeUpdate2.Stake)
+		require.Equal(t, uint32(0), stakeUpdate2.NextUpdateBlockNumber)
 	})
+
+	// t.Run("Get stake at block number", func(t *testing.T) {
+	// 	operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+	// 	operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+	// 	require.NoError(t, err)
+	// 	stake, err := chainReader.GetStakeAtBlockNumber(&bind.CallOpts{}, operatorId, quorumNumber, 0)
+	// 	require.NoError(t, err)
+	// 	require.Equal(t, int64(0), stake.Int64())
+	// })
 
 }
