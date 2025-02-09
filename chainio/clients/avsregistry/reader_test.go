@@ -40,8 +40,8 @@ func TestReaderMethods(t *testing.T) {
 	keypair, err := bls.NewKeyPairFromString("0x01")
 	require.NoError(t, err)
 
-	operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	// operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	// operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 	require.NoError(t, err)
 
 	t.Run("get quorum state", func(t *testing.T) {
@@ -200,6 +200,21 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stakeHistory length", func(t *testing.T) {
+		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+		require.NoError(t, err)
+
+		//REGISTER OPERATOR
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			operatorPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber)
@@ -217,8 +232,9 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-
-		// stakeUpdate, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
+		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+		require.NoError(t, err)
 
 		//REGISTER OPERATOR
 		receipt, err := chainWriter.RegisterOperator(
@@ -238,7 +254,7 @@ func TestReaderMethods(t *testing.T) {
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(&bind.CallOpts{}, operatorId, quorumNumber)
 		fmt.Println("STAKE", stakeUpdate2.Stake)
 		require.NoError(t, err)
-		require.NotEqual(t, uint32(0), stakeUpdate2.Stake)
+		require.NotEqual(t, uint32(0), uint32(stakeUpdate2.Stake.Uint64()))
 		require.Equal(t, uint32(0), stakeUpdate2.NextUpdateBlockNumber)
 	})
 
