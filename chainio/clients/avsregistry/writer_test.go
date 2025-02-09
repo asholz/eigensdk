@@ -426,9 +426,9 @@ func TestEjectOperator(t *testing.T) {
 	quorumNumbers := types.QuorumNums{0}
 
 	// At the beginning, operator is not registered
-	isRegisterd, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	isRegistered, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
-	require.False(t, isRegisterd)
+	require.False(t, isRegistered)
 
 	// After registration, operator is registered
 	receipt, err := chainWriter.RegisterOperator(
@@ -442,18 +442,18 @@ func TestEjectOperator(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	isRegistered, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
-	require.True(t, isRegisterd)
+	require.True(t, isRegistered)
 
 	// After being ejected, operator is not registered anymore
 	receipt, err = chainWriter.EjectOperator(context.Background(), operatorAddr, quorumNumbers, true)
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
+	isRegistered, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
-	require.False(t, isRegisterd)
+	require.False(t, isRegistered)
 }
 
 func TestSetOperatorSetParams(t *testing.T) {
