@@ -128,7 +128,7 @@ func TestChainReader(t *testing.T) {
 		)
 		assert.NotZero(t, len(strategies), "Strategies has at least one element")
 		assert.NotZero(t, len(shares), "Shares has at least one element")
-		assert.Equal(t, len(strategies), len(shares), "Strategies has the same ammount of elements as shares")
+		assert.Equal(t, len(strategies), len(shares), "Strategies has the same amount of elements as shares")
 		assert.NoError(t, err)
 	})
 
@@ -576,7 +576,7 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	// Assert that after stake reduction, Allocatable Magnitude + reduction ammount equals Max allocatable magnitude
+	// Assert that after stake reduction, Allocatable Magnitude + reduction amount equals Max allocatable magnitude
 	allocable, err = chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
 	assert.Equal(t, maxMagnitudes[0], allocable+allocatable_reduction)
