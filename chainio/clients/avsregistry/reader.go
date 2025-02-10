@@ -308,6 +308,7 @@ func (r *ChainReader) StrategyParamsLength(
 	return length, nil
 }
 
+// Returns the strategy and weight multiplier for the index'th strategy in the specified quorum.
 func (r *ChainReader) StrategyParamsByIndex(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
