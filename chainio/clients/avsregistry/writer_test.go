@@ -2,11 +2,12 @@ package avsregistry_test
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
-	regcoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
@@ -135,7 +136,7 @@ func TestWriterMethods(t *testing.T) {
 		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
 		require.NoError(t, err)
 
-		contractBlsRegistryCoordinator, err := regcoordinator.NewContractRegistryCoordinator(
+		contractBlsRegistryCoordinator, err := regcoord.NewContractRegistryCoordinator(
 			contractAddrs.RegistryCoordinator,
 			ethHttpClient,
 		)
@@ -256,7 +257,7 @@ func TestWriterMethods(t *testing.T) {
 		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
 		require.NoError(t, err)
 
-		contractBlsRegistryCoordinator, err := regcoordinator.NewContractRegistryCoordinator(
+		contractBlsRegistryCoordinator, err := regcoord.NewContractRegistryCoordinator(
 			contractAddrs.RegistryCoordinator,
 			ethHttpClient,
 		)
@@ -329,6 +330,84 @@ func TestBlsSignature(t *testing.T) {
 	assert.Equal(t, y, "4960450323239587206117776989095741074887370703941588742100855592356200866613")
 }
 
+func TestCreateDelegatedAndSlashableStakeQuorums(t *testing.T) {
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount: 5,
+	}
+	minimumStakeNeeded := big.NewInt(0)
+
+	strategyAddr := contractAddrs.Erc20MockStrategy
+	strategyParam := regcoord.IStakeRegistryTypesStrategyParams{
+		Strategy:   strategyAddr,
+		Multiplier: big.NewInt(1e18),
+	}
+
+	lookAheadPeriod := uint32(0)
+
+	// First, quorum count is 1 because Registry is initialized with 1 quorum
+	count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(1))
+
+	// Create a new total delegated stake quorum
+	receipt, err := chainWriter.CreateTotalDelegatedStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After creating first quorum, count is 2
+	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(2))
+
+	// Enabling operator sets to create slashable stake quorums
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	txManager := clients.TxManager
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	tx, err := registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	require.NoError(t, err)
+
+	_, err = txManager.Send(context.Background(), tx, true)
+	require.NoError(t, err)
+
+	// Create a new slashable stake quorum
+	receipt, err = chainWriter.CreateSlashableStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		lookAheadPeriod,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After creating a new one, quorum count is 3
+	count, err = chainReader.GetQuorumCount(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, count, uint8(3))
+}
+
 func TestEjectOperator(t *testing.T) {
 	// Test set up
 	clients, _ := testclients.BuildTestClients(t)
@@ -375,4 +454,186 @@ func TestEjectOperator(t *testing.T) {
 	isRegisterd, err = chainReader.IsOperatorRegistered(&bind.CallOpts{}, operatorAddr)
 	require.NoError(t, err)
 	require.False(t, isRegisterd)
+}
+
+func TestSetOperatorSetParams(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	// This parameters are seted to the quorum created on reg coordinator initialization
+	initialParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount:        10000,
+		KickBIPsOfOperatorStake: 15000,
+		KickBIPsOfTotalStake:    100,
+	}
+
+	// At the beginning, params are the set on initialization
+	params, err := registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, initialParams)
+
+	newOperatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount: 5,
+	}
+
+	receipt, err := chainWriter.SetOperatorSetParams(
+		context.Background(),
+		0,
+		newOperatorSetParams,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After setting operator set params, params are the setted ones
+	params, err = registryCoordinator.GetOperatorSetParams(&bind.CallOpts{}, 0)
+	require.NoError(t, err)
+	require.Equal(t, params, newOperatorSetParams)
+}
+
+func TestSetChurnApprover(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, churnApprover is anvil first address
+	approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set a new churnApprover
+	receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, churnApprover is the setted value
+	newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
+
+func TestSetEjector(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	ejectorAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, ejector is anvil first address
+	ejector, err := registryCoordinatorContract.Ejector(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, ejector.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set a new ejector
+	receipt, err := chainWriter.SetEjector(context.Background(), ejectorAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, ejector is the setted value
+	newEjector, err := registryCoordinatorContract.Ejector(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newEjector.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
+
+func TestSetAccountIdentifier(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	accountIdentifierAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, accountIdentifier is service manager address
+	accountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, accountIdentifier, contractAddrs.ServiceManager)
+
+	// Set a new accountIdentifier
+	receipt, err := chainWriter.SetAccountIdentifier(context.Background(), accountIdentifierAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, accountIdentifier is the value set
+	newAccountIdentifier, err := registryCoordinatorContract.AccountIdentifier(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newAccountIdentifier.String(), testutils.ANVIL_SECOND_ADDRESS)
+}
+
+func TestSetEjectionCooldown(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+
+	ejectionCooldown := big.NewInt(2873)
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, ejectionCooldown is zero
+	cooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, cooldown.Int64(), int64(0))
+
+	// Set a new ejectionCooldown
+	receipt, err := chainWriter.SetEjectionCooldown(context.Background(), ejectionCooldown, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, ejectionCooldown is the value set
+	newCooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newCooldown, ejectionCooldown)
 }

@@ -8,6 +8,8 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -15,6 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -158,18 +163,7 @@ func TestReaderMethods(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 0, len(address_to_sockets))
 		})
-
-	t.Run("Is operator set quorum", func(t *testing.T) {
-		// A quorum registered in the old workflow should return false
-		isOperatorSet, err := chainReader.IsOperatorSetQuorum(
-			&bind.CallOpts{},
-			0,
-		)
-		require.NoError(t, err)
-		require.False(t, isOperatorSet)
-
-		// TODO: Make a test with the new workflow testing a case returning true
-	})
+}
 
 	t.Run("Get weight of operator for quorum", func(t *testing.T) {
 		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
@@ -409,4 +403,70 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, uint32(1), totalStakeIndices[0])
 	})
 
+func TestIsOperatorSetQuorum(t *testing.T) {
+	// Test set up
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.ReadClients.AvsRegistryChainReader
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	// By default, quorums are not operator sets
+	isOperatorSet, err := chainReader.IsOperatorSetQuorum(
+		&bind.CallOpts{},
+		0,
+	)
+	require.NoError(t, err)
+	require.False(t, isOperatorSet)
+
+	// Enabling operator sets to create slashable stake quorums
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	txManager := clients.TxManager
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	tx, err := registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	require.NoError(t, err)
+
+	_, err = txManager.Send(context.Background(), tx, true)
+	require.NoError(t, err)
+
+	// Create a new slashable stake quorum
+	operatorSetParams := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount: 5,
+	}
+	minimumStakeNeeded := big.NewInt(0)
+
+	strategyAddr := contractAddrs.Erc20MockStrategy
+	strategyParam := regcoord.IStakeRegistryTypesStrategyParams{
+		Strategy:   strategyAddr,
+		Multiplier: big.NewInt(1e18),
+	}
+
+	lookAheadPeriod := uint32(0)
+
+	receipt, err := chainWriter.CreateSlashableStakeQuorum(
+		context.Background(),
+		operatorSetParams,
+		minimumStakeNeeded,
+		[]regcoord.IStakeRegistryTypesStrategyParams{strategyParam},
+		lookAheadPeriod,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After inserting a new flow quorum, requesting if is an operator set returns true
+	isOperatorSet, err = chainReader.IsOperatorSetQuorum(
+		&bind.CallOpts{},
+		1,
+	)
+	require.NoError(t, err)
+	require.True(t, isOperatorSet)
 }
