@@ -520,6 +520,7 @@ func (r *ChainReader) GetCheckSignaturesIndices(
 	return checkSignatureIndices, nil
 }
 
+// Returns the stake weight from the latest entry in the quorum's stake history
 func (r *ChainReader) GetCurrentTotalStake(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
@@ -554,6 +555,8 @@ func (r *ChainReader) GetTotalStakeUpdateAtIndex(
 	return stakeUpdate, nil
 }
 
+// Returns the total stake weight for the specified quorum at the `index`-th entry in the
+// stake history array if it was the stake at the specified blockNumber.
 func (r *ChainReader) GetTotalStakeAtBlockNumberFromIndex(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
@@ -576,6 +579,7 @@ func (r *ChainReader) GetTotalStakeAtBlockNumberFromIndex(
 	return stake, nil
 }
 
+// Returns the indices of the total stakes for the provided quorumNumbers at the given blockNumber
 func (r *ChainReader) GetTotalStakeIndicesAtBlockNumber(
 	opts *bind.CallOpts,
 	quorumNumbers types.QuorumNums,
