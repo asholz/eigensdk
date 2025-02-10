@@ -350,6 +350,16 @@ func (r *ChainReader) GetOperatorPISplit(
 
 	return r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
 }
+func (r *ChainReader) GetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+) (uint16, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
+}
 
 func (r *ChainReader) GetAllocatableMagnitude(
 	ctx context.Context,
