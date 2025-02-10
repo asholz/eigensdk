@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
-	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
@@ -163,7 +163,6 @@ func TestReaderMethods(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 0, len(address_to_sockets))
 		})
-}
 
 	t.Run("Get weight of operator for quorum", func(t *testing.T) {
 		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
@@ -402,6 +401,7 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, 1, len(totalStakeIndices))
 		require.Equal(t, uint32(1), totalStakeIndices[0])
 	})
+}
 
 func TestIsOperatorSetQuorum(t *testing.T) {
 	// Test set up
