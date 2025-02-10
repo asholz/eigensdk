@@ -275,6 +275,7 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 	return quorumStakes, nil
 }
 
+// This function computes the total weight of the operator in the quorum quorumNumber.
 func (r *ChainReader) WeightOfOperatorForQuorum(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
@@ -291,6 +292,7 @@ func (r *ChainReader) WeightOfOperatorForQuorum(
 	return stake, nil
 }
 
+// Returns the length of the dynamic array stored in strategyParams[quorumNumber] in the StakeRegistry contract.
 func (r *ChainReader) StrategyParamsLength(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
@@ -325,6 +327,7 @@ func (r *ChainReader) StrategyParamsByIndex(
 	return param, nil
 }
 
+// Returns the length of an operator's stake history for the given quorum
 func (r *ChainReader) GetStakeHistoryLength(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -341,6 +344,8 @@ func (r *ChainReader) GetStakeHistoryLength(
 	return length, nil
 }
 
+// Returns the entire operatorStakeHistory[operatorId][quorumNumber] array which contains the operator's
+// stake update history for a given quorum.
 func (r *ChainReader) GetStakeHistory(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -357,6 +362,7 @@ func (r *ChainReader) GetStakeHistory(
 	return stakeHistory, nil
 }
 
+// Returns the most recent stake weight for the `operatorId` for a certain quorum
 func (r *ChainReader) GetLatestStakeUpdate(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -373,6 +379,8 @@ func (r *ChainReader) GetLatestStakeUpdate(
 	return stakeUpdate, nil
 }
 
+// Returns the `index`-th entry in the `operatorStakeHistory[operatorId][quorumNumber]` array, i.e.,
+// returns the `index`-th stake update for the operator.
 func (r *ChainReader) GetStakeUpdateAtIndex(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -393,6 +401,7 @@ func (r *ChainReader) GetStakeUpdateAtIndex(
 	return stakeUpdate, nil
 }
 
+// Returns the stake of the operator for the provided `quorumNumber` at the given `blockNumber`
 func (r *ChainReader) GetStakeAtBlockNumber(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -410,6 +419,7 @@ func (r *ChainReader) GetStakeAtBlockNumber(
 	return stake, nil
 }
 
+// Returns the indices of the operator stakes for the provided `quorumNumber` at the given `blockNumber`
 func (r *ChainReader) GetStakeUpdateIndexAtBlockNumber(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -432,6 +442,9 @@ func (r *ChainReader) GetStakeUpdateIndexAtBlockNumber(
 	return index, nil
 }
 
+// Returns the stake weight corresponding to `operatorId` for quorum `quorumNumber`, at the
+// `index`-th entry in the operator's stake history array if it was the operator's
+// stake at `blockNumber`.
 func (r *ChainReader) GetStakeAtBlockNumberAndIndex(
 	opts *bind.CallOpts,
 	operatorId types.OperatorId,
@@ -456,6 +469,7 @@ func (r *ChainReader) GetStakeAtBlockNumberAndIndex(
 	return stake, nil
 }
 
+// Returns the length of the total stake history for the given quorum
 func (r *ChainReader) GetTotalStakeHistoryLength(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
