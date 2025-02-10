@@ -1,6 +1,6 @@
 module github.com/Layr-Labs/eigensdk-go
 
-go 1.21
+go 1.21.13
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
@@ -53,7 +53,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/containerd/containerd v1.7.12 // indirect
@@ -102,11 +102,11 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sync v0.7.0
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	google.golang.org/grpc v1.58.3 // indirect

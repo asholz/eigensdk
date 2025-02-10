@@ -29,17 +29,33 @@ var (
 	_ = abi.ConvertType
 )
 
-// IRewardsCoordinatorRewardsSubmission is an auto generated low-level Go binding around an user-defined struct.
-type IRewardsCoordinatorRewardsSubmission struct {
-	StrategiesAndMultipliers []IRewardsCoordinatorStrategyAndMultiplier
+// IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission struct {
+	StrategiesAndMultipliers []IRewardsCoordinatorTypesStrategyAndMultiplier
+	Token                    common.Address
+	OperatorRewards          []IRewardsCoordinatorTypesOperatorReward
+	StartTimestamp           uint32
+	Duration                 uint32
+	Description              string
+}
+
+// IRewardsCoordinatorTypesOperatorReward is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorTypesOperatorReward struct {
+	Operator common.Address
+	Amount   *big.Int
+}
+
+// IRewardsCoordinatorTypesRewardsSubmission is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorTypesRewardsSubmission struct {
+	StrategiesAndMultipliers []IRewardsCoordinatorTypesStrategyAndMultiplier
 	Token                    common.Address
 	Amount                   *big.Int
 	StartTimestamp           uint32
 	Duration                 uint32
 }
 
-// IRewardsCoordinatorStrategyAndMultiplier is an auto generated low-level Go binding around an user-defined struct.
-type IRewardsCoordinatorStrategyAndMultiplier struct {
+// IRewardsCoordinatorTypesStrategyAndMultiplier is an auto generated low-level Go binding around an user-defined struct.
+type IRewardsCoordinatorTypesStrategyAndMultiplier struct {
 	Strategy   common.Address
 	Multiplier *big.Int
 }
@@ -53,7 +69,7 @@ type ISignatureUtilsSignatureWithSaltAndExpiry struct {
 
 // ContractServiceManagerBaseMetaData contains all meta data concerning the ContractServiceManagerBase contract.
 var ContractServiceManagerBaseMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"avsDirectory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createAVSRewardsSubmission\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinator.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createOperatorSets\",\"inputs\":[{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"finalizeMigration\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getOperatorRestakedStrategies\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsToMigrate\",\"inputs\":[],\"outputs\":[{\"name\":\"operatorSetIdsToCreate\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"},{\"name\":\"allOperators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRestakeableStrategies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"migrateAndCreateOperatorSetIds\",\"inputs\":[{\"name\":\"operatorSetsToCreate\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"migrateToOperatorSets\",\"inputs\":[{\"name\":\"operatorSetIds\",\"type\":\"uint32[][]\",\"internalType\":\"uint32[][]\"},{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"migrationFinalized\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rewardsInitiator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setRewardsInitiator\",\"inputs\":[{\"name\":\"newRewardsInitiator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"_metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsInitiatorUpdated\",\"inputs\":[{\"name\":\"prevRewardsInitiator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newRewardsInitiator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addPendingAdmin\",\"inputs\":[{\"name\":\"admin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"avsDirectory\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createAVSRewardsSubmission\",\"inputs\":[{\"name\":\"rewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinatorTypes.RewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinatorTypes.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createOperatorDirectedAVSRewardsSubmission\",\"inputs\":[{\"name\":\"operatorDirectedRewardsSubmissions\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[]\",\"components\":[{\"name\":\"strategiesAndMultipliers\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinatorTypes.StrategyAndMultiplier[]\",\"components\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"multiplier\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"operatorRewards\",\"type\":\"tuple[]\",\"internalType\":\"structIRewardsCoordinatorTypes.OperatorReward[]\",\"components\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"startTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"description\",\"type\":\"string\",\"internalType\":\"string\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterOperatorFromOperatorSets\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getOperatorRestakedStrategies\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getRestakeableStrategies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerOperatorToAVS\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSignature\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithSaltAndExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeAdmin\",\"inputs\":[{\"name\":\"admin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeAppointee\",\"inputs\":[{\"name\":\"appointee\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removePendingAdmin\",\"inputs\":[{\"name\":\"pendingAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rewardsInitiator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setAppointee\",\"inputs\":[{\"name\":\"appointee\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setClaimerFor\",\"inputs\":[{\"name\":\"claimer\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRewardsInitiator\",\"inputs\":[{\"name\":\"newRewardsInitiator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateAVSMetadataURI\",\"inputs\":[{\"name\":\"_metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RewardsInitiatorUpdated\",\"inputs\":[{\"name\":\"prevRewardsInitiator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newRewardsInitiator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"DelayPeriodNotPassed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyRegistryCoordinator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyRewardsInitiator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlySlasher\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStakeRegistry\",\"inputs\":[]}]",
 }
 
 // ContractServiceManagerBaseABI is the input ABI used to generate the binding from.
@@ -73,15 +89,7 @@ type ContractServiceManagerBaseCalls interface {
 
 	GetOperatorRestakedStrategies(opts *bind.CallOpts, operator common.Address) ([]common.Address, error)
 
-	GetOperatorsToMigrate(opts *bind.CallOpts) (struct {
-		OperatorSetIdsToCreate []uint32
-		OperatorSetIds         [][]uint32
-		AllOperators           []common.Address
-	}, error)
-
 	GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error)
-
-	MigrationFinalized(opts *bind.CallOpts) (bool, error)
 
 	Owner(opts *bind.CallOpts) (common.Address, error)
 
@@ -90,21 +98,29 @@ type ContractServiceManagerBaseCalls interface {
 
 // ContractServiceManagerBaseTransacts is an auto generated interface that defines the transact methods available for an Ethereum contract.
 type ContractServiceManagerBaseTransacts interface {
-	CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorRewardsSubmission) (*types.Transaction, error)
+	AddPendingAdmin(opts *bind.TransactOpts, admin common.Address) (*types.Transaction, error)
 
-	CreateOperatorSets(opts *bind.TransactOpts, operatorSetIds []uint32) (*types.Transaction, error)
+	CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error)
+
+	CreateOperatorDirectedAVSRewardsSubmission(opts *bind.TransactOpts, operatorDirectedRewardsSubmissions []IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission) (*types.Transaction, error)
 
 	DeregisterOperatorFromAVS(opts *bind.TransactOpts, operator common.Address) (*types.Transaction, error)
 
-	FinalizeMigration(opts *bind.TransactOpts) (*types.Transaction, error)
-
-	MigrateAndCreateOperatorSetIds(opts *bind.TransactOpts, operatorSetsToCreate []uint32) (*types.Transaction, error)
-
-	MigrateToOperatorSets(opts *bind.TransactOpts, operatorSetIds [][]uint32, operators []common.Address) (*types.Transaction, error)
+	DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error)
 
 	RegisterOperatorToAVS(opts *bind.TransactOpts, operator common.Address, operatorSignature ISignatureUtilsSignatureWithSaltAndExpiry) (*types.Transaction, error)
 
+	RemoveAdmin(opts *bind.TransactOpts, admin common.Address) (*types.Transaction, error)
+
+	RemoveAppointee(opts *bind.TransactOpts, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error)
+
+	RemovePendingAdmin(opts *bind.TransactOpts, pendingAdmin common.Address) (*types.Transaction, error)
+
 	RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
+
+	SetAppointee(opts *bind.TransactOpts, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error)
+
+	SetClaimerFor(opts *bind.TransactOpts, claimer common.Address) (*types.Transaction, error)
 
 	SetRewardsInitiator(opts *bind.TransactOpts, newRewardsInitiator common.Address) (*types.Transaction, error)
 
@@ -344,56 +360,6 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseCallerSession) GetO
 	return _ContractServiceManagerBase.Contract.GetOperatorRestakedStrategies(&_ContractServiceManagerBase.CallOpts, operator)
 }
 
-// GetOperatorsToMigrate is a free data retrieval call binding the contract method 0x0b91d665.
-//
-// Solidity: function getOperatorsToMigrate() view returns(uint32[] operatorSetIdsToCreate, uint32[][] operatorSetIds, address[] allOperators)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseCaller) GetOperatorsToMigrate(opts *bind.CallOpts) (struct {
-	OperatorSetIdsToCreate []uint32
-	OperatorSetIds         [][]uint32
-	AllOperators           []common.Address
-}, error) {
-	var out []interface{}
-	err := _ContractServiceManagerBase.contract.Call(opts, &out, "getOperatorsToMigrate")
-
-	outstruct := new(struct {
-		OperatorSetIdsToCreate []uint32
-		OperatorSetIds         [][]uint32
-		AllOperators           []common.Address
-	})
-	if err != nil {
-		return *outstruct, err
-	}
-
-	outstruct.OperatorSetIdsToCreate = *abi.ConvertType(out[0], new([]uint32)).(*[]uint32)
-	outstruct.OperatorSetIds = *abi.ConvertType(out[1], new([][]uint32)).(*[][]uint32)
-	outstruct.AllOperators = *abi.ConvertType(out[2], new([]common.Address)).(*[]common.Address)
-
-	return *outstruct, err
-
-}
-
-// GetOperatorsToMigrate is a free data retrieval call binding the contract method 0x0b91d665.
-//
-// Solidity: function getOperatorsToMigrate() view returns(uint32[] operatorSetIdsToCreate, uint32[][] operatorSetIds, address[] allOperators)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) GetOperatorsToMigrate() (struct {
-	OperatorSetIdsToCreate []uint32
-	OperatorSetIds         [][]uint32
-	AllOperators           []common.Address
-}, error) {
-	return _ContractServiceManagerBase.Contract.GetOperatorsToMigrate(&_ContractServiceManagerBase.CallOpts)
-}
-
-// GetOperatorsToMigrate is a free data retrieval call binding the contract method 0x0b91d665.
-//
-// Solidity: function getOperatorsToMigrate() view returns(uint32[] operatorSetIdsToCreate, uint32[][] operatorSetIds, address[] allOperators)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseCallerSession) GetOperatorsToMigrate() (struct {
-	OperatorSetIdsToCreate []uint32
-	OperatorSetIds         [][]uint32
-	AllOperators           []common.Address
-}, error) {
-	return _ContractServiceManagerBase.Contract.GetOperatorsToMigrate(&_ContractServiceManagerBase.CallOpts)
-}
-
 // GetRestakeableStrategies is a free data retrieval call binding the contract method 0xe481af9d.
 //
 // Solidity: function getRestakeableStrategies() view returns(address[])
@@ -423,37 +389,6 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) GetRestake
 // Solidity: function getRestakeableStrategies() view returns(address[])
 func (_ContractServiceManagerBase *ContractServiceManagerBaseCallerSession) GetRestakeableStrategies() ([]common.Address, error) {
 	return _ContractServiceManagerBase.Contract.GetRestakeableStrategies(&_ContractServiceManagerBase.CallOpts)
-}
-
-// MigrationFinalized is a free data retrieval call binding the contract method 0x8d68349a.
-//
-// Solidity: function migrationFinalized() view returns(bool)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseCaller) MigrationFinalized(opts *bind.CallOpts) (bool, error) {
-	var out []interface{}
-	err := _ContractServiceManagerBase.contract.Call(opts, &out, "migrationFinalized")
-
-	if err != nil {
-		return *new(bool), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
-
-	return out0, err
-
-}
-
-// MigrationFinalized is a free data retrieval call binding the contract method 0x8d68349a.
-//
-// Solidity: function migrationFinalized() view returns(bool)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) MigrationFinalized() (bool, error) {
-	return _ContractServiceManagerBase.Contract.MigrationFinalized(&_ContractServiceManagerBase.CallOpts)
-}
-
-// MigrationFinalized is a free data retrieval call binding the contract method 0x8d68349a.
-//
-// Solidity: function migrationFinalized() view returns(bool)
-func (_ContractServiceManagerBase *ContractServiceManagerBaseCallerSession) MigrationFinalized() (bool, error) {
-	return _ContractServiceManagerBase.Contract.MigrationFinalized(&_ContractServiceManagerBase.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -518,46 +453,67 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseCallerSession) Rewa
 	return _ContractServiceManagerBase.Contract.RewardsInitiator(&_ContractServiceManagerBase.CallOpts)
 }
 
+// AddPendingAdmin is a paid mutator transaction binding the contract method 0x279432eb.
+//
+// Solidity: function addPendingAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) AddPendingAdmin(opts *bind.TransactOpts, admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "addPendingAdmin", admin)
+}
+
+// AddPendingAdmin is a paid mutator transaction binding the contract method 0x279432eb.
+//
+// Solidity: function addPendingAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) AddPendingAdmin(admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.AddPendingAdmin(&_ContractServiceManagerBase.TransactOpts, admin)
+}
+
+// AddPendingAdmin is a paid mutator transaction binding the contract method 0x279432eb.
+//
+// Solidity: function addPendingAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) AddPendingAdmin(admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.AddPendingAdmin(&_ContractServiceManagerBase.TransactOpts, admin)
+}
+
 // CreateAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xfce36c7d.
 //
 // Solidity: function createAVSRewardsSubmission(((address,uint96)[],address,uint256,uint32,uint32)[] rewardsSubmissions) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorRewardsSubmission) (*types.Transaction, error) {
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) CreateAVSRewardsSubmission(opts *bind.TransactOpts, rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error) {
 	return _ContractServiceManagerBase.contract.Transact(opts, "createAVSRewardsSubmission", rewardsSubmissions)
 }
 
 // CreateAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xfce36c7d.
 //
 // Solidity: function createAVSRewardsSubmission(((address,uint96)[],address,uint256,uint32,uint32)[] rewardsSubmissions) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) CreateAVSRewardsSubmission(rewardsSubmissions []IRewardsCoordinatorRewardsSubmission) (*types.Transaction, error) {
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) CreateAVSRewardsSubmission(rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error) {
 	return _ContractServiceManagerBase.Contract.CreateAVSRewardsSubmission(&_ContractServiceManagerBase.TransactOpts, rewardsSubmissions)
 }
 
 // CreateAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xfce36c7d.
 //
 // Solidity: function createAVSRewardsSubmission(((address,uint96)[],address,uint256,uint32,uint32)[] rewardsSubmissions) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) CreateAVSRewardsSubmission(rewardsSubmissions []IRewardsCoordinatorRewardsSubmission) (*types.Transaction, error) {
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) CreateAVSRewardsSubmission(rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error) {
 	return _ContractServiceManagerBase.Contract.CreateAVSRewardsSubmission(&_ContractServiceManagerBase.TransactOpts, rewardsSubmissions)
 }
 
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xa20b99bf.
 //
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) CreateOperatorSets(opts *bind.TransactOpts, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.contract.Transact(opts, "createOperatorSets", operatorSetIds)
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) CreateOperatorDirectedAVSRewardsSubmission(opts *bind.TransactOpts, operatorDirectedRewardsSubmissions []IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "createOperatorDirectedAVSRewardsSubmission", operatorDirectedRewardsSubmissions)
 }
 
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xa20b99bf.
 //
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) CreateOperatorSets(operatorSetIds []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.CreateOperatorSets(&_ContractServiceManagerBase.TransactOpts, operatorSetIds)
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) CreateOperatorDirectedAVSRewardsSubmission(operatorDirectedRewardsSubmissions []IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.CreateOperatorDirectedAVSRewardsSubmission(&_ContractServiceManagerBase.TransactOpts, operatorDirectedRewardsSubmissions)
 }
 
-// CreateOperatorSets is a paid mutator transaction binding the contract method 0xafe02ed5.
+// CreateOperatorDirectedAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xa20b99bf.
 //
-// Solidity: function createOperatorSets(uint32[] operatorSetIds) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) CreateOperatorSets(operatorSetIds []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.CreateOperatorSets(&_ContractServiceManagerBase.TransactOpts, operatorSetIds)
+// Solidity: function createOperatorDirectedAVSRewardsSubmission(((address,uint96)[],address,(address,uint256)[],uint32,uint32,string)[] operatorDirectedRewardsSubmissions) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) CreateOperatorDirectedAVSRewardsSubmission(operatorDirectedRewardsSubmissions []IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.CreateOperatorDirectedAVSRewardsSubmission(&_ContractServiceManagerBase.TransactOpts, operatorDirectedRewardsSubmissions)
 }
 
 // DeregisterOperatorFromAVS is a paid mutator transaction binding the contract method 0xa364f4da.
@@ -581,67 +537,25 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) 
 	return _ContractServiceManagerBase.Contract.DeregisterOperatorFromAVS(&_ContractServiceManagerBase.TransactOpts, operator)
 }
 
-// FinalizeMigration is a paid mutator transaction binding the contract method 0xb78b6087.
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
 //
-// Solidity: function finalizeMigration() returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) FinalizeMigration(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.contract.Transact(opts, "finalizeMigration")
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) DeregisterOperatorFromOperatorSets(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "deregisterOperatorFromOperatorSets", operator, operatorSetIds)
 }
 
-// FinalizeMigration is a paid mutator transaction binding the contract method 0xb78b6087.
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
 //
-// Solidity: function finalizeMigration() returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) FinalizeMigration() (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.FinalizeMigration(&_ContractServiceManagerBase.TransactOpts)
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.DeregisterOperatorFromOperatorSets(&_ContractServiceManagerBase.TransactOpts, operator, operatorSetIds)
 }
 
-// FinalizeMigration is a paid mutator transaction binding the contract method 0xb78b6087.
+// DeregisterOperatorFromOperatorSets is a paid mutator transaction binding the contract method 0xc1a8e2c5.
 //
-// Solidity: function finalizeMigration() returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) FinalizeMigration() (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.FinalizeMigration(&_ContractServiceManagerBase.TransactOpts)
-}
-
-// MigrateAndCreateOperatorSetIds is a paid mutator transaction binding the contract method 0x15b7bc9a.
-//
-// Solidity: function migrateAndCreateOperatorSetIds(uint32[] operatorSetsToCreate) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) MigrateAndCreateOperatorSetIds(opts *bind.TransactOpts, operatorSetsToCreate []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.contract.Transact(opts, "migrateAndCreateOperatorSetIds", operatorSetsToCreate)
-}
-
-// MigrateAndCreateOperatorSetIds is a paid mutator transaction binding the contract method 0x15b7bc9a.
-//
-// Solidity: function migrateAndCreateOperatorSetIds(uint32[] operatorSetsToCreate) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) MigrateAndCreateOperatorSetIds(operatorSetsToCreate []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.MigrateAndCreateOperatorSetIds(&_ContractServiceManagerBase.TransactOpts, operatorSetsToCreate)
-}
-
-// MigrateAndCreateOperatorSetIds is a paid mutator transaction binding the contract method 0x15b7bc9a.
-//
-// Solidity: function migrateAndCreateOperatorSetIds(uint32[] operatorSetsToCreate) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) MigrateAndCreateOperatorSetIds(operatorSetsToCreate []uint32) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.MigrateAndCreateOperatorSetIds(&_ContractServiceManagerBase.TransactOpts, operatorSetsToCreate)
-}
-
-// MigrateToOperatorSets is a paid mutator transaction binding the contract method 0xd9f95377.
-//
-// Solidity: function migrateToOperatorSets(uint32[][] operatorSetIds, address[] operators) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) MigrateToOperatorSets(opts *bind.TransactOpts, operatorSetIds [][]uint32, operators []common.Address) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.contract.Transact(opts, "migrateToOperatorSets", operatorSetIds, operators)
-}
-
-// MigrateToOperatorSets is a paid mutator transaction binding the contract method 0xd9f95377.
-//
-// Solidity: function migrateToOperatorSets(uint32[][] operatorSetIds, address[] operators) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) MigrateToOperatorSets(operatorSetIds [][]uint32, operators []common.Address) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.MigrateToOperatorSets(&_ContractServiceManagerBase.TransactOpts, operatorSetIds, operators)
-}
-
-// MigrateToOperatorSets is a paid mutator transaction binding the contract method 0xd9f95377.
-//
-// Solidity: function migrateToOperatorSets(uint32[][] operatorSetIds, address[] operators) returns()
-func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) MigrateToOperatorSets(operatorSetIds [][]uint32, operators []common.Address) (*types.Transaction, error) {
-	return _ContractServiceManagerBase.Contract.MigrateToOperatorSets(&_ContractServiceManagerBase.TransactOpts, operatorSetIds, operators)
+// Solidity: function deregisterOperatorFromOperatorSets(address operator, uint32[] operatorSetIds) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) DeregisterOperatorFromOperatorSets(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.DeregisterOperatorFromOperatorSets(&_ContractServiceManagerBase.TransactOpts, operator, operatorSetIds)
 }
 
 // RegisterOperatorToAVS is a paid mutator transaction binding the contract method 0x9926ee7d.
@@ -665,6 +579,69 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) 
 	return _ContractServiceManagerBase.Contract.RegisterOperatorToAVS(&_ContractServiceManagerBase.TransactOpts, operator, operatorSignature)
 }
 
+// RemoveAdmin is a paid mutator transaction binding the contract method 0x1785f53c.
+//
+// Solidity: function removeAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) RemoveAdmin(opts *bind.TransactOpts, admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "removeAdmin", admin)
+}
+
+// RemoveAdmin is a paid mutator transaction binding the contract method 0x1785f53c.
+//
+// Solidity: function removeAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) RemoveAdmin(admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemoveAdmin(&_ContractServiceManagerBase.TransactOpts, admin)
+}
+
+// RemoveAdmin is a paid mutator transaction binding the contract method 0x1785f53c.
+//
+// Solidity: function removeAdmin(address admin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) RemoveAdmin(admin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemoveAdmin(&_ContractServiceManagerBase.TransactOpts, admin)
+}
+
+// RemoveAppointee is a paid mutator transaction binding the contract method 0xba550880.
+//
+// Solidity: function removeAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) RemoveAppointee(opts *bind.TransactOpts, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "removeAppointee", appointee, target, selector)
+}
+
+// RemoveAppointee is a paid mutator transaction binding the contract method 0xba550880.
+//
+// Solidity: function removeAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) RemoveAppointee(appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemoveAppointee(&_ContractServiceManagerBase.TransactOpts, appointee, target, selector)
+}
+
+// RemoveAppointee is a paid mutator transaction binding the contract method 0xba550880.
+//
+// Solidity: function removeAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) RemoveAppointee(appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemoveAppointee(&_ContractServiceManagerBase.TransactOpts, appointee, target, selector)
+}
+
+// RemovePendingAdmin is a paid mutator transaction binding the contract method 0x9da16d8e.
+//
+// Solidity: function removePendingAdmin(address pendingAdmin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) RemovePendingAdmin(opts *bind.TransactOpts, pendingAdmin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "removePendingAdmin", pendingAdmin)
+}
+
+// RemovePendingAdmin is a paid mutator transaction binding the contract method 0x9da16d8e.
+//
+// Solidity: function removePendingAdmin(address pendingAdmin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) RemovePendingAdmin(pendingAdmin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemovePendingAdmin(&_ContractServiceManagerBase.TransactOpts, pendingAdmin)
+}
+
+// RemovePendingAdmin is a paid mutator transaction binding the contract method 0x9da16d8e.
+//
+// Solidity: function removePendingAdmin(address pendingAdmin) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) RemovePendingAdmin(pendingAdmin common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.RemovePendingAdmin(&_ContractServiceManagerBase.TransactOpts, pendingAdmin)
+}
+
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
@@ -684,6 +661,48 @@ func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) RenounceOw
 // Solidity: function renounceOwnership() returns()
 func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) RenounceOwnership() (*types.Transaction, error) {
 	return _ContractServiceManagerBase.Contract.RenounceOwnership(&_ContractServiceManagerBase.TransactOpts)
+}
+
+// SetAppointee is a paid mutator transaction binding the contract method 0x1fdb0cfd.
+//
+// Solidity: function setAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) SetAppointee(opts *bind.TransactOpts, appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "setAppointee", appointee, target, selector)
+}
+
+// SetAppointee is a paid mutator transaction binding the contract method 0x1fdb0cfd.
+//
+// Solidity: function setAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) SetAppointee(appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.SetAppointee(&_ContractServiceManagerBase.TransactOpts, appointee, target, selector)
+}
+
+// SetAppointee is a paid mutator transaction binding the contract method 0x1fdb0cfd.
+//
+// Solidity: function setAppointee(address appointee, address target, bytes4 selector) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) SetAppointee(appointee common.Address, target common.Address, selector [4]byte) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.SetAppointee(&_ContractServiceManagerBase.TransactOpts, appointee, target, selector)
+}
+
+// SetClaimerFor is a paid mutator transaction binding the contract method 0xa0169ddd.
+//
+// Solidity: function setClaimerFor(address claimer) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactor) SetClaimerFor(opts *bind.TransactOpts, claimer common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.contract.Transact(opts, "setClaimerFor", claimer)
+}
+
+// SetClaimerFor is a paid mutator transaction binding the contract method 0xa0169ddd.
+//
+// Solidity: function setClaimerFor(address claimer) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseSession) SetClaimerFor(claimer common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.SetClaimerFor(&_ContractServiceManagerBase.TransactOpts, claimer)
+}
+
+// SetClaimerFor is a paid mutator transaction binding the contract method 0xa0169ddd.
+//
+// Solidity: function setClaimerFor(address claimer) returns()
+func (_ContractServiceManagerBase *ContractServiceManagerBaseTransactorSession) SetClaimerFor(claimer common.Address) (*types.Transaction, error) {
+	return _ContractServiceManagerBase.Contract.SetClaimerFor(&_ContractServiceManagerBase.TransactOpts, claimer)
 }
 
 // SetRewardsInitiator is a paid mutator transaction binding the contract method 0x3bc28c8c.
