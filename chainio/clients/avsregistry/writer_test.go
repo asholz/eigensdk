@@ -35,6 +35,15 @@ func TestWriterMethods(t *testing.T) {
 
 	operatorPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 
+	// secondOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	secondOperatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
+	secondOperatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	churnApprovalPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+	require.NoError(t, err)
+	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
 	config := avsregistry.Config{
 		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
 		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
@@ -42,6 +51,9 @@ func TestWriterMethods(t *testing.T) {
 	}
 
 	chainWriter, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
+	require.NoError(t, err)
+
+	chainWriter2, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, secondOperatorPrivateKeyHex, config)
 	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
@@ -81,11 +93,41 @@ func TestWriterMethods(t *testing.T) {
 	})
 
 	t.Run("register operator with churn", func(t *testing.T) {
-		firstOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-		firstOperatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+		clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+		contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+		chainWriter := clients.AvsRegistryChainWriter
+
+		firstOperatorAddress := addr
+		firstOperatorPrivateKey := ecdsaPrivateKey
+		require.NoError(t, err)
+
+		ethHttpClient := clients.EthHttpClient
+
+		registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+			contractAddrs.RegistryCoordinator,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+
+		// At first, churnApprover is anvil first address
+		approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+		require.NoError(t, err)
+		assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+		// Set a new churnApprover
+		receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
+		require.NoError(t, err)
+		require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+		// After change, churnApprover is the setted value
+		newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+		require.NoError(t, err)
+		assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 
 		//register once
-		receipt, err := chainWriter.RegisterOperator(
+		receipt, err = chainWriter.RegisterOperator(
 			context.Background(),
 			firstOperatorPrivateKey,
 			keypair,
@@ -96,14 +138,12 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, receipt)
 
-		secondOperatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
 		operatorsToKick := []gethcommon.Address{firstOperatorAddress}
 
-		churnApprovalPrivateKey := testutils.ANVIL_THIRD_PRIVATE_KEY
-
-		receipt, err = chainWriter.RegisterOperatorWithChurn(
+		receipt, err = chainWriter2.RegisterOperatorWithChurn(
 			context.Background(),
 			secondOperatorPrivateKey,
+			churnApprovalPrivateKey,
 			keypair,
 			quorumNumbers,
 			quorumNumbers,
