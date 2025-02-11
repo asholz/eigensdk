@@ -403,7 +403,12 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get minimum stake for quorum", func(t *testing.T) {
-		receipt, err := chainWriter.SetMinimumStakeForQuorum(context.Background(), quorumNumber.UnderlyingType(), big.NewInt(100), true)
+		receipt, err := chainWriter.SetMinimumStakeForQuorum(
+			context.Background(),
+			quorumNumber.UnderlyingType(),
+			big.NewInt(100),
+			true,
+		)
 		require.NoError(t, err)
 		require.NotNil(t, receipt)
 
@@ -411,6 +416,14 @@ func TestReaderMethods(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, big.NewInt(100), minimumStake)
 	})
+
+	t.Run("Get strategy params at index", func(t *testing.T) {
+		params, err := chainReader.StrategyParamsByIndex(&bind.CallOpts{}, quorumNumber, big.NewInt(0))
+		require.NoError(t, err)
+		require.Equal(t, strategy, params.Strategy)
+		require.Equal(t, big.NewInt(1e18), params.Multiplier)
+	})
+
 }
 
 func TestIsOperatorSetQuorum(t *testing.T) {

@@ -612,6 +612,21 @@ func (r *ChainReader) GetMinimumStakeForQuorum(
 	return stake, nil
 }
 
+func (r *ChainReader) GetStrategyParamsAtIndex(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	index *big.Int,
+) (stakeregistry.IStakeRegistryTypesStrategyParams, error) {
+	if r.stakeRegistry == nil {
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, errors.New("StakeRegistry contract not provided")
+	}
+	params, err := r.stakeRegistry.StrategyParams(opts, quorumNumber.UnderlyingType(), index)
+	if err != nil {
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError("Failed to get strategy params", err)
+	}
+	return params, nil
+}
+
 // Given an operator address, returns its ID.
 func (r *ChainReader) GetOperatorId(
 	opts *bind.CallOpts,
