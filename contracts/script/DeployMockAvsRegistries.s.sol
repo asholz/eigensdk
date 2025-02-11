@@ -215,5 +215,6 @@ contract DeployMockAvsRegistries is Script, ConfigsReadWriter, EigenlayerContrac
         registry.registerContract("delegationManager", address(eigen.delegationManager));
         registry.registerContract("strategyManager", address(eigen.strategyManager));
         registry.registerContract("rewardsCoordinator", address(eigen.rewardsCoordinator));
+        registry.registerContract("permissionController", address(eigen.permissionController));
     }
 }
