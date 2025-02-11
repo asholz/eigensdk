@@ -306,7 +306,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		stakeRegistryAddr, err := contractBlsRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
+		stakeRegistryAddr, err := contractRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
 		require.NoError(t, err)
 
 		stakeRegistry, err := stakeregistry.NewContractStakeRegistry(
