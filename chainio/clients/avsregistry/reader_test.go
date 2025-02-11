@@ -403,9 +403,13 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get minimum stake for quorum", func(t *testing.T) {
+		receipt, err := chainWriter.SetMinimumStakeForQuorum(context.Background(), quorumNumber.UnderlyingType(), big.NewInt(100), true)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
 		minimumStake, err := chainReader.GetMinimumStakeForQuorum(&bind.CallOpts{}, quorumNumber)
 		require.NoError(t, err)
-		require.NotNil(t, minimumStake)
+		require.Equal(t, big.NewInt(100), minimumStake)
 	})
 }
 
