@@ -627,6 +627,52 @@ func (r *ChainReader) GetStrategyParamsAtIndex(
 	return params, nil
 }
 
+func (r *ChainReader) GetStrategyPerQuorumAtIndex(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+	index *big.Int,
+) (common.Address, error) {
+	if r.stakeRegistry == nil {
+		return common.Address{}, errors.New("StakeRegistry contract not provided")
+	}
+
+	strategy, err := r.stakeRegistry.StrategiesPerQuorum(opts, quorumNumber.UnderlyingType(), index)
+	if err != nil {
+		return common.Address{}, utils.WrapError("Failed to get strategies per quorum", err)
+	}
+	return strategy, nil
+}
+
+func (r *ChainReader) GetStakeTypePerQuorum(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (uint8, error) {
+	if r.stakeRegistry == nil {
+		return 0, errors.New("StakeRegistry contract not provided")
+	}
+
+	stakeType, err := r.stakeRegistry.StakeTypePerQuorum(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return 0, utils.WrapError("Failed to get stake type per quorum", err)
+	}
+	return stakeType, nil
+}
+
+func (r *ChainReader) GetSlashableStakeLookAheadPerQuorum(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (uint32, error) {
+	if r.stakeRegistry == nil {
+		return 0, errors.New("StakeRegistry contract not provided")
+	}
+
+	lookAhead, err := r.stakeRegistry.SlashableStakeLookAheadPerQuorum(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return 0, utils.WrapError("Failed to get slashable stake look ahead per quorum", err)
+	}
+	return lookAhead, nil
+}
+
 // Given an operator address, returns its ID.
 func (r *ChainReader) GetOperatorId(
 	opts *bind.CallOpts,

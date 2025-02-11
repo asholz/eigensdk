@@ -424,6 +424,24 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, big.NewInt(1e18), params.Multiplier)
 	})
 
+	t.Run("Get strategy per quorum at index", func(t *testing.T) {
+		retrievedStrat, err := chainReader.GetStrategyPerQuorumAtIndex(&bind.CallOpts{}, quorumNumber, big.NewInt(0))
+		require.NoError(t, err)
+		require.Equal(t, strategy, retrievedStrat)
+	})
+
+	t.Run("Get stake type per quorum", func(t *testing.T) {
+		stakeType, err := chainReader.GetStakeTypePerQuorum(&bind.CallOpts{}, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, uint8(0), stakeType)
+	})
+
+	t.Run("Get slashable stake look ahead per quorum", func(t *testing.T) {
+		lookAhead, err := chainReader.GetSlashableStakeLookAheadPerQuorum(&bind.CallOpts{}, quorumNumber)
+		require.NoError(t, err)
+		require.Equal(t, uint32(0), lookAhead)
+	})
+
 }
 
 func TestIsOperatorSetQuorum(t *testing.T) {
