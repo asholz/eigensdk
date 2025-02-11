@@ -675,3 +675,44 @@ func TestSetEjectionCooldown(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newCooldown, ejectionCooldown)
 }
+
+func TestCreateAVSRewardsSubmission(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	// svcManagerAddr := clients.AvsRegistryContractBindings.ServiceManagerAddr
+
+	strategies, err := clients.AvsRegistryChainReader.StrategyParamsByIndex(nil, 0, big.NewInt(0))
+	require.NoError(t, err)
+
+	calculationInterval, err := clients.EigenlayerContractBindings.RewardsCoordinator.CALCULATIONINTERVALSECONDS(nil)
+	require.NoError(t, err)
+
+	strategy := strategies.Strategy
+
+	_, token, err := clients.ElChainReader.GetStrategyAndUnderlyingToken(context.TODO(), strategies.Strategy)
+	require.NoError(t, err)
+
+	strategiesAndMultipliers := []servicemanager.IRewardsCoordinatorTypesStrategyAndMultiplier{
+		{
+			Strategy:   strategy,
+			Multiplier: big.NewInt(1),
+		},
+	}
+	// These values are set to align with the contract's requirements for the `OperatorDirectedRewardsSubmission`.
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/ecaff6304de6cb0f43b42024ad55d0e8a0430790/src/contracts/core/RewardsCoordinator.sol#L414
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/ecaff6304de6cb0f43b42024ad55d0e8a0430790/src/contracts/core/RewardsCoordinator.sol#L482
+	var duration uint32 = 86400
+	var startTimestamp uint32 = calculationInterval
+
+	rewardsSubmission := []servicemanager.IRewardsCoordinatorTypesRewardsSubmission{{
+		StrategiesAndMultipliers: strategiesAndMultipliers,
+		Token:                    token,
+		Amount:                   big.NewInt(1000),
+		StartTimestamp:           startTimestamp,
+		Duration:                 duration,
+	}}
+	receipt, err := chainWriter.CreateAVSRewardsSubmission(context.TODO(), rewardsSubmission, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
