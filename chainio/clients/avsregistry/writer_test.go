@@ -278,7 +278,6 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 		assert.Zero(t, lookAheadPeriod)
 
-		// Modify lookAheadPeriod, set it as 32
 		newLookAheadPeriod := 32
 		receipt, err := chainWriter.SetSlashableStakeLookahead(
 			context.Background(),
