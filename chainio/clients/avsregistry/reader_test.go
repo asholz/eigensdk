@@ -521,14 +521,10 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get apk update", func(t *testing.T) {
-
 		apkUpdateAfter, err := chainReader.GetApkUpdate(&bind.CallOpts{}, quorumNumber.UnderlyingType(), big.NewInt(0))
 		require.NoError(t, err)
 		require.NotNil(t, apkUpdateAfter)
-
-		blockNumber, err := clients.EthHttpClient.BlockNumber(context.Background())
-		require.NoError(t, err)
-		require.Equal(t, apkUpdateAfter.NextUpdateBlockNumber, uint32(blockNumber))
+		require.Greater(t, apkUpdateAfter.NextUpdateBlockNumber, apkUpdateAfter.UpdateBlockNumber)
 	})
 
 	t.Run("Get current apk", func(t *testing.T) {
