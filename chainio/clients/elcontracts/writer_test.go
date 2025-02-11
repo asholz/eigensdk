@@ -696,12 +696,11 @@ func TestSetAndRemovePermission(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
@@ -942,13 +941,11 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
@@ -1007,13 +1004,12 @@ func TestAcceptAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
@@ -1068,13 +1064,11 @@ func TestRemoveAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
