@@ -359,7 +359,7 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		return nil, err
 	}
 	churnMsgToSign, err := w.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
-		&bind.CallOpts{},
+		&bind.CallOpts{Context: ctx},
 		operatorAddr,
 		operatorId,
 		operatorKickParams,
