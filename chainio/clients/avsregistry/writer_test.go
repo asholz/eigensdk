@@ -52,6 +52,7 @@ func TestWriterMethods(t *testing.T) {
 	require.NoError(t, err)
 
 	quorumNumbers := types.QuorumNums{0}
+	quorumNumber := types.QuorumNum(0)
 
 	subCtx, cancelFn := context.WithCancel(context.Background())
 	cancelFn()
@@ -294,6 +295,43 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, lookAheadPeriod, uint32(newLookAheadPeriod))
+	})
+
+	t.Run("set minimum stake for quorum", func(t *testing.T) {
+		// Create stakeRegistry contract
+		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+		require.NoError(t, err)
+
+		contractRegistryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+			contractAddrs.RegistryCoordinator,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+
+		stakeRegistryAddr, err := contractRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
+		require.NoError(t, err)
+
+		stakeRegistry, err := stakeregistry.NewContractStakeRegistry(
+			stakeRegistryAddr,
+			ethHttpClient,
+		)
+		require.NoError(t, err)
+		receipt, err := chainWriter.SetMinimumStakeForQuorum(
+			context.Background(),
+			quorumNumber.UnderlyingType(),
+			big.NewInt(100),
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, receipt)
+
+		newMinimumStakeForQuorum, err := stakeRegistry.MinimumStakeForQuorum(
+			&bind.CallOpts{},
+			quorumNumber.UnderlyingType(),
+		)
+		require.NoError(t, err)
+
+		assert.Equal(t, newMinimumStakeForQuorum, big.NewInt(100))
 	})
 }
 
