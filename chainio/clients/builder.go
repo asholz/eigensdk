@@ -22,12 +22,15 @@ import (
 )
 
 type BuildAllConfig struct {
-	EthHttpUrl                 string
-	EthWsUrl                   string
-	RegistryCoordinatorAddr    string
-	OperatorStateRetrieverAddr string
-	AvsName                    string
-	PromMetricsIpPortAddress   string
+	EthHttpUrl               string
+	EthWsUrl                 string
+	AvsName                  string
+	PromMetricsIpPortAddress string
+
+	RegistryCoordinatorAddr     string
+	OperatorStateRetrieverAddr  string
+	RewardsCoordinatorAddress   string
+	PermissionControllerAddress string
 
 	/// The address of the ServiceManager contract.
 	ServiceManagerAddress string
@@ -196,12 +199,20 @@ func BuildAll(
 		return nil, utils.WrapError("Failed to create AVS Registry Reader and Writer", err)
 	}
 
+	elcontractsCfg := elcontracts.Config{
+		DelegationManagerAddress: avsRegistryContractBindings.DelegationManagerAddr,
+		AvsDirectoryAddress:      avsRegistryContractBindings.AvsDirectoryAddr,
+	}
+	if config.RewardsCoordinatorAddress != "" {
+		elcontractsCfg.RewardsCoordinatorAddress = gethcommon.HexToAddress(config.RewardsCoordinatorAddress)
+	}
+	if config.PermissionControllerAddress != "" {
+		elcontractsCfg.PermissionControllerAddress = gethcommon.HexToAddress(config.PermissionControllerAddress)
+	}
+
 	// creating EL clients: Reader, Writer and EigenLayer Contract Bindings
 	elChainReader, elChainWriter, elContractBindings, err := elcontracts.BuildClients(
-		elcontracts.Config{
-			DelegationManagerAddress: avsRegistryContractBindings.DelegationManagerAddr,
-			AvsDirectoryAddress:      avsRegistryContractBindings.AvsDirectoryAddr,
-		},
+		elcontractsCfg,
 		ethHttpClient,
 		txMgr,
 		logger,
@@ -244,17 +255,6 @@ func (config *BuildAllConfig) validate(logger logging.Logger) error {
 		logger.Error("BuildAllConfig.validate: Missing eth ws url")
 		return fmt.Errorf("BuildAllConfig.validate: Missing eth ws url")
 	}
-	if config.RegistryCoordinatorAddr == "" {
-		logger.Error("BuildAllConfig.validate: Missing bls registry coordinator address")
-		return fmt.Errorf("BuildAllConfig.validate: Missing bls registry coordinator address")
-	}
-	if config.ServiceManagerAddress == "" {
-		logger.Info("BuildAllConfig.validate: Missing optional service manager address")
-	}
-	if config.OperatorStateRetrieverAddr == "" {
-		logger.Error("BuildAllConfig.validate: Missing bls operator state retriever address")
-		return fmt.Errorf("BuildAllConfig.validate: Missing bls operator state retriever address")
-	}
 	if config.AvsName == "" {
 		logger.Error("BuildAllConfig.validate: Missing avs name")
 		return fmt.Errorf("BuildAllConfig.validate: Missing avs name")
@@ -262,6 +262,23 @@ func (config *BuildAllConfig) validate(logger logging.Logger) error {
 	if config.PromMetricsIpPortAddress == "" {
 		logger.Error("BuildAllConfig.validate: Missing prometheus metrics ip port address")
 		return fmt.Errorf("BuildAllConfig.validate: Missing prometheus metrics ip port address")
+	}
+	if config.RegistryCoordinatorAddr == "" {
+		logger.Error("BuildAllConfig.validate: Missing bls registry coordinator address")
+		return fmt.Errorf("BuildAllConfig.validate: Missing bls registry coordinator address")
+	}
+	if config.OperatorStateRetrieverAddr == "" {
+		logger.Error("BuildAllConfig.validate: Missing bls operator state retriever address")
+		return fmt.Errorf("BuildAllConfig.validate: Missing bls operator state retriever address")
+	}
+	if config.RewardsCoordinatorAddress == "" {
+		logger.Info("BuildAllConfig.validate: Missing optional rewards coordinator address")
+	}
+	if config.PermissionControllerAddress == "" {
+		logger.Info("BuildAllConfig.validate: Missing optional permission controller address")
+	}
+	if config.ServiceManagerAddress == "" {
+		logger.Info("BuildAllConfig.validate: Missing optional service manager address")
 	}
 	return nil
 }
