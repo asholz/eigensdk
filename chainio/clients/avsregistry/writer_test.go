@@ -325,7 +325,10 @@ func TestWriterMethods(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, receipt)
 
-		newMinimumStakeForQuorum, err := stakeRegistry.MinimumStakeForQuorum(&bind.CallOpts{}, quorumNumber.UnderlyingType())
+		newMinimumStakeForQuorum, err := stakeRegistry.MinimumStakeForQuorum(
+			&bind.CallOpts{},
+			quorumNumber.UnderlyingType(),
+		)
 		require.NoError(t, err)
 
 		assert.Equal(t, newMinimumStakeForQuorum, big.NewInt(100))
