@@ -652,10 +652,6 @@ func TestUpdateAVSMetadataURI(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Prepare event filter to check for URI update
-	iter, err := avsDirectory.FilterAVSMetadataURIUpdated(nil, []gethcommon.Address{svcManagerAddr})
-	require.NoError(t, err)
-
 	// Update the metadata URI
 	newMetadata := "https://new-metadata-uri.com"
 	receipt, err := chainWriter.UpdateAVSMetadataURI(context.TODO(), newMetadata, true)
@@ -663,6 +659,8 @@ func TestUpdateAVSMetadataURI(t *testing.T) {
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
 	// Assert the event was emitted
+	iter, err := avsDirectory.FilterAVSMetadataURIUpdated(nil, []gethcommon.Address{svcManagerAddr})
+	require.NoError(t, err)
 	require.True(t, iter.Next())
 	require.Equal(t, newMetadata, iter.Event.MetadataURI)
 }
