@@ -38,6 +38,7 @@ type Config struct {
 type ChainReader struct {
 	logger                  logging.Logger
 	blsApkRegistryAddr      common.Address
+	blsApkRegistry          *apkreg.ContractBLSApkRegistry
 	registryCoordinatorAddr common.Address
 	registryCoordinator     *regcoord.ContractRegistryCoordinator
 	operatorStateRetriever  *opstateretriever.ContractOperatorStateRetriever
@@ -50,6 +51,7 @@ func NewChainReader(
 	registryCoordinatorAddr common.Address,
 	blsApkRegistryAddr common.Address,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
+	blsApkRegistry *apkreg.ContractBLSApkRegistry,
 	operatorStateRetriever *opstateretriever.ContractOperatorStateRetriever,
 	stakeRegistry *stakeregistry.ContractStakeRegistry,
 	logger logging.Logger,
@@ -59,6 +61,7 @@ func NewChainReader(
 
 	return &ChainReader{
 		blsApkRegistryAddr:      blsApkRegistryAddr,
+		blsApkRegistry:          blsApkRegistry,
 		registryCoordinatorAddr: registryCoordinatorAddr,
 		registryCoordinator:     registryCoordinator,
 		operatorStateRetriever:  operatorStateRetriever,
@@ -83,6 +86,7 @@ func NewReaderFromConfig(
 		bindings.RegistryCoordinatorAddr,
 		bindings.BlsApkRegistryAddr,
 		bindings.RegistryCoordinator,
+		bindings.BlsApkRegistry,
 		bindings.OperatorStateRetriever,
 		bindings.StakeRegistry,
 		logger,
@@ -777,6 +781,21 @@ func (r *ChainReader) IsOperatorSetQuorum(
 	}
 
 	return isOperatorSet, nil
+}
+
+func (r *ChainReader) GetOperatorPubkeyHash(
+	opts *bind.CallOpts,
+	operatorAddress common.Address,
+) ([32]byte, error) {
+	if r.blsApkRegistry == nil {
+		return [32]byte{}, errors.New("BLSApkRegistry contract not provided")
+	}
+
+	operatorPubkeyHash, err := r.blsApkRegistry.OperatorToPubkeyHash(opts, operatorAddress)
+	if err != nil {
+		return [32]byte{}, utils.WrapError("Failed to get operator pubkey hash", err)
+	}
+	return operatorPubkeyHash, nil
 }
 
 // Queries existing operators for a particular block range.
