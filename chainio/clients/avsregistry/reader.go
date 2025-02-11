@@ -597,6 +597,21 @@ func (r *ChainReader) GetTotalStakeIndicesAtBlockNumber(
 	return indices, nil
 }
 
+func (r *ChainReader) GetMinimumStakeForQuorum(
+	opts *bind.CallOpts,
+	quorumNumber types.QuorumNum,
+) (types.StakeAmount, error) {
+	if r.stakeRegistry == nil {
+		return nil, errors.New("StakeRegistry contract not provided")
+	}
+
+	stake, err := r.stakeRegistry.MinimumStakeForQuorum(opts, quorumNumber.UnderlyingType())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get minimum stake for quorum", err)
+	}
+	return stake, nil
+}
+
 // Given an operator address, returns its ID.
 func (r *ChainReader) GetOperatorId(
 	opts *bind.CallOpts,

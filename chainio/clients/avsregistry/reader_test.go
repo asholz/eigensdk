@@ -401,6 +401,12 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, 1, len(totalStakeIndices))
 		require.Equal(t, uint32(1), totalStakeIndices[0])
 	})
+
+	t.Run("Get minimum stake for quorum", func(t *testing.T) {
+		minimumStake, err := chainReader.GetMinimumStakeForQuorum(&bind.CallOpts{}, quorumNumber)
+		require.NoError(t, err)
+		require.NotNil(t, minimumStake)
+	})
 }
 
 func TestIsOperatorSetQuorum(t *testing.T) {
