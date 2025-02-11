@@ -364,12 +364,13 @@ func (w *ChainWriter) SetRewardsInitiator(
 		return nil, err
 	}
 
+	// TODO: store binding in struct
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
 		w.serviceManagerAddr,
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
 	}
 	tx, err := serviceManagerContract.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
 	if err != nil {
@@ -619,6 +620,38 @@ func (w *ChainWriter) SetEjectionCooldown(
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
+// Updates the metadata URI for the AVS. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) UpdateAVSMetadataURI(
+	ctx context.Context,
+	metadataUri string,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("updating AVS metadata URI with value ", metadataUri)
+
+	// TODO: store binding in struct
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.UpdateAVSMetadataURI(noSendTxOpts, metadataUri)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send updateAVSMetadataURI tx", err.Error())
 	}
 	return receipt, nil
 }
