@@ -406,6 +406,27 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 	return receipt, nil
 }
 
+func (w *ChainWriter) SetMinimumStakeForQuorum(
+	ctx context.Context,
+	quorumNumber uint8,
+	minimumStake *big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.SetMinimumStakeForQuorum(noSendTxOpts, quorumNumber, minimumStake)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err.Error())
+	}
+	return receipt, nil
+}
+
 // Creates a new quorum that tracks total delegated stake for operators.
 // It receives the operator set parameters for the given quorum and the minimum stake required to register.
 // Returns the transaction receipt in case of success.
