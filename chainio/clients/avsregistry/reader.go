@@ -684,7 +684,7 @@ func (r *ChainReader) GetOperatorRestakedStrategies(
 	if err != nil {
 		return nil, utils.WrapError("Failed to get operator restaked strategies", err)
 	}
-	return strategies, nil
+	return removeDuplicateStrategies(strategies), nil
 }
 
 func (r *ChainReader) GetStakeTypePerQuorum(
