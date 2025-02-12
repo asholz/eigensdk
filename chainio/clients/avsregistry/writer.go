@@ -214,7 +214,7 @@ func (w *ChainWriter) RegisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully registered operator with AVS registry coordinator",
@@ -256,7 +256,7 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err: ", err.Error())
+		return nil, utils.WrapError("failed to send tx with err: ", err)
 	}
 	w.logger.Info(
 		"successfully updated stakes for entire operator set",
@@ -287,7 +287,7 @@ func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully updated stakes of operator subset for all quorums",
@@ -318,7 +318,7 @@ func (w *ChainWriter) DeregisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully deregistered operator with the AVS's registry coordinator",
@@ -345,7 +345,7 @@ func (w *ChainWriter) UpdateSocket(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send UpdateSocket tx with err", err.Error())
+		return nil, utils.WrapError("failed to send UpdateSocket tx with err", err)
 	}
 	return receipt, nil
 }
@@ -379,7 +379,7 @@ func (w *ChainWriter) SetRewardsInitiator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err)
 	}
 	return receipt, nil
 }
@@ -403,7 +403,7 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err)
 	}
 	return receipt, nil
 }
@@ -424,7 +424,7 @@ func (w *ChainWriter) SetMinimumStakeForQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err)
 	}
 	return receipt, nil
 }
@@ -457,7 +457,7 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err.Error())
+		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err)
 	}
 	return receipt, nil
 }
@@ -494,7 +494,7 @@ func (w *ChainWriter) CreateSlashableStakeQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err.Error())
+		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err)
 	}
 	return receipt, nil
 }
@@ -519,7 +519,7 @@ func (w *ChainWriter) EjectOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+		return nil, utils.WrapError("failed to send EjectOperator tx with err", err)
 	}
 	return receipt, nil
 }
@@ -545,7 +545,7 @@ func (w *ChainWriter) SetOperatorSetParams(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err)
 	}
 	return receipt, nil
 }
@@ -569,7 +569,7 @@ func (w *ChainWriter) SetChurnApprover(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err)
 	}
 	return receipt, nil
 }
@@ -593,7 +593,7 @@ func (w *ChainWriter) SetEjector(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjector tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetEjector tx with err", err)
 	}
 	return receipt, nil
 }
@@ -617,7 +617,7 @@ func (w *ChainWriter) SetAccountIdentifier(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err)
 	}
 	return receipt, nil
 }
@@ -641,7 +641,7 @@ func (w *ChainWriter) SetEjectionCooldown(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err)
 	}
 	return receipt, nil
 }
@@ -716,7 +716,7 @@ func (w *ChainWriter) CreateAVSRewardsSubmission(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateAVSRewardsSubmission tx with err", err.Error())
+		return nil, utils.WrapError("failed to send CreateAVSRewardsSubmission tx with err", err)
 	}
 	return receipt, nil
 }
