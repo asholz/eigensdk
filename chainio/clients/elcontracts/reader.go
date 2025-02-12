@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
@@ -543,6 +544,46 @@ func (r *ChainReader) GetOperatorsShares(
 		return nil, errors.New("DelegationManager contract not provided")
 	}
 	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddresses, strategyAddresses)
+}
+
+// Returns whether `delegationApprover` has already used the given `salt`.
+func (r *ChainReader) GetDelegationApproverSaltIsSpent(
+	ctx context.Context,
+	delegationApprover common.Address,
+	approverSalt [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.DelegationApproverSaltIsSpent(
+		&bind.CallOpts{Context: ctx},
+		delegationApprover,
+		approverSalt,
+	)
+}
+
+// Returns whether a withdrawal is pending for a given `withdrawalRoot`.
+func (r *ChainReader) GetPendingWithdrawalStatus(
+	ctx context.Context,
+	withdrawalRoot [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
+}
+
+// Returns the total number of withdrawals that have been queued for a given `staker`
+func (r *ChainReader) GetCumulativeWithdrawalsQueued(
+	ctx context.Context,
+	staker common.Address,
+) (*big.Int, error) {
+	if r.delegationManager == nil {
+		return big.NewInt(0), errors.New("DelegationManager contract not provided")
+	}
+	return r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
 }
 
 // Returns the number of operator sets that an operator is part of.
