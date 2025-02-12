@@ -663,19 +663,7 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 	if len(strategies) == 0 {
 		return strategies, nil
 	}
-	// Remove duplicates
-	slices.SortFunc(strategies, common.Address.Cmp)
-	uniqueStrategies := make([]common.Address, 0, len(strategies))
-	lastElement := strategies[0]
-	uniqueStrategies = append(uniqueStrategies, lastElement)
-	for i := range uniqueStrategies[1:] {
-		if strategies[i] == lastElement {
-			continue
-		}
-		lastElement = strategies[i]
-		uniqueStrategies = append(uniqueStrategies, lastElement)
-	}
-	return uniqueStrategies, nil
+	return removeDuplicateStrategies(strategies), nil
 }
 
 func (r *ChainReader) GetStakeTypePerQuorum(
@@ -983,4 +971,20 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 		)
 	}
 	return operatorIdToSocketMap, nil
+}
+
+// Removes duplicates from the given list of strategies.
+func removeDuplicateStrategies(strategies []common.Address) []common.Address {
+	slices.SortFunc(strategies, common.Address.Cmp)
+	uniqueStrategies := make([]common.Address, 0, len(strategies))
+	lastElement := strategies[0]
+	uniqueStrategies = append(uniqueStrategies, lastElement)
+	for i := range uniqueStrategies[1:] {
+		if strategies[i] == lastElement {
+			continue
+		}
+		lastElement = strategies[i]
+		uniqueStrategies = append(uniqueStrategies, lastElement)
+	}
+	return uniqueStrategies
 }
