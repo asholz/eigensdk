@@ -670,6 +670,18 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 	return removeDuplicateStrategies(strategies), nil
 }
 
+func (r *ChainReader) GetOperatorRestakedStrategies(opts *bind.CallOpts, operator common.Address) ([]common.Address, error) {
+	if r.serviceManager == nil {
+		return nil, errors.New("ServiceManager contract not provided")
+	}
+
+	strategies, err := r.serviceManager.GetOperatorRestakedStrategies(opts, operator)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get operator restaked strategies", err)
+	}
+	return strategies, nil
+}
+
 func (r *ChainReader) GetStakeTypePerQuorum(
 	opts *bind.CallOpts,
 	quorumNumber uint8,
