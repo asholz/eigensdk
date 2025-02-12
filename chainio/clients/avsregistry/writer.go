@@ -364,7 +364,7 @@ func (w *ChainWriter) SetRewardsInitiator(
 		return nil, err
 	}
 
-	// TODO: store binding in struct
+	// TODO: create ServiceManager binding in `NewChainWriter`
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
 		w.serviceManagerAddr,
 		w.ethClient,
@@ -653,7 +653,8 @@ func (w *ChainWriter) UpdateAVSMetadataURI(
 ) (*gethtypes.Receipt, error) {
 	w.logger.Info("updating AVS metadata URI with value ", metadataUri)
 
-	// TODO: store binding in struct
+	// TODO: create ServiceManager binding in `NewChainWriter`
+	// (see https://github.com/Layr-Labs/eigensdk-go/issues/552)
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
 		w.serviceManagerAddr,
 		w.ethClient,
