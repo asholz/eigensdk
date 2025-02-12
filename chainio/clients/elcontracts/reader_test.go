@@ -627,10 +627,9 @@ func TestAdminFunctions(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	assert.NoError(t, err)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-	config := elcontracts.Config{
-		PermissionsControllerAddress: permissionControllerAddr,
-	}
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	config := elcontracts.Config{PermissionControllerAddress: contractAddrs.PermissionController}
 
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
@@ -716,10 +715,9 @@ func TestAppointeesFunctions(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	assert.NoError(t, err)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-	config := elcontracts.Config{
-		PermissionsControllerAddress: permissionControllerAddr,
-	}
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	config := elcontracts.Config{PermissionControllerAddress: contractAddrs.PermissionController}
 
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	assert.NoError(t, err)

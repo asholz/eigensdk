@@ -23,10 +23,10 @@ import (
 )
 
 type Config struct {
-	DelegationManagerAddress     gethcommon.Address
-	AvsDirectoryAddress          gethcommon.Address
-	RewardsCoordinatorAddress    gethcommon.Address
-	PermissionsControllerAddress gethcommon.Address
+	DelegationManagerAddress    gethcommon.Address
+	AvsDirectoryAddress         gethcommon.Address
+	RewardsCoordinatorAddress   gethcommon.Address
+	PermissionControllerAddress gethcommon.Address
 }
 
 type ChainReader struct {
