@@ -783,7 +783,8 @@ func (r *ChainReader) IsOperatorSetQuorum(
 	return isOperatorSet, nil
 }
 
-func (r *ChainReader) GetPubkeyHashFromOperatorAddress(
+// Returns the operator's operatorId (pubkeyhash) given their address
+func (r *ChainReader) GetOperatorIdFromOperatorAddress(
 	opts *bind.CallOpts,
 	operatorAddress common.Address,
 ) ([32]byte, error) {
@@ -798,7 +799,8 @@ func (r *ChainReader) GetPubkeyHashFromOperatorAddress(
 	return operatorPubkeyHash, nil
 }
 
-func (r *ChainReader) GetOperatorAddressFromPubkeyHash(
+// Returns the operator address given their operator ID (their pubkeyhash)
+func (r *ChainReader) GetOperatorAddressFromOperatorId(
 	opts *bind.CallOpts,
 	operatorPubkeyHash [32]byte,
 ) (common.Address, error) {
@@ -813,6 +815,7 @@ func (r *ChainReader) GetOperatorAddressFromPubkeyHash(
 	return operatorAddress, nil
 }
 
+// Returns operator's BLS public key in G1 given their address
 func (r *ChainReader) GetPubkeyFromOperatorAddress(
 	opts *bind.CallOpts,
 	operatorAddress common.Address,
@@ -831,12 +834,13 @@ func (r *ChainReader) GetPubkeyFromOperatorAddress(
 	return *operatorPubkeyG1, nil
 }
 
+// Stores the history of aggregate public key updates for `quorumNumber` at `index`
 func (r *ChainReader) GetApkUpdate(
 	opts *bind.CallOpts,
 	quorumNumber uint8,
 	index *big.Int,
 ) (apkreg.IBLSApkRegistryTypesApkUpdate, error) {
-	if r.stakeRegistry == nil {
+	if r.blsApkRegistry == nil {
 		return apkreg.IBLSApkRegistryTypesApkUpdate{}, errors.New("StakeRegistry contract not provided")
 	}
 
@@ -854,11 +858,12 @@ func (r *ChainReader) GetApkUpdate(
 	return apkUpdate, nil
 }
 
+// Gets the current aggregate bls pubkey for a given quorum
 func (r *ChainReader) GetCurrentApk(
 	opts *bind.CallOpts,
 	quorumNumber uint8,
 ) (bls.G1Point, error) {
-	if r.stakeRegistry == nil {
+	if r.blsApkRegistry == nil {
 		return bls.G1Point{}, errors.New("StakeRegistry contract not provided")
 	}
 
