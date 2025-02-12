@@ -549,7 +549,7 @@ func (r *ChainReader) GetOperatorsShares(
 // Returns whether `delegationApprover` has already used the given `salt`.
 func (r *ChainReader) GetDelegationApproverSaltIsSpent(
 	ctx context.Context,
-	delegationApprover common.Address,
+	delegationApprover gethcommon.Address,
 	approverSalt [32]byte,
 ) (bool, error) {
 	if r.delegationManager == nil {
