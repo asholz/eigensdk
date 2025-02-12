@@ -394,8 +394,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		socket,
 		pubkeyRegParams,
 		operatorKickParams,
-		operatorSignatureWithSaltAndExpiry,
 		churnApproverSignatureWithSaltAndExpiry,
+		operatorSignatureWithSaltAndExpiry,
 	)
 
 	if err != nil {
