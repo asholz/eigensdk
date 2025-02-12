@@ -414,7 +414,10 @@ func (r *ChainReader) GetOperatorSetSplit(
 	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
 }
 
-// Returns the amount of magnitude an operator has allocated to operator sets
+// Returns the amount of magnitude on a strategy not currently allocated to any operator set,
+// by an operator.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetAllocatableMagnitude(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -440,7 +443,7 @@ func (r *ChainReader) GetEncumberedMagnitude(
 	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
-// Returns the delay before deallocations are clearable and can be added back into freeMagnitude
+// Returns the delay within which deallocations are slashable.
 func (r *ChainReader) GetDeallocationDelay(
 	ctx context.Context,
 ) (uint32, error) {
@@ -450,7 +453,7 @@ func (r *ChainReader) GetDeallocationDelay(
 	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
 }
 
-// Returns the delay before alloaction delay modifications take effect.
+// Returns the delay before allocation delay modifications take effect.
 func (r *ChainReader) GetAllocationConfigurationDelay(
 	ctx context.Context,
 ) (uint32, error) {

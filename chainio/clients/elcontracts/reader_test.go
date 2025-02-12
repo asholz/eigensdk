@@ -2,7 +2,6 @@ package elcontracts_test
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -553,7 +552,6 @@ func TestGetAllocatableMagnitudeAndEncumberedMagnitudeAndGetMaxMagnitudes(t *tes
 	assert.NoError(t, err)
 
 	encumberedMagnitude, err := chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
-	log.Println("Encumbered magnitude: ", encumberedMagnitude)
 	assert.NoError(t, err)
 
 	assert.Equal(t, maxMagnitudes[0], allocable)
