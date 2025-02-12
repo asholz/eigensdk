@@ -439,6 +439,24 @@ func (r *ChainReader) GetEncumberedMagnitude(
 	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
+func (r *ChainReader) GetDeallocationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetAllocationConfigurationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
 // Returns the maximum magnitude an operator can allocate for the given strategies.
 // Can return an error if the `AllocationManager` contract address was not provided, or due to
 // errors in the underlying contract call.

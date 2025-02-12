@@ -215,6 +215,22 @@ func TestChainReader(t *testing.T) {
 		assert.Len(t, shares, 3)
 		assert.Len(t, shares[2], 3)
 	})
+
+	t.Run("Get deallocation delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetDeallocationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
+
+	t.Run("Get allocation configuration delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetAllocationConfigurationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
 }
 
 func TestGetCurrentClaimableDistributionRoot(t *testing.T) {
