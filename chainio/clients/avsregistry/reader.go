@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"slices"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -659,7 +660,22 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 	if err != nil {
 		return nil, utils.WrapError("Failed to get restakeable strategies", err)
 	}
-	return strategies, nil
+	if len(strategies) == 0 {
+		return strategies, nil
+	}
+	// Remove duplicates
+	slices.SortFunc(strategies, common.Address.Cmp)
+	uniqueStrategies := make([]common.Address, 0, len(strategies))
+	lastElement := strategies[0]
+	uniqueStrategies = append(uniqueStrategies, lastElement)
+	for i := range uniqueStrategies[1:] {
+		if strategies[i] == lastElement {
+			continue
+		}
+		lastElement = strategies[i]
+		uniqueStrategies = append(uniqueStrategies, lastElement)
+	}
+	return uniqueStrategies, nil
 }
 
 func (r *ChainReader) GetStakeTypePerQuorum(
