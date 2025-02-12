@@ -28,6 +28,7 @@ func BuildReadClients(
 	}
 
 	chainReader := NewChainReader(
+		avsBindings.ServiceManager,
 		avsBindings.RegistryCoordinatorAddr,
 		avsBindings.BlsApkRegistryAddr,
 		avsBindings.RegistryCoordinator,
@@ -67,6 +68,7 @@ func BuildClients(
 	}
 
 	chainReader := NewChainReader(
+		avsBindings.ServiceManager,
 		avsBindings.RegistryCoordinatorAddr,
 		avsBindings.BlsApkRegistryAddr,
 		avsBindings.RegistryCoordinator,

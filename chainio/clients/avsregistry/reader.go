@@ -14,6 +14,7 @@ import (
 	apkreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -39,6 +40,7 @@ type ChainReader struct {
 	logger                  logging.Logger
 	blsApkRegistryAddr      common.Address
 	registryCoordinatorAddr common.Address
+	serviceManager          *servicemanager.ContractServiceManagerBase
 	registryCoordinator     *regcoord.ContractRegistryCoordinator
 	operatorStateRetriever  *opstateretriever.ContractOperatorStateRetriever
 	stakeRegistry           *stakeregistry.ContractStakeRegistry
@@ -47,6 +49,7 @@ type ChainReader struct {
 
 // Creates a new instance  of the ChainReader.
 func NewChainReader(
+	serviceManager *servicemanager.ContractServiceManagerBase,
 	registryCoordinatorAddr common.Address,
 	blsApkRegistryAddr common.Address,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
@@ -59,6 +62,7 @@ func NewChainReader(
 
 	return &ChainReader{
 		blsApkRegistryAddr:      blsApkRegistryAddr,
+		serviceManager:          serviceManager,
 		registryCoordinatorAddr: registryCoordinatorAddr,
 		registryCoordinator:     registryCoordinator,
 		operatorStateRetriever:  operatorStateRetriever,
@@ -80,6 +84,7 @@ func NewReaderFromConfig(
 	}
 
 	return NewChainReader(
+		bindings.ServiceManager,
 		bindings.RegistryCoordinatorAddr,
 		bindings.BlsApkRegistryAddr,
 		bindings.RegistryCoordinator,
