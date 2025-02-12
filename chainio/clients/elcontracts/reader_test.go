@@ -553,6 +553,7 @@ func TestGetAllocatableMagnitudeAndEncumberedMagnitudeAndGetMaxMagnitudes(t *tes
 
 	encumberedMagnitude, err := chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
+	assert.Zero(t, encumberedMagnitude)
 
 	assert.Equal(t, maxMagnitudes[0], allocable)
 
