@@ -670,7 +670,10 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 	return removeDuplicateStrategies(strategies), nil
 }
 
-func (r *ChainReader) GetOperatorRestakedStrategies(opts *bind.CallOpts, operator common.Address) ([]common.Address, error) {
+func (r *ChainReader) GetOperatorRestakedStrategies(
+	opts *bind.CallOpts,
+	operator common.Address,
+) ([]common.Address, error) {
 	if r.serviceManager == nil {
 		return nil, errors.New("ServiceManager contract not provided")
 	}
