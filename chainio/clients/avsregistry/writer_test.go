@@ -7,6 +7,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
+	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AVSDirectory"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
@@ -715,4 +716,30 @@ func TestCreateAVSRewardsSubmission(t *testing.T) {
 	receipt, err := chainWriter.CreateAVSRewardsSubmission(context.TODO(), rewardsSubmission, true)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+func TestUpdateAVSMetadataURI(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	svcManagerAddr := clients.AvsRegistryContractBindings.ServiceManagerAddr
+	avsDirectoryAddr := clients.EigenlayerContractBindings.AvsDirectoryAddr
+
+	avsDirectory, err := avsdirectory.NewContractAVSDirectory(
+		avsDirectoryAddr,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	// Update the metadata URI
+	newMetadata := "https://new-metadata-uri.com"
+	receipt, err := chainWriter.UpdateAVSMetadataURI(context.TODO(), newMetadata, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Assert the event was emitted
+	iter, err := avsDirectory.FilterAVSMetadataURIUpdated(nil, []gethcommon.Address{svcManagerAddr})
+	require.NoError(t, err)
+	require.True(t, iter.Next())
+	require.Equal(t, newMetadata, iter.Event.MetadataURI)
 }
