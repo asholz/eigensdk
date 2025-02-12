@@ -430,6 +430,12 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, strategy, retrievedStrat)
 	})
 
+	t.Run("Get restakeable strategies", func(t *testing.T) {
+		retrievedStrat, err := chainReader.GetRestakeableStrategies(&bind.CallOpts{})
+		require.NoError(t, err)
+		require.Equal(t, []common.Address{strategy}, retrievedStrat)
+	})
+
 	t.Run("Get stake type per quorum", func(t *testing.T) {
 		stakeType, err := chainReader.GetStakeTypePerQuorum(&bind.CallOpts{}, quorumNumber)
 		require.NoError(t, err)
