@@ -681,8 +681,6 @@ func TestCreateAVSRewardsSubmission(t *testing.T) {
 	clients, _ := testclients.BuildTestClients(t)
 	chainWriter := clients.AvsRegistryChainWriter
 
-	// svcManagerAddr := clients.AvsRegistryContractBindings.ServiceManagerAddr
-
 	strategies, err := clients.AvsRegistryChainReader.StrategyParamsByIndex(nil, 0, big.NewInt(0))
 	require.NoError(t, err)
 
