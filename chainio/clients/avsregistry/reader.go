@@ -670,6 +670,8 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 	return removeDuplicateStrategies(strategies), nil
 }
 
+// Returns the list of strategies that the operator has potentially restaked on the AVS.
+// No guarantee is made on whether the operator has shares on each of the returned strategies.
 func (r *ChainReader) GetOperatorRestakedStrategies(
 	opts *bind.CallOpts,
 	operator common.Address,
