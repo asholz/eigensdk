@@ -427,6 +427,7 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	return r.allocationManager.GetAllocatableMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
+// Returns the amount of magnitude an operator has allocated to operator sets for a given strategy
 func (r *ChainReader) GetEncumberedMagnitude(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -439,6 +440,7 @@ func (r *ChainReader) GetEncumberedMagnitude(
 	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
+// Returns the delay before deallocations are clearable and can be added back into freeMagnitude
 func (r *ChainReader) GetDeallocationDelay(
 	ctx context.Context,
 ) (uint32, error) {
@@ -448,6 +450,7 @@ func (r *ChainReader) GetDeallocationDelay(
 	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
 }
 
+// Returns the delay before alloaction delay modifications take effect.
 func (r *ChainReader) GetAllocationConfigurationDelay(
 	ctx context.Context,
 ) (uint32, error) {
