@@ -200,6 +200,8 @@ func TestReaderMethods(t *testing.T) {
 	operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 	require.NoError(t, err)
 
+	operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
 	//REGISTER OPERATOR
 	receipt, err := chainWriter.RegisterOperator(
 		context.Background(),
@@ -213,8 +215,6 @@ func TestReaderMethods(t *testing.T) {
 	require.NotNil(t, receipt)
 
 	t.Run("Get stakeHistory length", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber.UnderlyingType())
@@ -223,8 +223,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -240,8 +238,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update at index", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -257,8 +253,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake at block number", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -283,8 +277,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake updated index at block number", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -308,8 +300,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update index at block number", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -335,8 +325,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total current stake", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -366,8 +354,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at index", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -391,8 +377,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at block number from index", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -417,8 +401,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake indices at block number", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -471,6 +453,12 @@ func TestReaderMethods(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.Equal(t, strategy, retrievedStrat)
+	})
+
+	t.Run("Get restakeable strategies", func(t *testing.T) {
+		retrievedStrat, err := chainReader.GetRestakeableStrategies(&bind.CallOpts{})
+		require.NoError(t, err)
+		require.Equal(t, []common.Address{strategy}, retrievedStrat)
 	})
 
 	t.Run("Get restakeable strategies", func(t *testing.T) {
