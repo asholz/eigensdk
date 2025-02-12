@@ -720,3 +720,49 @@ func (w *ChainWriter) CreateAVSRewardsSubmission(
 	}
 	return receipt, nil
 }
+
+// Creates a new operator-directed rewards submission, to be split amongst the operators and
+// set of stakers delegated to operators who are registered to this `avs`.
+// Returns the receipt of the transaction in case of success.
+//
+// Can fail in some cases:
+//   - Only callable by the permissioned rewardsInitiator address
+//   - The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+//   - The tokens are sent to the `RewardsCoordinator` contract
+//   - This contract needs a token approval of sum of all `operatorRewards` in the
+//     `operatorDirectedRewardsSubmissions`, before calling this function.
+//   - Strategies must be in ascending order of addresses to check for duplicates
+//   - Operators must be in ascending order of addresses to check for duplicates
+//   - This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
+//   - This function may fail to execute with a large number of submissions due to gas limits. Use a
+//     smaller array of submissions if necessary.
+func (w *ChainWriter) CreateOperatorDirectedAVSRewardsSubmission(
+	ctx context.Context,
+	operatorDirectedRewardsSubmissions []servicemanager.IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("creating operator directed AVS rewards submission ", operatorDirectedRewardsSubmissions)
+
+	// TODO: store binding in struct
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.CreateOperatorDirectedAVSRewardsSubmission(noSendTxOpts, operatorDirectedRewardsSubmissions)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateOperatorDirectedAVSRewardsSubmission tx with err", err)
+	}
+	return receipt, nil
+}
