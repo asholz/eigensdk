@@ -80,11 +80,11 @@ func NewBindingsFromConfig(
 		}
 	}
 
-	if isZeroAddress(cfg.PermissionsControllerAddress) {
+	if isZeroAddress(cfg.PermissionControllerAddress) {
 		logger.Debug("PermissionController address not provided, the calls to the contract will not work")
 	} else {
 		permissionController, err = permissioncontroller.NewContractPermissionController(
-			cfg.PermissionsControllerAddress,
+			cfg.PermissionControllerAddress,
 			client,
 		)
 		if err != nil {
