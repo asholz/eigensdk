@@ -365,6 +365,7 @@ func (w *ChainWriter) SetRewardsInitiator(
 	}
 
 	// TODO: create ServiceManager binding in `NewChainWriter`
+	// (see https://github.com/Layr-Labs/eigensdk-go/issues/552)
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
 		w.serviceManagerAddr,
 		w.ethClient,
