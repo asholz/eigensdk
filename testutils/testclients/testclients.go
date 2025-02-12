@@ -42,13 +42,15 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 anvilHttpEndpoint,
-		EthWsUrl:                   anvilWsEndpoint,
-		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
-		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
-		AvsName:                    "exampleAvs",
-		PromMetricsIpPortAddress:   ":9090",
-		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
+		EthHttpUrl:                  anvilHttpEndpoint,
+		EthWsUrl:                    anvilWsEndpoint,
+		RegistryCoordinatorAddr:     contractAddrs.RegistryCoordinator.String(),
+		OperatorStateRetrieverAddr:  contractAddrs.OperatorStateRetriever.String(),
+		AvsName:                     "exampleAvs",
+		PromMetricsIpPortAddress:    ":9090",
+		ServiceManagerAddress:       contractAddrs.ServiceManager.String(),
+		RewardsCoordinatorAddress:   contractAddrs.RewardsCoordinator.String(),
+		PermissionControllerAddress: contractAddrs.PermissionController.String(),
 	}
 
 	clients, err := clients.BuildAll(
