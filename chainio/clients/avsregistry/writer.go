@@ -695,7 +695,7 @@ func (w *ChainWriter) CreateAVSRewardsSubmission(
 	rewardsSubmission []servicemanager.IRewardsCoordinatorTypesRewardsSubmission,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
-	w.logger.Info("creating AVS rewards submission ", rewardsSubmission)
+	w.logger.Info("creating AVS rewards submission ", "rewardsSubmission", rewardsSubmission)
 
 	// TODO: store binding in struct
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
