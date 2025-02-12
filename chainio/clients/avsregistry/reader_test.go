@@ -461,6 +461,12 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, []common.Address{strategy}, retrievedStrat)
 	})
 
+	t.Run("Get operator restaked strategies", func(t *testing.T) {
+		retrievedStrat, err := chainReader.GetOperatorRestakedStrategies(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		require.Equal(t, []common.Address{strategy}, retrievedStrat)
+	})
+
 	t.Run("Get restakeable strategies", func(t *testing.T) {
 		retrievedStrat, err := chainReader.GetRestakeableStrategies(&bind.CallOpts{})
 		require.NoError(t, err)
