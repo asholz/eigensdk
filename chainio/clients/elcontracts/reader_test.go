@@ -2,6 +2,7 @@ package elcontracts_test
 
 import (
 	"context"
+	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -501,7 +502,7 @@ func TestCheckClaim(t *testing.T) {
 	assert.True(t, checked)
 }
 
-func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
+func TestGetAllocatableMagnitudeAndEncumberedMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	// Without changes, Allocable magnitude is max magnitude
 
 	// Test setup
@@ -533,6 +534,10 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 
 	// Assert that at the beginning, Allocatable Magnitude is Max allocatable magnitude
 	allocable, err := chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
+	assert.NoError(t, err)
+
+	encumberedMagnitude, err := chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	log.Println("Encumbered magnitude: ", encumberedMagnitude)
 	assert.NoError(t, err)
 
 	assert.Equal(t, maxMagnitudes[0], allocable)
@@ -580,6 +585,11 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	allocable, err = chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
 	assert.Equal(t, maxMagnitudes[0], allocable+allocatable_reduction)
+
+	encumberedMagnitude, err = chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	assert.Equal(t, encumberedMagnitude, allocatable_reduction)
+
+	assert.NoError(t, err)
 
 	// Check that the new allocationDelay is equal to delay
 	op := types.Operator{

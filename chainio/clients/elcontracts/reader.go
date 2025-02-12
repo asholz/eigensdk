@@ -414,10 +414,7 @@ func (r *ChainReader) GetOperatorSetSplit(
 	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
 }
 
-// Returns the amount of magnitude on a strategy not currently allocated to any operator set,
-// by an operator.
-// Can return an error if the `AllocationManager` contract address was not provided, or due to
-// errors in the underlying contract call.
+// Returns the amount of magnitude an operator has allocated to operator sets
 func (r *ChainReader) GetAllocatableMagnitude(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -428,6 +425,18 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	}
 
 	return r.allocationManager.GetAllocatableMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+}
+
+func (r *ChainReader) GetEncumberedMagnitude(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	strategyAddress gethcommon.Address,
+) (uint64, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+
+	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
 // Returns the maximum magnitude an operator can allocate for the given strategies.
