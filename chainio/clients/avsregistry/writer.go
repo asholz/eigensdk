@@ -678,3 +678,45 @@ func (w *ChainWriter) UpdateAVSMetadataURI(
 	}
 	return receipt, nil
 }
+
+// Creates a new rewards submission to the EigenLayer RewardsCoordinator contract,
+// to be split amongst the set of stakers delegated to operators who are registered
+// to this `avs`. Returns the receipt of the transaction in case of success.
+//
+// Can fail in some cases:
+//   - Only callable by the permissioned rewardsInitiator address
+//   - The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+//   - The tokens are sent to the `RewardsCoordinator` contract
+//   - Strategies must be in ascending order of addresses to check for duplicates
+//   - This function may fail to execute with a large number of submissions due to gas limits. Use a
+//     smaller array of submissions if necessary.
+func (w *ChainWriter) CreateAVSRewardsSubmission(
+	ctx context.Context,
+	rewardsSubmission []servicemanager.IRewardsCoordinatorTypesRewardsSubmission,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("creating AVS rewards submission ", "rewardsSubmission", rewardsSubmission)
+
+	// TODO: store binding in struct
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.CreateAVSRewardsSubmission(noSendTxOpts, rewardsSubmission)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateAVSRewardsSubmission tx with err", err.Error())
+	}
+	return receipt, nil
+}

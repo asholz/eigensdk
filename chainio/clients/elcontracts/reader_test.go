@@ -214,6 +214,22 @@ func TestChainReader(t *testing.T) {
 		assert.Len(t, shares, 3)
 		assert.Len(t, shares[2], 3)
 	})
+
+	t.Run("Get deallocation delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetDeallocationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
+
+	t.Run("Get allocation configuration delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetAllocationConfigurationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
 }
 
 func TestGetCurrentClaimableDistributionRoot(t *testing.T) {
@@ -501,8 +517,8 @@ func TestCheckClaim(t *testing.T) {
 	assert.True(t, checked)
 }
 
-func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
-	// Without changes, Allocatable magnitude is max magnitude
+func TestGetAllocatableMagnitudeAndEncumberedMagnitudeAndGetMaxMagnitudes(t *testing.T) {
+	// Without changes, Allocable magnitude is max magnitude
 
 	// Test setup
 	ctx := context.Background()
@@ -534,6 +550,10 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	// Assert that at the beginning, Allocatable Magnitude is Max allocatable magnitude
 	allocable, err := chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
+
+	encumberedMagnitude, err := chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	assert.NoError(t, err)
+	assert.Zero(t, encumberedMagnitude)
 
 	assert.Equal(t, maxMagnitudes[0], allocable)
 
@@ -580,6 +600,11 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	allocable, err = chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
 	assert.Equal(t, maxMagnitudes[0], allocable+allocatable_reduction)
+
+	encumberedMagnitude, err = chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	assert.Equal(t, encumberedMagnitude, allocatable_reduction)
+
+	assert.NoError(t, err)
 
 	// Check that the new allocationDelay is equal to delay
 	op := types.Operator{
