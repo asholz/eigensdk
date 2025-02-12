@@ -15,7 +15,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -214,7 +213,7 @@ func TestReaderMethods(t *testing.T) {
 	require.NotNil(t, receipt)
 
 	t.Run("Get stakeHistory length", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -224,7 +223,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -237,7 +236,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update at index", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -254,7 +253,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake at block number", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -271,7 +270,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake updated index at block number", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -292,7 +291,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update index at block number", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -315,7 +314,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total current stake", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -339,7 +338,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at index", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -360,7 +359,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at block number from index", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
@@ -382,7 +381,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake indices at block number", func(t *testing.T) {
-		operatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
