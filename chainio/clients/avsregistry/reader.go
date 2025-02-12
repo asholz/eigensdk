@@ -648,6 +648,18 @@ func (r *ChainReader) GetStrategyPerQuorumAtIndex(
 	return strategy, nil
 }
 
+func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error) {
+	if r.serviceManager == nil {
+		return nil, errors.New("ServiceManager contract not provided")
+	}
+
+	strategies, err := r.serviceManager.GetRestakeableStrategies(opts)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get restakeable strategies", err)
+	}
+	return strategies, nil
+}
+
 func (r *ChainReader) GetStakeTypePerQuorum(
 	opts *bind.CallOpts,
 	quorumNumber types.QuorumNum,
