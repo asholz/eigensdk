@@ -648,6 +648,8 @@ func (r *ChainReader) GetStrategyPerQuorumAtIndex(
 	return strategy, nil
 }
 
+// Returns the list of strategies that the AVS supports for restaking.
+// The list returned contains no duplicates.
 func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error) {
 	if r.serviceManager == nil {
 		return nil, errors.New("ServiceManager contract not provided")
