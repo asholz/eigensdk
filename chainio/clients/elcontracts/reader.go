@@ -594,7 +594,11 @@ func (r *ChainReader) GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
 	if r.rewardsCoordinator == nil {
 		return false, errors.New("RewardsCoordinator contract not provided")
 	}
-	return r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+	return r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
 }
 
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,

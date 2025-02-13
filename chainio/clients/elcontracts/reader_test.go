@@ -413,7 +413,11 @@ func TestChainReader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, strategy)
 		assert.NotEqual(t, common.Address{}, underlyingTokenAddr)
-		claimed, err := clients.ElChainReader.GetCumulativeClaimed(context.Background(), common.HexToAddress(operator.Address), underlyingTokenAddr)
+		claimed, err := clients.ElChainReader.GetCumulativeClaimed(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			underlyingTokenAddr,
+		)
 		require.NoError(t, err)
 		require.NotNil(t, claimed)
 	})
@@ -425,37 +429,60 @@ func TestChainReader(t *testing.T) {
 	})
 
 	t.Run("get is AVS rewards submission hash", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsAVSRewardsSubmissionHash(context.Background(), contractAddrs.ServiceManager, [32]byte{})
+		isValid, err := clients.ElChainReader.GetIsAVSRewardsSubmissionHash(
+			context.Background(),
+			contractAddrs.ServiceManager,
+			[32]byte{},
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
 
 	t.Run("get is rewards submission for all hash", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllHash(context.Background(), contractAddrs.ServiceManager, [32]byte{})
+		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllHash(
+			context.Background(),
+			contractAddrs.ServiceManager,
+			[32]byte{},
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
 
 	t.Run("get is rewards for all submitter", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsRewardsForAllSubmitter(context.Background(), common.HexToAddress(operator.Address))
+		isValid, err := clients.ElChainReader.GetIsRewardsForAllSubmitter(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
 
 	t.Run("get is rewards submission for all earners hash", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllEarnersHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllEarnersHash(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			[32]byte{},
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
 
 	t.Run("get is operator directed AVS rewards submission hash", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsOperatorDirectedAVSRewardsSubmissionHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		isValid, err := clients.ElChainReader.GetIsOperatorDirectedAVSRewardsSubmissionHash(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			[32]byte{},
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
 
 	t.Run("get is operator directed operator set rewards submission hash", func(t *testing.T) {
-		isValid, err := clients.ElChainReader.GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		isValid, err := clients.ElChainReader.GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			[32]byte{},
+		)
 		require.NoError(t, err)
 		require.False(t, isValid)
 	})
