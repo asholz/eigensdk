@@ -51,6 +51,14 @@ contract DeployMockAvs is DeployMockAvsRegistries {
         address avsAddress = address(mockAvsServiceManager);
         eigenlayerContracts.permissionController.acceptAdmin(avsAddress);
         _setupPermissions(avsAddress, eigenlayerContracts);
+        // Give some permissions back to the ServiceManager
+        // NOTE: by accepting admin permissions, we remove the admin permissions the AVS had on its own address
+        eigenlayerContracts.permissionController.setAppointee(
+            avsAddress,
+            avsAddress,
+            address(eigenlayerContracts.rewardsCoordinator),
+            eigenlayerContracts.rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission.selector
+        );
 
         if (block.chainid == 31337 || block.chainid == 1337) {
             _writeContractsToRegistry(contractsRegistry, eigenlayerContracts, mockAvsContracts);
