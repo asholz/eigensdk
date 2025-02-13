@@ -2,6 +2,7 @@ package elcontracts_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -900,35 +901,38 @@ func TestInvalidConfig(t *testing.T) {
 		// currently this is configured to zero but may be configured to 1 week in a future release, based on this
 		// comment:
 		// https://github.com/Layr-Labs/eigenlayer-contracts/blob/441339cbd570ad0d650a9c11bea9eed7f70a490d/src/contracts/core/RewardsCoordinatorStorage.sol#L64
-		require.Zero(t, interval)
+		require.NotZero(t, interval)
 	})
 
-	//Get the maximum amount of time (seconds) that a rewards submission can span over
 	t.Run("get max duration  seconds", func(t *testing.T) {
 		duration, err := chainReader.GetMaxRewardsDuration(context.Background())
 		require.Error(t, err)
-		require.Zero(t, duration)
+		require.NotZero(t, duration)
 	})
 
-	/// Get the max amount of time (seconds) that a rewards submission can start in the past
 	t.Run("get max retroactive length", func(t *testing.T) {
 		length, err := chainReader.GetMaxRetroactiveLength(context.Background())
 		require.Error(t, err)
-		require.Zero(t, length)
+		require.NotZero(t, length)
 	})
 
-	/// Get the max amount of time (seconds) that a rewards submission can start in the future
 	t.Run("get max future length", func(t *testing.T) {
 		length, err := chainReader.GetMaxFutureLength(context.Background())
 		require.Error(t, err)
-		require.Zero(t, length)
+		require.NotZero(t, length)
 	})
 
-	/// Get the absolute min timestamp (seconds) that a rewards submission can start at
 	t.Run("get genesis rewards timestamp", func(t *testing.T) {
 		timestamp, err := chainReader.GetGenesisRewardsTimestamp(context.Background())
 		require.Error(t, err)
-		require.Zero(t, timestamp)
+		require.NotZero(t, timestamp)
+	})
+
+	t.Run("Get rewards updater", func(t *testing.T) {
+		addr, err := chainReader.GetRewardsUpdater(context.Background())
+		require.Error(t, err)
+		fmt.Print("addr: ", addr)
+		require.NotNil(t, addr)
 	})
 
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {

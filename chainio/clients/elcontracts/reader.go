@@ -435,6 +435,7 @@ func (r *ChainReader) GetMaxRewardsDuration(
 	return r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
 }
 
+// Get the max amount of time (seconds) that a rewards submission can start in the past
 func (r *ChainReader) GetMaxRetroactiveLength(
 	ctx context.Context,
 ) (uint32, error) {
@@ -444,6 +445,7 @@ func (r *ChainReader) GetMaxRetroactiveLength(
 	return r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
 }
 
+// Get the max amount of time (seconds) that a rewards submission can start in the future
 func (r *ChainReader) GetMaxFutureLength(
 	ctx context.Context,
 ) (uint32, error) {
@@ -453,6 +455,7 @@ func (r *ChainReader) GetMaxFutureLength(
 	return r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
 }
 
+// Get absolute min timestamp (seconds) that a rewards submission can start at
 func (r *ChainReader) GetGenesisRewardsTimestamp(
 	ctx context.Context,
 ) (uint32, error) {
@@ -460,6 +463,16 @@ func (r *ChainReader) GetGenesisRewardsTimestamp(
 		return 0, errors.New("RewardsCoordinator contract not provided")
 	}
 	return r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
+}
+
+// Get the address of the entity that can update the contract with new merkle roots
+func (r *ChainReader) GetRewardsUpdater(
+	ctx context.Context,
+) (gethcommon.Address, error) {
+	if r.rewardsCoordinator == nil {
+		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
 }
 
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
