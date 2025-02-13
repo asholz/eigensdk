@@ -878,7 +878,7 @@ func TestInvalidConfig(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("get operator set", func(t *testing.T) {
+	t.Run("get operator set split", func(t *testing.T) {
 		testAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 		operatorSetId := uint32(1)
 		operatorSet := rewardscoordinator.OperatorSet{
@@ -891,6 +891,44 @@ func TestInvalidConfig(t *testing.T) {
 			operatorSet,
 		)
 		require.Error(t, err)
+	})
+
+	// Get the interval in seconds at which the calculation for rewards distribution is done.
+	t.Run("get calculation interval seconds", func(t *testing.T) {
+		interval, err := chainReader.GetCalculationIntervalSeconds(context.Background())
+		require.Error(t, err)
+		// currently this is configured to zero but may be configured to 1 week in a future release, based on this
+		// comment:
+		// https://github.com/Layr-Labs/eigenlayer-contracts/blob/441339cbd570ad0d650a9c11bea9eed7f70a490d/src/contracts/core/RewardsCoordinatorStorage.sol#L64
+		require.Zero(t, interval)
+	})
+
+	//Get the maximum amount of time (seconds) that a rewards submission can span over
+	t.Run("get max duration  seconds", func(t *testing.T) {
+		duration, err := chainReader.GetMaxRewardsDuration(context.Background())
+		require.Error(t, err)
+		require.Zero(t, duration)
+	})
+
+	/// Get the max amount of time (seconds) that a rewards submission can start in the past
+	t.Run("get max retroactive length", func(t *testing.T) {
+		length, err := chainReader.GetMaxRetroactiveLength(context.Background())
+		require.Error(t, err)
+		require.Zero(t, length)
+	})
+
+	/// Get the max amount of time (seconds) that a rewards submission can start in the future
+	t.Run("get max future length", func(t *testing.T) {
+		length, err := chainReader.GetMaxFutureLength(context.Background())
+		require.Error(t, err)
+		require.Zero(t, length)
+	})
+
+	/// Get the absolute min timestamp (seconds) that a rewards submission can start at
+	t.Run("get genesis rewards timestamp", func(t *testing.T) {
+		timestamp, err := chainReader.GetGenesisRewardsTimestamp(context.Background())
+		require.Error(t, err)
+		require.Zero(t, timestamp)
 	})
 
 	t.Run("try to get strategy and underlying token with wrong strategy address", func(t *testing.T) {

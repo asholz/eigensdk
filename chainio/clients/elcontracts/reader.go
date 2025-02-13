@@ -415,6 +415,53 @@ func (r *ChainReader) GetOperatorSetSplit(
 	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
 }
 
+// Gets the interval in seconds at which the calculation for rewards distribution is done.
+func (r *ChainReader) GetCalculationIntervalSeconds(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.CALCULATIONINTERVALSECONDS(&bind.CallOpts{Context: ctx})
+}
+
+// Gets the maximum amount of time (seconds) that a rewards submission can span over
+func (r *ChainReader) GetMaxRewardsDuration(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetMaxRetroactiveLength(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetMaxFutureLength(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetGenesisRewardsTimestamp(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
+}
+
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
 // by an operator.
 // Can return an error if the `AllocationManager` contract address was not provided, or due to
