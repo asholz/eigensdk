@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -354,14 +356,21 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		return nil, err
 	}
 
-	operatorId, err := w.registryCoordinator.GetOperatorId(&bind.CallOpts{}, operatorAddr)
+	var operatorIdBytes [32]byte
+
+	// Remove the 0x prefix from the operator ID
+	operatorId := blsKeyPair.GetPubKeyG1().GetOperatorID()
+	operatorIdNoPrefix := strings.TrimPrefix(operatorId, "0x")
+	operatorIdBytesDecoded, err := hex.DecodeString(operatorIdNoPrefix)
 	if err != nil {
 		return nil, err
 	}
+	copy(operatorIdBytes[:], operatorIdBytesDecoded)
+
 	churnMsgToSign, err := w.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
 		&bind.CallOpts{Context: ctx},
 		operatorAddr,
-		operatorId,
+		operatorIdBytes,
 		operatorKickParams,
 		churnSignatureSalt,
 		signatureExpiry,
@@ -369,17 +378,19 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 	if err != nil {
 		return nil, err
 	}
+
 	churnApprovalSignature, err := crypto.Sign(churnMsgToSign[:], churnApprovalEcdsaPrivateKey)
 	if err != nil {
 		return nil, err
 	}
+
 	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
 	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
 	// and https://twitter.com/pcaversaccio/status/1671488928262529031
 	churnApprovalSignature[64] += 27
 	churnApproverSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: churnApprovalSignature,
-		Salt:      signatureSalt,
+		Salt:      churnSignatureSalt,
 		Expiry:    signatureExpiry,
 	}
 

@@ -53,7 +53,11 @@ func TestWriterMethods(t *testing.T) {
 	chainWriter, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	chainWriter2, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, secondOperatorPrivateKeyHex, config)
+	chainWriter2, err := testclients.NewTestAvsRegistryWriterFromConfig(
+		anvilHttpEndpoint,
+		secondOperatorPrivateKeyHex,
+		config,
+	)
 	require.NoError(t, err)
 
 	keypair, err := bls.NewKeyPairFromString("0x01")
@@ -139,12 +143,14 @@ func TestWriterMethods(t *testing.T) {
 		require.NotNil(t, receipt)
 
 		operatorsToKick := []gethcommon.Address{firstOperatorAddress}
+		newKeyPair, err := bls.NewKeyPairFromString("0x02")
+		require.NoError(t, err)
 
 		receipt, err = chainWriter2.RegisterOperatorWithChurn(
 			context.Background(),
 			secondOperatorPrivateKey,
 			churnApprovalPrivateKey,
-			keypair,
+			newKeyPair,
 			quorumNumbers,
 			quorumNumbers,
 			operatorsToKick,
@@ -408,6 +414,117 @@ func TestWriterMethods(t *testing.T) {
 
 		assert.Equal(t, newMinimumStakeForQuorum, big.NewInt(100))
 	})
+}
+
+func TestRegisterOperatorWithChurn(t *testing.T) {
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	firstOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	firstOperatorECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+	firstOperatorKeyPair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	quorumNumbers := types.QuorumNums{0}
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, churnApprover is anvil first address
+	approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set a new churnApprover
+	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, churnApprover is the setted value
+	newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
+
+	//register once
+	receipt, err = chainWriter.RegisterOperator(
+		context.Background(),
+		firstOperatorECDSAPrivateKey,
+		firstOperatorKeyPair,
+		quorumNumbers,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	receipt, err = chainWriter.SetOperatorSetParams(
+		context.Background(),
+		0,
+		regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+			MaxOperatorCount:        1,
+			KickBIPsOfOperatorStake: 10,
+			KickBIPsOfTotalStake:    10000,
+		},
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	churnECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+	require.NoError(t, err)
+	operatorsToKick := []gethcommon.Address{firstOperatorAddress}
+
+	thirdOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+	thirdOperatorECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_THIRD_PRIVATE_KEY)
+	require.NoError(t, err)
+	thirdOperatorPrivateKey := testutils.ANVIL_THIRD_PRIVATE_KEY
+	newKeyPair, err := bls.NewKeyPairFromString("0x03")
+	require.NoError(t, err)
+
+	config := avsregistry.Config{
+		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
+		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
+		ServiceManagerAddress:         contractAddrs.ServiceManager,
+	}
+	chainWriter3, err := testclients.NewTestAvsRegistryWriterFromConfig(
+		anvilHttpEndpoint,
+		thirdOperatorPrivateKey,
+		config,
+	)
+	require.NoError(t, err)
+
+	receipt, err = chainWriter3.RegisterOperatorWithChurn(
+		context.Background(),
+		thirdOperatorECDSAPrivateKey,
+		churnECDSAPrivateKey,
+		newKeyPair,
+		quorumNumbers,
+		quorumNumbers,
+		operatorsToKick,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	deregisteredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, firstOperatorAddress)
+	require.NoError(t, err)
+	require.False(t, deregisteredOperatorWithChurn)
+
+	registeredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, thirdOperatorAddress)
+	require.NoError(t, err)
+	require.True(t, registeredOperatorWithChurn)
 }
 
 // Compliance test for BLS signature
