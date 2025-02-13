@@ -756,7 +756,10 @@ func (w *ChainWriter) CreateOperatorDirectedAVSRewardsSubmission(
 	if err != nil {
 		return nil, err
 	}
-	tx, err := serviceManagerContract.CreateOperatorDirectedAVSRewardsSubmission(noSendTxOpts, operatorDirectedRewardsSubmissions)
+	tx, err := serviceManagerContract.CreateOperatorDirectedAVSRewardsSubmission(
+		noSendTxOpts,
+		operatorDirectedRewardsSubmissions,
+	)
 	if err != nil {
 		return nil, err
 	}
