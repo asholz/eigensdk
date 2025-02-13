@@ -475,6 +475,46 @@ func (r *ChainReader) GetRewardsUpdater(
 	return r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
 }
 
+// Get delay in timestamp (seconds) before a posted root can be claimed against
+func (r *ChainReader) GetActivationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.ActivationDelay(&bind.CallOpts{Context: ctx})
+}
+
+// Get timestamp for last submitted DistributionRoot
+func (r *ChainReader) GetCurrRewardsCalculationEndTimestamp(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+}
+
+// Get the default split for all operators across all avss in bips.
+func (r *ChainReader) GetDefaultOperatorSplitBips(
+	ctx context.Context,
+) (uint16, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.DefaultOperatorSplitBips(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetClaimerFor(
+	ctx context.Context,
+	earner gethcommon.Address,
+) (gethcommon.Address, error) {
+	if r.rewardsCoordinator == nil {
+		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
+}
+
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
 // by an operator.
 // Can return an error if the `AllocationManager` contract address was not provided, or due to
