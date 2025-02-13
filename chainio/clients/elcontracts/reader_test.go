@@ -9,7 +9,7 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
@@ -32,7 +32,7 @@ func TestChainReader(t *testing.T) {
 		Address: testutils.ANVIL_FIRST_ADDRESS,
 	}
 
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(
 		contractAddrs.RewardsCoordinator,
 		clients.EthHttpClient,
 	)
@@ -404,6 +404,62 @@ func TestChainReader(t *testing.T) {
 		require.Equal(t, common.HexToAddress(operator.Address), newClaimer)
 	})
 
+	t.Run("get cumulative claimed", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategy, underlyingTokenAddr, err := clients.ElChainReader.GetStrategyAndUnderlyingToken(
+			ctx,
+			strategyAddr,
+		)
+		assert.NoError(t, err)
+		assert.NotNil(t, strategy)
+		assert.NotEqual(t, common.Address{}, underlyingTokenAddr)
+		claimed, err := clients.ElChainReader.GetCumulativeClaimed(context.Background(), common.HexToAddress(operator.Address), underlyingTokenAddr)
+		require.NoError(t, err)
+		require.NotNil(t, claimed)
+	})
+
+	t.Run("get submission nonce", func(t *testing.T) {
+		nonce, err := clients.ElChainReader.GetSubmissionNonce(context.Background(), contractAddrs.ServiceManager)
+		require.NoError(t, err)
+		require.NotNil(t, nonce)
+	})
+
+	t.Run("get is AVS rewards submission hash", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsAVSRewardsSubmissionHash(context.Background(), contractAddrs.ServiceManager, [32]byte{})
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
+	t.Run("get is rewards submission for all hash", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllHash(context.Background(), contractAddrs.ServiceManager, [32]byte{})
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
+	t.Run("get is rewards for all submitter", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsRewardsForAllSubmitter(context.Background(), common.HexToAddress(operator.Address))
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
+	t.Run("get is rewards submission for all earners hash", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsRewardsSubmissionForAllEarnersHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
+	t.Run("get is operator directed AVS rewards submission hash", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsOperatorDirectedAVSRewardsSubmissionHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
+	t.Run("get is operator directed operator set rewards submission hash", func(t *testing.T) {
+		isValid, err := clients.ElChainReader.GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(context.Background(), common.HexToAddress(operator.Address), [32]byte{})
+		require.NoError(t, err)
+		require.False(t, isValid)
+	})
+
 }
 
 func TestGetCurrentClaimableDistributionRoot(t *testing.T) {
@@ -432,7 +488,7 @@ func TestGetCurrentClaimableDistributionRoot(t *testing.T) {
 	// Create and configure rewards coordinator
 	ethClient, err := ethclient.Dial(anvilHttpEndpoint)
 	require.NoError(t, err)
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
 	require.NoError(t, err)
 
 	ecdsaPrivKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
@@ -500,7 +556,7 @@ func TestGetRootIndexFromRootHash(t *testing.T) {
 	// Create and configure rewards coordinator
 	ethClient, err := ethclient.Dial(anvilHttpEndpoint)
 	require.NoError(t, err)
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
 	require.NoError(t, err)
 	ecdsaPrivKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 

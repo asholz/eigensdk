@@ -14,9 +14,9 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -35,7 +35,7 @@ type ChainReader struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
 	avsDirectory         *avsdirectory.ContractAVSDirectory
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
 	ethClient            eth.HttpBackend
@@ -48,7 +48,7 @@ func NewChainReader(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
 	logger logging.Logger,
@@ -513,6 +513,88 @@ func (r *ChainReader) GetClaimerFor(
 		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
 	}
 	return r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
+}
+
+// Returns the submission nonce for an avs
+func (r *ChainReader) GetSubmissionNonce(
+	ctx context.Context,
+	avs gethcommon.Address,
+) (*big.Int, error) {
+	if r.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.SubmissionNonce(&bind.CallOpts{Context: ctx}, avs)
+}
+
+// Returns whether a hash is a valid rewards submission hash for a given avs
+func (r *ChainReader) GetIsAVSRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid rewards submission for all hash for a given avs
+func (r *ChainReader) GetIsRewardsSubmissionForAllHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsSubmissionForAllHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a submitter is a valid rewards for all submitter
+func (r *ChainReader) GetIsRewardsForAllSubmitter(
+	ctx context.Context,
+	submitter gethcommon.Address,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsForAllSubmitter(&bind.CallOpts{Context: ctx}, submitter)
+}
+
+// Returns whether a hash is a valid rewards submission for all earners hash for a given avs
+func (r *ChainReader) GetIsRewardsSubmissionForAllEarnersHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
+func (r *ChainReader) GetIsOperatorDirectedAVSRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
+func (r *ChainReader) GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
 }
 
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
