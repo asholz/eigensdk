@@ -271,6 +271,8 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 
 }
 
+// Registers an operator while replacing existing operators in full quorums. If any quorum reaches its maximum
+// operator capacity, `operatorKickParams` is used to replace an old operator with the new one.
 func (w *ChainWriter) RegisterOperatorWithChurn(
 	ctx context.Context,
 	operatorEcdsaPrivateKey *ecdsa.PrivateKey,
