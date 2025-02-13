@@ -19,10 +19,10 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -42,7 +42,7 @@ type Reader interface {
 type ChainWriter struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	avsDirectory         *avsdirectory.ContractAVSDirectory
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
@@ -57,7 +57,7 @@ type ChainWriter struct {
 func NewChainWriter(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
