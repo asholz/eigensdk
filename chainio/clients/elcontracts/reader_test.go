@@ -387,11 +387,18 @@ func TestChainReader(t *testing.T) {
 		claimer, err := clients.ElChainReader.GetClaimerFor(context.Background(), common.HexToAddress(operator.Address))
 		require.NoError(t, err)
 
-		receipt, err := clients.ElChainWriter.SetClaimerFor(context.Background(), common.HexToAddress(operator.Address), true)
+		receipt, err := clients.ElChainWriter.SetClaimerFor(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+			true,
+		)
 		require.NoError(t, err)
 		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-		newClaimer, err := clients.ElChainReader.GetClaimerFor(context.Background(), common.HexToAddress(operator.Address))
+		newClaimer, err := clients.ElChainReader.GetClaimerFor(
+			context.Background(),
+			common.HexToAddress(operator.Address),
+		)
 		require.NoError(t, err)
 		require.NotEqual(t, claimer, newClaimer)
 		require.Equal(t, common.HexToAddress(operator.Address), newClaimer)
