@@ -215,6 +215,37 @@ func TestChainReader(t *testing.T) {
 		assert.Len(t, shares[2], 3)
 	})
 
+	t.Run("Get delegationApproverSaltIsSpent", func(t *testing.T) {
+		approverSalt := [32]byte{}
+		isSpent, err := read_clients.ElChainReader.GetDelegationApproverSaltIsSpent(
+			ctx,
+			common.HexToAddress(operator.Address),
+			approverSalt,
+		)
+		assert.NoError(t, err)
+		assert.False(t, isSpent)
+	})
+
+	t.Run("Get pending withdrawal status", func(t *testing.T) {
+		withdrawalRoot := [32]byte{}
+		pending, err := read_clients.ElChainReader.GetPendingWithdrawalStatus(
+			ctx,
+			withdrawalRoot,
+		)
+		assert.NoError(t, err)
+		assert.False(t, pending)
+	})
+
+	t.Run("Get cumulative withdrawals queued", func(t *testing.T) {
+		staker := common.HexToAddress(operator.Address)
+		cumulative, err := read_clients.ElChainReader.GetCumulativeWithdrawalsQueued(
+			ctx,
+			staker,
+		)
+		assert.NoError(t, err)
+		assert.Zero(t, cumulative.Cmp(big.NewInt(0)))
+	})
+
 	t.Run("Get deallocation delay", func(t *testing.T) {
 		delay, err := read_clients.ElChainReader.GetDeallocationDelay(
 			ctx,
