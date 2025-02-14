@@ -762,6 +762,7 @@ func (w *ChainWriter) SetEjector(
 	return receipt, nil
 }
 
+// Modifies the multiplier of existing strategies for the given quorum number.
 func (w *ChainWriter) ModifyStrategyParams(
 	ctx context.Context,
 	quorumNumber types.QuorumNum,
