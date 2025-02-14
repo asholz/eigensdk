@@ -360,7 +360,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 
 	var operatorIdBytes [32]byte
 
-	// Remove the 0x prefix from the operator ID
+	// `GetOperatorID()`` returns the operator ID with the 0x prefix.
+	// We need to remove the prefix and decode the hex string to bytes.
 	operatorId := blsKeyPair.GetPubKeyG1().GetOperatorID()
 	operatorIdNoPrefix := strings.TrimPrefix(operatorId, "0x")
 	operatorIdBytesDecoded, err := hex.DecodeString(operatorIdNoPrefix)

@@ -359,23 +359,26 @@ func TestRegisterOperatorWithChurn(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// At first, churnApprover is anvil first address
+	// At first, churnApprover is ANVIL_FIRST_ADDRESS
 	approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
 
-	// Set a new churnApprover
+	// Set ANVIL_SECOND_ADDRESS as the new churnApprover
 	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	churnECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+	require.NoError(t, err)
+
 	receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
 	require.NoError(t, err)
 	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
 
-	// After change, churnApprover is the setted value
+	// After change, churnApprover is ANVIL_SECOND_ADDRESS
 	newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
 
-	//register once
+	//Register ANVIL_FIRST_ADDRESS as operator
 	receipt, err = chainWriter.RegisterOperator(
 		context.Background(),
 		firstOperatorECDSAPrivateKey,
@@ -387,6 +390,7 @@ func TestRegisterOperatorWithChurn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
 
+	// Change the OperatorSetParams to allow only 1 operator
 	receipt, err = chainWriter.SetOperatorSetParams(
 		context.Background(),
 		0,
@@ -400,8 +404,7 @@ func TestRegisterOperatorWithChurn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
 
-	churnECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
-	require.NoError(t, err)
+	// We want to kick the first operator
 	operatorsToKick := []gethcommon.Address{firstOperatorAddress}
 
 	thirdOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
@@ -423,6 +426,8 @@ func TestRegisterOperatorWithChurn(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	// Register ANVIL_THIRD_ADDRESS as operator. Since there is only one slot available, ANVIL_FIRST_ADDRESS should be
+	// kicked
 	receipt, err = chainWriter3.RegisterOperatorWithChurn(
 		context.Background(),
 		thirdOperatorECDSAPrivateKey,
@@ -437,10 +442,12 @@ func TestRegisterOperatorWithChurn(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
 
+	// ANVIL_FIRST_ADDRESS should be deregistered
 	deregisteredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, firstOperatorAddress)
 	require.NoError(t, err)
 	require.False(t, deregisteredOperatorWithChurn)
 
+	// ANVIL_THIRD_ADDRESS should be registered
 	registeredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, thirdOperatorAddress)
 	require.NoError(t, err)
 	require.True(t, registeredOperatorWithChurn)
