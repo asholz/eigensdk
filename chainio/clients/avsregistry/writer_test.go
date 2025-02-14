@@ -719,6 +719,23 @@ func TestCreateAVSRewardsSubmission(t *testing.T) {
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
+func TestModifyStrategyParams(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	indices := []*big.Int{big.NewInt(0)}
+	multiplier := []*big.Int{big.NewInt(5e18)}
+
+	receipt, err := chainWriter.ModifyStrategyParams(context.Background(), 0, indices, multiplier, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	strategies, err := chainReader.StrategyParamsByIndex(nil, 0, indices[0])
+	require.NoError(t, err)
+	require.Equal(t, strategies.Multiplier, multiplier[0])
+}
+
 func TestCreateOperatorDirectedAVSRewardsSubmission(t *testing.T) {
 	clients, _ := testclients.BuildTestClients(t)
 	chainWriter := clients.AvsRegistryChainWriter
