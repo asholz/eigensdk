@@ -837,6 +837,54 @@ func TestCreateAVSRewardsSubmission(t *testing.T) {
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
+func TestCreateOperatorDirectedAVSRewardsSubmission(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	strategies, err := clients.AvsRegistryChainReader.StrategyParamsByIndex(nil, 0, big.NewInt(0))
+	require.NoError(t, err)
+
+	calculationInterval, err := clients.EigenlayerContractBindings.RewardsCoordinator.CALCULATIONINTERVALSECONDS(nil)
+	require.NoError(t, err)
+
+	strategy := strategies.Strategy
+
+	_, token, err := clients.ElChainReader.GetStrategyAndUnderlyingToken(context.TODO(), strategies.Strategy)
+	require.NoError(t, err)
+
+	strategiesAndMultipliers := []servicemanager.IRewardsCoordinatorTypesStrategyAndMultiplier{
+		{
+			Strategy:   strategy,
+			Multiplier: big.NewInt(1),
+		},
+	}
+	header, err := clients.EthHttpClient.HeaderByNumber(context.TODO(), nil)
+	require.NoError(t, err)
+
+	// These values are set to align with the contract's requirements for the `OperatorDirectedRewardsSubmission`.
+	// https://github.com/Layr-labs/eigenlayer-contracts/blob/5341ef83500476c62a4406ff00cdde7f5c2cc11f/src/contracts/core/RewardsCoordinator.sol#L485
+	// https://github.com/Layr-labs/eigenlayer-contracts/blob/5341ef83500476c62a4406ff00cdde7f5c2cc11f/src/contracts/core/RewardsCoordinator.sol#L438
+	var duration uint32 = calculationInterval
+	var startTimestamp uint32 = ((uint32(header.Time) / calculationInterval) - 2) * calculationInterval
+
+	operatorRewards := []servicemanager.IRewardsCoordinatorTypesOperatorReward{{
+		Operator: gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS),
+		Amount:   big.NewInt(1000),
+	}}
+
+	rewardsSubmission := []servicemanager.IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission{{
+		StrategiesAndMultipliers: strategiesAndMultipliers,
+		Token:                    token,
+		OperatorRewards:          operatorRewards,
+		StartTimestamp:           startTimestamp,
+		Duration:                 duration,
+		Description:              "some description here",
+	}}
+	receipt, err := chainWriter.CreateOperatorDirectedAVSRewardsSubmission(context.TODO(), rewardsSubmission, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
 func TestUpdateAVSMetadataURI(t *testing.T) {
 	clients, _ := testclients.BuildTestClients(t)
 	chainWriter := clients.AvsRegistryChainWriter

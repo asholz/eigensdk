@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"slices"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -14,6 +15,7 @@ import (
 	apkreg "github.com/Layr-Labs/eigensdk-go/contracts/bindings/BLSApkRegistry"
 	opstateretriever "github.com/Layr-Labs/eigensdk-go/contracts/bindings/OperatorStateRetriever"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -40,6 +42,7 @@ type ChainReader struct {
 	blsApkRegistryAddr      common.Address
 	blsApkRegistry          *apkreg.ContractBLSApkRegistry
 	registryCoordinatorAddr common.Address
+	serviceManager          *servicemanager.ContractServiceManagerBase
 	registryCoordinator     *regcoord.ContractRegistryCoordinator
 	operatorStateRetriever  *opstateretriever.ContractOperatorStateRetriever
 	stakeRegistry           *stakeregistry.ContractStakeRegistry
@@ -48,6 +51,7 @@ type ChainReader struct {
 
 // Creates a new instance  of the ChainReader.
 func NewChainReader(
+	serviceManager *servicemanager.ContractServiceManagerBase,
 	registryCoordinatorAddr common.Address,
 	blsApkRegistryAddr common.Address,
 	registryCoordinator *regcoord.ContractRegistryCoordinator,
@@ -61,6 +65,7 @@ func NewChainReader(
 
 	return &ChainReader{
 		blsApkRegistryAddr:      blsApkRegistryAddr,
+		serviceManager:          serviceManager,
 		blsApkRegistry:          blsApkRegistry,
 		registryCoordinatorAddr: registryCoordinatorAddr,
 		registryCoordinator:     registryCoordinator,
@@ -83,6 +88,7 @@ func NewReaderFromConfig(
 	}
 
 	return NewChainReader(
+		bindings.ServiceManager,
 		bindings.RegistryCoordinatorAddr,
 		bindings.BlsApkRegistryAddr,
 		bindings.RegistryCoordinator,
@@ -647,6 +653,23 @@ func (r *ChainReader) GetStrategyPerQuorumAtIndex(
 	return strategy, nil
 }
 
+// Returns the list of strategies that the AVS supports for restaking.
+// The list returned contains no duplicates.
+func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Address, error) {
+	if r.serviceManager == nil {
+		return nil, errors.New("ServiceManager contract not provided")
+	}
+
+	strategies, err := r.serviceManager.GetRestakeableStrategies(opts)
+	if err != nil {
+		return nil, utils.WrapError("Failed to get restakeable strategies", err)
+	}
+	if len(strategies) == 0 {
+		return strategies, nil
+	}
+	return removeDuplicateStrategies(strategies), nil
+}
+
 func (r *ChainReader) GetStakeTypePerQuorum(
 	opts *bind.CallOpts,
 	quorumNumber uint8,
@@ -1045,4 +1068,20 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 		)
 	}
 	return operatorIdToSocketMap, nil
+}
+
+// Removes duplicates from the given list of strategies.
+func removeDuplicateStrategies(strategies []common.Address) []common.Address {
+	slices.SortFunc(strategies, common.Address.Cmp)
+	uniqueStrategies := make([]common.Address, 0, len(strategies))
+	lastElement := strategies[0]
+	uniqueStrategies = append(uniqueStrategies, lastElement)
+	for i := range uniqueStrategies[1:] {
+		if strategies[i] == lastElement {
+			continue
+		}
+		lastElement = strategies[i]
+		uniqueStrategies = append(uniqueStrategies, lastElement)
+	}
+	return uniqueStrategies
 }
