@@ -761,6 +761,32 @@ func TestSetAccountIdentifier(t *testing.T) {
 	assert.Equal(t, newAccountIdentifier.String(), testutils.ANVIL_SECOND_ADDRESS)
 }
 
+func TestRemoveStrategies(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	quorumNumber := types.QuorumNum(0)
+	indices := []*big.Int{big.NewInt(0)}
+
+	_, err := clients.AvsRegistryChainReader.GetStrategyParamsAtIndex(
+		&bind.CallOpts{Context: context.Background()},
+		quorumNumber.UnderlyingType(),
+		indices[0],
+	)
+	require.NoError(t, err)
+
+	// There is a strategy at index 0. We will remove it
+	receipt, err := chainWriter.RemoveStrategies(context.Background(), quorumNumber, indices, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After removing, there are no strategies in quorum
+	length, err := chainReader.StrategyParamsLength(&bind.CallOpts{}, quorumNumber.UnderlyingType())
+	require.NoError(t, err)
+	require.Zero(t, length.Cmp(big.NewInt(0)))
+}
+
 func TestSetEjectionCooldown(t *testing.T) {
 	// Test set up
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)

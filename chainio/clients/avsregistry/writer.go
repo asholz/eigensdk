@@ -897,6 +897,32 @@ func (w *ChainWriter) UpdateAVSMetadataURI(
 	return receipt, nil
 }
 
+// Removes strategies and their associated weights from the specified quorum.
+func (w *ChainWriter) RemoveStrategies(
+	ctx context.Context,
+	quorumNumber types.QuorumNum,
+	indicesToRemove []*big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("removing strategies from quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.stakeRegistry.RemoveStrategies(noSendTxOpts, quorumNumber.UnderlyingType(), indicesToRemove)
+	if err != nil {
+		return nil, err
+	}
+
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to remove strategies from quorum", err)
+	}
+	return receipt, nil
+}
+
 // Creates a new rewards submission to the EigenLayer RewardsCoordinator contract,
 // to be split amongst the set of stakers delegated to operators who are registered
 // to this `avs`. Returns the receipt of the transaction in case of success.
