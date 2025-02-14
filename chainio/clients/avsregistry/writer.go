@@ -598,6 +598,35 @@ func (w *ChainWriter) SetEjector(
 	return receipt, nil
 }
 
+func (w *ChainWriter) ModifyStrategyParams(
+	ctx context.Context,
+	quorumNumber types.QuorumNum,
+	strategyIndices []*big.Int,
+	multipliers []*big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("modifying strategy params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.ModifyStrategyParams(
+		noSendTxOpts,
+		quorumNumber.UnderlyingType(),
+		strategyIndices,
+		multipliers,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send ModifyStrategyParams tx with err", err)
+	}
+	return receipt, nil
+}
+
 // Sets the accountIdentifier as the address received as parameter. Identifier should only be set once, since
 // changing it could break existing operator sets. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) SetAccountIdentifier(
