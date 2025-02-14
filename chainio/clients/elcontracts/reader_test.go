@@ -10,6 +10,7 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
 	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
+	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
@@ -34,6 +35,12 @@ func TestChainReader(t *testing.T) {
 
 	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(
 		contractAddrs.RewardsCoordinator,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	strategyManager, err := strategymanager.NewContractStrategyManager(
+		contractAddrs.StrategyManager,
 		clients.EthHttpClient,
 	)
 	require.NoError(t, err)
@@ -485,6 +492,102 @@ func TestChainReader(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.False(t, isValid)
+	})
+
+	t.Run("get deposit typehash", func(t *testing.T) {
+		typehash, err := clients.ElChainReader.GetDepositTypehash(context.Background())
+		require.NoError(t, err)
+		require.NotNil(t, typehash)
+
+		typehashActual, err := strategyManager.DEPOSITTYPEHASH(&bind.CallOpts{})
+		require.NoError(t, err)
+		require.Equal(t, typehash, typehashActual)
+	})
+
+	t.Run("get default burns address", func(t *testing.T) {
+		burner, err := clients.ElChainReader.GetDefaultBurnAddress(context.Background())
+		require.NoError(t, err)
+
+		burnerActual, err := strategyManager.DEFAULTBURNADDRESS(&bind.CallOpts{})
+		require.NoError(t, err)
+		require.NotEqual(t, common.Address{}, burner)
+		require.Equal(t, burner, burnerActual)
+	})
+
+	t.Run("get nonce", func(t *testing.T) {
+		operatorAddress := common.HexToAddress(operator.Address)
+		nonce, err := clients.ElChainReader.GetNonce(context.Background(), operatorAddress)
+		require.NoError(t, err)
+		require.NotNil(t, nonce)
+
+		nonceActual, err := strategyManager.Nonces(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		require.Equal(t, nonce, nonceActual)
+	})
+
+	t.Run("get strategy whitelister", func(t *testing.T) {
+		whitelister, err := clients.ElChainReader.GetStrategyWhitelister(context.Background())
+		require.NoError(t, err)
+		require.NotEqual(t, common.Address{}, whitelister)
+
+		whitelisterActual, err := strategyManager.StrategyWhitelister(&bind.CallOpts{})
+		require.NoError(t, err)
+		require.Equal(t, whitelister, whitelisterActual)
+	})
+
+	t.Run("get staker deposit shares", func(t *testing.T) {
+		stakerAddress := common.HexToAddress(operator.Address)
+		strategyAddress := common.HexToAddress(operator.Address)
+
+		shares, err := clients.ElChainReader.GetStakerDepositShares(
+			context.Background(),
+			stakerAddress,
+			strategyAddress,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, shares)
+
+		sharesActual, err := strategyManager.StakerDepositShares(&bind.CallOpts{}, stakerAddress, strategyAddress)
+		require.NoError(t, err)
+		require.Equal(t, shares, sharesActual)
+	})
+
+	t.Run("get staker strategy list", func(t *testing.T) {
+		stakerAddress := common.HexToAddress(operator.Address)
+		index := big.NewInt(0)
+		strategies, err := clients.ElChainReader.GetStakerStrategyAtIndex(context.Background(), stakerAddress, index)
+		require.NoError(t, err)
+		require.NotNil(t, strategies)
+
+		strategiesActual, err := strategyManager.StakerStrategyList(&bind.CallOpts{}, stakerAddress, index)
+		require.NoError(t, err)
+		require.Equal(t, strategies, strategiesActual)
+	})
+
+	t.Run("get strategy is whitelisted for deposit", func(t *testing.T) {
+		strategyAddress := common.HexToAddress(operator.Address)
+
+		isWhitelisted, err := clients.ElChainReader.GetStrategyIsWhitelistedForDeposit(
+			context.Background(),
+			strategyAddress,
+		)
+		require.NoError(t, err)
+
+		isWhitelistedActual, err := strategyManager.StrategyIsWhitelistedForDeposit(&bind.CallOpts{}, strategyAddress)
+		require.NoError(t, err)
+		require.Equal(t, isWhitelisted, isWhitelistedActual)
+	})
+
+	t.Run("get burnable shares", func(t *testing.T) {
+		strategyAddress := common.HexToAddress(operator.Address)
+
+		shares, err := clients.ElChainReader.GetBurnableShares(context.Background(), strategyAddress)
+		require.NoError(t, err)
+		require.NotNil(t, shares)
+
+		sharesActual, err := strategyManager.BurnableShares(&bind.CallOpts{}, strategyAddress)
+		require.NoError(t, err)
+		require.Equal(t, shares, sharesActual)
 	})
 
 }
