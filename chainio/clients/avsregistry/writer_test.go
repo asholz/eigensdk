@@ -837,6 +837,36 @@ func TestCreateAVSRewardsSubmission(t *testing.T) {
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
+func TestAddStrategies(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	// contractAddrs.Erc20MockStrategy is already set as a strategy at index 0
+	strategyParam := stakeregistry.IStakeRegistryTypesStrategyParams{
+		Strategy:   gethcommon.HexToAddress("0x1"),
+		Multiplier: big.NewInt(100),
+	}
+
+	strategiesParams := []stakeregistry.IStakeRegistryTypesStrategyParams{strategyParam}
+	quorumNumber := types.QuorumNum(0)
+
+	receipt, err := chainWriter.AddStrategies(
+		context.Background(),
+		quorumNumber,
+		strategiesParams,
+		true,
+	)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// New strategy is set at index 1
+	params, err := chainReader.GetStrategyParamsAtIndex(nil, 0, big.NewInt(1))
+	require.NoError(t, err)
+	require.Equal(t, params.Strategy, strategyParam.Strategy)
+	require.Equal(t, params.Multiplier, strategyParam.Multiplier)
+}
+
 func TestModifyStrategyParams(t *testing.T) {
 	clients, _ := testclients.BuildTestClients(t)
 	chainWriter := clients.AvsRegistryChainWriter
