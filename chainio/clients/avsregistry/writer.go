@@ -864,7 +864,7 @@ func (w *ChainWriter) RemoveStrategies(
 
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to remove strategies form quorum", err.Error())
+		return nil, utils.WrapError("failed to remove strategies from quorum", err)
 	}
 	return receipt, nil
 }
