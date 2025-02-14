@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net/http"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/utils"
@@ -49,7 +50,8 @@ func (o Operator) Validate() error {
 		return utils.WrapError(ErrInvalidMetadataUrl, err)
 	}
 
-	body, err := utils.ReadPublicURL(o.MetadataUrl)
+	client := &http.Client{}
+	body, err := utils.ReadPublicURL(o.MetadataUrl, client)
 	if err != nil {
 		return utils.WrapError(ErrReadingMetadataUrlResponse, err)
 	}
