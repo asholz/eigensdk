@@ -1213,7 +1213,7 @@ func TestBlsAgg(t *testing.T) {
 				blsSig,
 				testOperator1.OperatorId,
 			)
-			require.EqualError(t, err, "Signature verification failed. Incorrect Signature.")
+			require.EqualError(t, err, "signature verification failed. Incorrect Signature")
 		},
 	)
 

@@ -22,7 +22,8 @@ var (
 	// error string directly.
 	//       see https://go.dev/blog/go1.13-errors
 	TaskInitializationErrorFn = func(err error, taskIndex types.TaskIndex) error {
-		return fmt.Errorf("Failed to initialize task %d: %w", taskIndex, err)
+		text := fmt.Sprintf("Failed to initialize task %d", taskIndex)
+		return utils.WrapError(text, err)
 	}
 	TaskAlreadyInitializedErrorFn = func(taskIndex types.TaskIndex) error {
 		return fmt.Errorf("task %d already initialized", taskIndex)
@@ -37,12 +38,12 @@ var (
 		return fmt.Errorf("operator %x not part of task %d's quorum", operatorId, taskIndex)
 	}
 	HashFunctionError = func(err error) error {
-		return fmt.Errorf("Failed to hash task response: %w", err)
+		return utils.WrapError("Failed to hash task response", err)
 	}
 	SignatureVerificationError = func(err error) error {
-		return fmt.Errorf("Failed to verify signature: %w", err)
+		return utils.WrapError("Failed to verify signature", err)
 	}
-	IncorrectSignatureError = errors.New("Signature verification failed. Incorrect Signature.")
+	ErrIncorrectSignature = errors.New("signature verification failed. Incorrect Signature")
 )
 
 // BlsAggregationServiceResponse is the response from the bls aggregation service
@@ -349,8 +350,12 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			"err",
 			err,
 		)
+		text := fmt.Sprintf(
+			"AggregatorService failed to get operators state from avs registry at blockNum %d",
+			taskCreatedBlock,
+		)
 		a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-			Err:       TaskInitializationErrorFn(fmt.Errorf("AggregatorService failed to get operators state from avs registry at blockNum %d: %w", taskCreatedBlock, err), taskIndex),
+			Err:       TaskInitializationErrorFn(utils.WrapError(text, err), taskIndex),
 			TaskIndex: taskIndex,
 		}
 		return
@@ -369,7 +374,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			err,
 		)
 		a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-			Err:       TaskInitializationErrorFn(fmt.Errorf("Aggregator failed to get quorums state from avs registry: %w", err), taskIndex),
+			Err:       TaskInitializationErrorFn(utils.WrapError("Aggregator failed to get quorums state from avs registry", err), taskIndex),
 			TaskIndex: taskIndex,
 		}
 		return
@@ -659,7 +664,7 @@ func (a *BlsAggregatorService) verifySignature(
 		return SignatureVerificationError(err)
 	}
 	if !signatureVerified {
-		return IncorrectSignatureError
+		return ErrIncorrectSignature
 	}
 	return nil
 }
