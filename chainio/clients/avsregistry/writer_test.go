@@ -7,6 +7,7 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
+	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AVSDirectory"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	servicemanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/ServiceManagerBase"
 	stakeregistry "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StakeRegistry"
@@ -332,6 +333,124 @@ func TestWriterMethods(t *testing.T) {
 
 		assert.Equal(t, newMinimumStakeForQuorum, big.NewInt(100))
 	})
+}
+
+func TestRegisterOperatorWithChurn(t *testing.T) {
+	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	firstOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	firstOperatorECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+	firstOperatorKeyPair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	quorumNumbers := types.QuorumNums{0}
+
+	ethHttpClient := clients.EthHttpClient
+
+	registryCoordinatorContract, err := regcoord.NewContractRegistryCoordinator(
+		contractAddrs.RegistryCoordinator,
+		ethHttpClient,
+	)
+	require.NoError(t, err)
+
+	// At first, churnApprover is ANVIL_FIRST_ADDRESS
+	approver, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, approver.String(), testutils.ANVIL_FIRST_ADDRESS)
+
+	// Set ANVIL_SECOND_ADDRESS as the new churnApprover
+	churnApproverAddress := gethcommon.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	churnECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_SECOND_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	receipt, err := chainWriter.SetChurnApprover(context.Background(), churnApproverAddress, true)
+	require.NoError(t, err)
+	require.Equal(t, receipt.Status, gethtypes.ReceiptStatusSuccessful)
+
+	// After change, churnApprover is ANVIL_SECOND_ADDRESS
+	newApprover, err := registryCoordinatorContract.ChurnApprover(&bind.CallOpts{})
+	require.NoError(t, err)
+	assert.Equal(t, newApprover.String(), testutils.ANVIL_SECOND_ADDRESS)
+
+	//Register ANVIL_FIRST_ADDRESS as operator
+	receipt, err = chainWriter.RegisterOperator(
+		context.Background(),
+		firstOperatorECDSAPrivateKey,
+		firstOperatorKeyPair,
+		quorumNumbers,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	// Change the OperatorSetParams to allow only 1 operator
+	receipt, err = chainWriter.SetOperatorSetParams(
+		context.Background(),
+		0,
+		regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+			MaxOperatorCount:        1,
+			KickBIPsOfOperatorStake: 10,
+			KickBIPsOfTotalStake:    10000,
+		},
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	// We want to kick the first operator
+	operatorsToKick := []gethcommon.Address{firstOperatorAddress}
+
+	thirdOperatorAddress := gethcommon.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+	thirdOperatorECDSAPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_THIRD_PRIVATE_KEY)
+	require.NoError(t, err)
+	thirdOperatorPrivateKey := testutils.ANVIL_THIRD_PRIVATE_KEY
+	newKeyPair, err := bls.NewKeyPairFromString("0x03")
+	require.NoError(t, err)
+
+	config := avsregistry.Config{
+		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
+		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
+		ServiceManagerAddress:         contractAddrs.ServiceManager,
+	}
+	chainWriter3, err := testclients.NewTestAvsRegistryWriterFromConfig(
+		anvilHttpEndpoint,
+		thirdOperatorPrivateKey,
+		config,
+	)
+	require.NoError(t, err)
+
+	// Register ANVIL_THIRD_ADDRESS as operator. Since there is only one slot available, ANVIL_FIRST_ADDRESS should be
+	// kicked
+	receipt, err = chainWriter3.RegisterOperatorWithChurn(
+		context.Background(),
+		thirdOperatorECDSAPrivateKey,
+		churnECDSAPrivateKey,
+		newKeyPair,
+		quorumNumbers,
+		quorumNumbers,
+		operatorsToKick,
+		"",
+		true,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+
+	// ANVIL_FIRST_ADDRESS should be deregistered
+	deregisteredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, firstOperatorAddress)
+	require.NoError(t, err)
+	require.False(t, deregisteredOperatorWithChurn)
+
+	// ANVIL_THIRD_ADDRESS should be registered
+	registeredOperatorWithChurn, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, thirdOperatorAddress)
+	require.NoError(t, err)
+	require.True(t, registeredOperatorWithChurn)
 }
 
 // Compliance test for BLS signature
@@ -674,4 +793,137 @@ func TestSetEjectionCooldown(t *testing.T) {
 	newCooldown, err := registryCoordinatorContract.EjectionCooldown(&bind.CallOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, newCooldown, ejectionCooldown)
+}
+
+func TestCreateAVSRewardsSubmission(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	strategies, err := clients.AvsRegistryChainReader.StrategyParamsByIndex(nil, 0, big.NewInt(0))
+	require.NoError(t, err)
+
+	calculationInterval, err := clients.EigenlayerContractBindings.RewardsCoordinator.CALCULATIONINTERVALSECONDS(nil)
+	require.NoError(t, err)
+
+	strategy := strategies.Strategy
+
+	_, token, err := clients.ElChainReader.GetStrategyAndUnderlyingToken(context.TODO(), strategies.Strategy)
+	require.NoError(t, err)
+
+	strategiesAndMultipliers := []servicemanager.IRewardsCoordinatorTypesStrategyAndMultiplier{
+		{
+			Strategy:   strategy,
+			Multiplier: big.NewInt(1),
+		},
+	}
+	header, err := clients.EthHttpClient.HeaderByNumber(context.TODO(), nil)
+	require.NoError(t, err)
+
+	// These values are set to align with the contract's requirements for the `OperatorDirectedRewardsSubmission`.
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/ecaff6304de6cb0f43b42024ad55d0e8a0430790/src/contracts/core/RewardsCoordinator.sol#L414
+	// https://github.com/Layr-Labs/eigenlayer-contracts/blob/ecaff6304de6cb0f43b42024ad55d0e8a0430790/src/contracts/core/RewardsCoordinator.sol#L482
+	var duration uint32 = calculationInterval
+	var startTimestamp uint32 = ((uint32(header.Time) / calculationInterval) + 1) * calculationInterval
+
+	rewardsSubmission := []servicemanager.IRewardsCoordinatorTypesRewardsSubmission{{
+		StrategiesAndMultipliers: strategiesAndMultipliers,
+		Token:                    token,
+		Amount:                   big.NewInt(1000),
+		StartTimestamp:           startTimestamp,
+		Duration:                 duration,
+	}}
+	receipt, err := chainWriter.CreateAVSRewardsSubmission(context.TODO(), rewardsSubmission, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+func TestModifyStrategyParams(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+	chainReader := clients.AvsRegistryChainReader
+
+	indices := []*big.Int{big.NewInt(0)}
+	multiplier := []*big.Int{big.NewInt(5e18)}
+
+	receipt, err := chainWriter.ModifyStrategyParams(context.Background(), 0, indices, multiplier, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	strategies, err := chainReader.StrategyParamsByIndex(nil, 0, indices[0])
+	require.NoError(t, err)
+	require.Equal(t, strategies.Multiplier, multiplier[0])
+}
+
+func TestCreateOperatorDirectedAVSRewardsSubmission(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	strategies, err := clients.AvsRegistryChainReader.StrategyParamsByIndex(nil, 0, big.NewInt(0))
+	require.NoError(t, err)
+
+	calculationInterval, err := clients.EigenlayerContractBindings.RewardsCoordinator.CALCULATIONINTERVALSECONDS(nil)
+	require.NoError(t, err)
+
+	strategy := strategies.Strategy
+
+	_, token, err := clients.ElChainReader.GetStrategyAndUnderlyingToken(context.TODO(), strategies.Strategy)
+	require.NoError(t, err)
+
+	strategiesAndMultipliers := []servicemanager.IRewardsCoordinatorTypesStrategyAndMultiplier{
+		{
+			Strategy:   strategy,
+			Multiplier: big.NewInt(1),
+		},
+	}
+	header, err := clients.EthHttpClient.HeaderByNumber(context.TODO(), nil)
+	require.NoError(t, err)
+
+	// These values are set to align with the contract's requirements for the `OperatorDirectedRewardsSubmission`.
+	// https://github.com/Layr-labs/eigenlayer-contracts/blob/5341ef83500476c62a4406ff00cdde7f5c2cc11f/src/contracts/core/RewardsCoordinator.sol#L485
+	// https://github.com/Layr-labs/eigenlayer-contracts/blob/5341ef83500476c62a4406ff00cdde7f5c2cc11f/src/contracts/core/RewardsCoordinator.sol#L438
+	var duration uint32 = calculationInterval
+	var startTimestamp uint32 = ((uint32(header.Time) / calculationInterval) - 2) * calculationInterval
+
+	operatorRewards := []servicemanager.IRewardsCoordinatorTypesOperatorReward{{
+		Operator: gethcommon.HexToAddress(testutils.ANVIL_FIRST_ADDRESS),
+		Amount:   big.NewInt(1000),
+	}}
+
+	rewardsSubmission := []servicemanager.IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission{{
+		StrategiesAndMultipliers: strategiesAndMultipliers,
+		Token:                    token,
+		OperatorRewards:          operatorRewards,
+		StartTimestamp:           startTimestamp,
+		Duration:                 duration,
+		Description:              "some description here",
+	}}
+	receipt, err := chainWriter.CreateOperatorDirectedAVSRewardsSubmission(context.TODO(), rewardsSubmission, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+func TestUpdateAVSMetadataURI(t *testing.T) {
+	clients, _ := testclients.BuildTestClients(t)
+	chainWriter := clients.AvsRegistryChainWriter
+
+	svcManagerAddr := clients.AvsRegistryContractBindings.ServiceManagerAddr
+	avsDirectoryAddr := clients.EigenlayerContractBindings.AvsDirectoryAddr
+
+	avsDirectory, err := avsdirectory.NewContractAVSDirectory(
+		avsDirectoryAddr,
+		clients.EthHttpClient,
+	)
+	require.NoError(t, err)
+
+	// Update the metadata URI
+	newMetadata := "https://new-metadata-uri.com"
+	receipt, err := chainWriter.UpdateAVSMetadataURI(context.TODO(), newMetadata, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Assert the event was emitted
+	iter, err := avsDirectory.FilterAVSMetadataURIUpdated(nil, []gethcommon.Address{svcManagerAddr})
+	require.NoError(t, err)
+	require.True(t, iter.Next())
+	require.Equal(t, newMetadata, iter.Event.MetadataURI)
 }

@@ -214,6 +214,53 @@ func TestChainReader(t *testing.T) {
 		assert.Len(t, shares, 3)
 		assert.Len(t, shares[2], 3)
 	})
+
+	t.Run("Get delegationApproverSaltIsSpent", func(t *testing.T) {
+		approverSalt := [32]byte{}
+		isSpent, err := read_clients.ElChainReader.GetDelegationApproverSaltIsSpent(
+			ctx,
+			common.HexToAddress(operator.Address),
+			approverSalt,
+		)
+		assert.NoError(t, err)
+		assert.False(t, isSpent)
+	})
+
+	t.Run("Get pending withdrawal status", func(t *testing.T) {
+		withdrawalRoot := [32]byte{}
+		pending, err := read_clients.ElChainReader.GetPendingWithdrawalStatus(
+			ctx,
+			withdrawalRoot,
+		)
+		assert.NoError(t, err)
+		assert.False(t, pending)
+	})
+
+	t.Run("Get cumulative withdrawals queued", func(t *testing.T) {
+		staker := common.HexToAddress(operator.Address)
+		cumulative, err := read_clients.ElChainReader.GetCumulativeWithdrawalsQueued(
+			ctx,
+			staker,
+		)
+		assert.NoError(t, err)
+		assert.Zero(t, cumulative.Cmp(big.NewInt(0)))
+	})
+
+	t.Run("Get deallocation delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetDeallocationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
+
+	t.Run("Get allocation configuration delay", func(t *testing.T) {
+		delay, err := read_clients.ElChainReader.GetAllocationConfigurationDelay(
+			ctx,
+		)
+		assert.NoError(t, err)
+		assert.NotZero(t, delay)
+	})
 }
 
 func TestGetCurrentClaimableDistributionRoot(t *testing.T) {
@@ -501,8 +548,8 @@ func TestCheckClaim(t *testing.T) {
 	assert.True(t, checked)
 }
 
-func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
-	// Without changes, Allocatable magnitude is max magnitude
+func TestGetAllocatableMagnitudeAndEncumberedMagnitudeAndGetMaxMagnitudes(t *testing.T) {
+	// Without changes, Allocable magnitude is max magnitude
 
 	// Test setup
 	ctx := context.Background()
@@ -534,6 +581,10 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	// Assert that at the beginning, Allocatable Magnitude is Max allocatable magnitude
 	allocable, err := chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
+
+	encumberedMagnitude, err := chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	assert.NoError(t, err)
+	assert.Zero(t, encumberedMagnitude)
 
 	assert.Equal(t, maxMagnitudes[0], allocable)
 
@@ -580,6 +631,11 @@ func TestGetAllocatableMagnitudeAndGetMaxMagnitudes(t *testing.T) {
 	allocable, err = chainReader.GetAllocatableMagnitude(ctx, testAddr, strategyAddr)
 	assert.NoError(t, err)
 	assert.Equal(t, maxMagnitudes[0], allocable+allocatable_reduction)
+
+	encumberedMagnitude, err = chainReader.GetEncumberedMagnitude(ctx, testAddr, strategyAddr)
+	assert.Equal(t, encumberedMagnitude, allocatable_reduction)
+
+	assert.NoError(t, err)
 
 	// Check that the new allocationDelay is equal to delay
 	op := types.Operator{

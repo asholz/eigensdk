@@ -489,7 +489,6 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operatorPubkeyHash", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
@@ -500,19 +499,15 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operatorPubkeyHash from operatorId", func(t *testing.T) {
-		operatorAddressActual := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddressActual)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
 		require.NoError(t, err)
 
-		operatorAddress, err := chainReader.GetOperatorAddressFromOperatorId(&bind.CallOpts{}, operatorId)
+		gotOperatorAddress, err := chainReader.GetOperatorAddressFromOperatorId(&bind.CallOpts{}, operatorId)
 		require.NoError(t, err)
-		require.Equal(t, operatorAddressActual, operatorAddress)
+		require.Equal(t, operatorAddress, gotOperatorAddress)
 	})
 
 	t.Run("Get operator bls pubkey", func(t *testing.T) {
-		operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 		pubKey, err := chainReader.GetPubkeyFromOperatorAddress(
 			&bind.CallOpts{},
 			operatorAddress,

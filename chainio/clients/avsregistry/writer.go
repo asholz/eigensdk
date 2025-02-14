@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -214,7 +216,7 @@ func (w *ChainWriter) RegisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully registered operator with AVS registry coordinator",
@@ -256,7 +258,7 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err: ", err.Error())
+		return nil, utils.WrapError("failed to send tx with err: ", err)
 	}
 	w.logger.Info(
 		"successfully updated stakes for entire operator set",
@@ -267,6 +269,168 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 	)
 	return receipt, nil
 
+}
+
+// Registers an operator while replacing existing operators in full quorums. If any quorum reaches its maximum
+// operator capacity, `operatorKickParams` is used to replace an old operator with the new one.
+func (w *ChainWriter) RegisterOperatorWithChurn(
+	ctx context.Context,
+	operatorEcdsaPrivateKey *ecdsa.PrivateKey,
+	churnApprovalEcdsaPrivateKey *ecdsa.PrivateKey,
+	blsKeyPair *bls.KeyPair,
+	quorumNumbers types.QuorumNums,
+	quorumNumbersToKick types.QuorumNums,
+	operatorsToKick []gethcommon.Address,
+	socket string,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	operatorAddr := crypto.PubkeyToAddress(operatorEcdsaPrivateKey.PublicKey)
+	g1HashedMsgToSign, err := w.registryCoordinator.PubkeyRegistrationMessageHash(&bind.CallOpts{}, operatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	signedMsg := chainioutils.ConvertToBN254G1Point(
+		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
+	)
+	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
+	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
+		PubkeyRegistrationSignature: signedMsg,
+		PubkeyG1:                    G1pubkeyBN254,
+		PubkeyG2:                    G2pubkeyBN254,
+	}
+
+	// generate a random salt and 1 hour expiry for the signature
+	var signatureSalt [32]byte
+	_, err = rand.Read(signatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	curBlockNum, err := w.ethClient.BlockNumber(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	curBlock, err := w.ethClient.BlockByNumber(context.Background(), new(big.Int).SetUint64(curBlockNum))
+	if err != nil {
+		return nil, err
+	}
+	sigValidForSeconds := int64(60 * 60) // 1 hour
+
+	curTime := new(big.Int).SetUint64(curBlock.Time())
+	signatureExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
+
+	// params to register operator in delegation manager's operator-avs mapping
+	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(
+		ctx,
+		operatorAddr,
+		w.serviceManagerAddr,
+		signatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+	operatorSignature, err := crypto.Sign(msgToSign[:], operatorEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	operatorSignature[64] += 27
+	operatorSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: operatorSignature,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	var operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam
+	for i, operatorToKick := range operatorsToKick {
+		operatorKickParams = append(operatorKickParams, regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam{
+			Operator:     operatorToKick,
+			QuorumNumber: quorumNumbersToKick[i].UnderlyingType(),
+		})
+	}
+	var churnSignatureSalt [32]byte
+	_, err = rand.Read(churnSignatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	var operatorIdBytes [32]byte
+
+	// `GetOperatorID()` returns the operator ID with `0x` prefix.
+	// We need to remove the prefix and decode the hex string to bytes.
+	operatorId := blsKeyPair.GetPubKeyG1().GetOperatorID()
+	operatorIdNoPrefix := strings.TrimPrefix(operatorId, "0x")
+	operatorIdBytesDecoded, err := hex.DecodeString(operatorIdNoPrefix)
+	if err != nil {
+		return nil, err
+	}
+	copy(operatorIdBytes[:], operatorIdBytesDecoded)
+
+	churnMsgToSign, err := w.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
+		&bind.CallOpts{Context: ctx},
+		operatorAddr,
+		operatorIdBytes,
+		operatorKickParams,
+		churnSignatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	churnApprovalSignature, err := crypto.Sign(churnMsgToSign[:], churnApprovalEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	churnApprovalSignature[64] += 27
+	churnApproverSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: churnApprovalSignature,
+		Salt:      churnSignatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.RegisterOperatorWithChurn(
+		noSendTxOpts,
+		quorumNumbers.UnderlyingType(),
+		socket,
+		pubkeyRegParams,
+		operatorKickParams,
+		churnApproverSignatureWithSaltAndExpiry,
+		operatorSignatureWithSaltAndExpiry,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
+	}
+	w.logger.Info(
+		"successfully registered operator with AVS registry coordinator",
+		"txHash",
+		receipt.TxHash.String(),
+		"avs-service-manager",
+		w.serviceManagerAddr,
+		"operator",
+		operatorAddr,
+		"quorumNumbers",
+		quorumNumbers,
+	)
+	return receipt, nil
 }
 
 // Updates the stakes of a the given `operators` for all the quorums.
@@ -287,7 +451,7 @@ func (w *ChainWriter) UpdateStakesOfOperatorSubsetForAllQuorums(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully updated stakes of operator subset for all quorums",
@@ -318,7 +482,7 @@ func (w *ChainWriter) DeregisterOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		return nil, utils.WrapError("failed to send tx with err", err)
 	}
 	w.logger.Info(
 		"successfully deregistered operator with the AVS's registry coordinator",
@@ -345,7 +509,7 @@ func (w *ChainWriter) UpdateSocket(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send UpdateSocket tx with err", err.Error())
+		return nil, utils.WrapError("failed to send UpdateSocket tx with err", err)
 	}
 	return receipt, nil
 }
@@ -364,12 +528,14 @@ func (w *ChainWriter) SetRewardsInitiator(
 		return nil, err
 	}
 
+	// TODO: create ServiceManager binding in `NewChainWriter`
+	// (see https://github.com/Layr-Labs/eigensdk-go/issues/552)
 	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
 		w.serviceManagerAddr,
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
 	}
 	tx, err := serviceManagerContract.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
 	if err != nil {
@@ -377,7 +543,7 @@ func (w *ChainWriter) SetRewardsInitiator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err)
 	}
 	return receipt, nil
 }
@@ -401,7 +567,7 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err)
 	}
 	return receipt, nil
 }
@@ -422,7 +588,7 @@ func (w *ChainWriter) SetMinimumStakeForQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err)
 	}
 	return receipt, nil
 }
@@ -455,7 +621,7 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err.Error())
+		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err)
 	}
 	return receipt, nil
 }
@@ -492,7 +658,7 @@ func (w *ChainWriter) CreateSlashableStakeQuorum(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err.Error())
+		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err)
 	}
 	return receipt, nil
 }
@@ -517,7 +683,7 @@ func (w *ChainWriter) EjectOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send EjectOperator tx with err", err.Error())
+		return nil, utils.WrapError("failed to send EjectOperator tx with err", err)
 	}
 	return receipt, nil
 }
@@ -543,7 +709,7 @@ func (w *ChainWriter) SetOperatorSetParams(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err)
 	}
 	return receipt, nil
 }
@@ -567,7 +733,7 @@ func (w *ChainWriter) SetChurnApprover(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err)
 	}
 	return receipt, nil
 }
@@ -591,7 +757,37 @@ func (w *ChainWriter) SetEjector(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjector tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetEjector tx with err", err)
+	}
+	return receipt, nil
+}
+
+// Modifies the multiplier of existing strategies for the given quorum number.
+func (w *ChainWriter) ModifyStrategyParams(
+	ctx context.Context,
+	quorumNumber types.QuorumNum,
+	strategyIndices []*big.Int,
+	multipliers []*big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("modifying strategy params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.ModifyStrategyParams(
+		noSendTxOpts,
+		quorumNumber.UnderlyingType(),
+		strategyIndices,
+		multipliers,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send ModifyStrategyParams tx with err", err)
 	}
 	return receipt, nil
 }
@@ -615,7 +811,7 @@ func (w *ChainWriter) SetAccountIdentifier(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err)
 	}
 	return receipt, nil
 }
@@ -639,7 +835,131 @@ func (w *ChainWriter) SetEjectionCooldown(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err.Error())
+		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err)
+	}
+	return receipt, nil
+}
+
+// Updates the metadata URI for the AVS. Returns the receipt of the transaction in case of success.
+func (w *ChainWriter) UpdateAVSMetadataURI(
+	ctx context.Context,
+	metadataUri string,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("updating AVS metadata URI with value ", metadataUri)
+
+	// TODO: create ServiceManager binding in `NewChainWriter`
+	// (see https://github.com/Layr-Labs/eigensdk-go/issues/552)
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.UpdateAVSMetadataURI(noSendTxOpts, metadataUri)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send updateAVSMetadataURI tx", err.Error())
+	}
+	return receipt, nil
+}
+
+// Creates a new rewards submission to the EigenLayer RewardsCoordinator contract,
+// to be split amongst the set of stakers delegated to operators who are registered
+// to this `avs`. Returns the receipt of the transaction in case of success.
+//
+// Can fail in some cases:
+//   - Only callable by the permissioned rewardsInitiator address
+//   - The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+//   - The tokens are sent to the `RewardsCoordinator` contract
+//   - Strategies must be in ascending order of addresses to check for duplicates
+//   - This function may fail to execute with a large number of submissions due to gas limits. Use a
+//     smaller array of submissions if necessary.
+func (w *ChainWriter) CreateAVSRewardsSubmission(
+	ctx context.Context,
+	rewardsSubmission []servicemanager.IRewardsCoordinatorTypesRewardsSubmission,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("creating AVS rewards submission ", "rewardsSubmission", rewardsSubmission)
+
+	// TODO: store binding in struct
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.CreateAVSRewardsSubmission(noSendTxOpts, rewardsSubmission)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateAVSRewardsSubmission tx with err", err)
+	}
+	return receipt, nil
+}
+
+// Creates a new operator-directed rewards submission, to be split amongst the operators and
+// set of stakers delegated to operators who are registered to this `avs`.
+// Returns the receipt of the transaction in case of success.
+//
+// Can fail in some cases:
+//   - Only callable by the permissioned rewardsInitiator address
+//   - The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+//   - The tokens are sent to the `RewardsCoordinator` contract
+//   - This contract needs a token approval of sum of all `operatorRewards` in the
+//     `operatorDirectedRewardsSubmissions`, before calling this function.
+//   - Strategies must be in ascending order of addresses to check for duplicates
+//   - Operators must be in ascending order of addresses to check for duplicates
+//   - This function will revert if the `operatorDirectedRewardsSubmissions` is malformed.
+//   - This function may fail to execute with a large number of submissions due to gas limits. Use a
+//     smaller array of submissions if necessary.
+func (w *ChainWriter) CreateOperatorDirectedAVSRewardsSubmission(
+	ctx context.Context,
+	operatorDirectedRewardsSubmissions []servicemanager.IRewardsCoordinatorTypesOperatorDirectedRewardsSubmission,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("creating operator directed AVS rewards submission ", operatorDirectedRewardsSubmissions)
+
+	// TODO: store binding in struct
+	serviceManagerContract, err := servicemanager.NewContractServiceManagerBase(
+		w.serviceManagerAddr,
+		w.ethClient,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := serviceManagerContract.CreateOperatorDirectedAVSRewardsSubmission(
+		noSendTxOpts,
+		operatorDirectedRewardsSubmissions,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send CreateOperatorDirectedAVSRewardsSubmission tx with err", err)
 	}
 	return receipt, nil
 }

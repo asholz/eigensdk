@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
@@ -430,6 +431,39 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	return r.allocationManager.GetAllocatableMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
+// Returns the amount of magnitude an operator has allocated to operator sets for a given strategy
+func (r *ChainReader) GetEncumberedMagnitude(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	strategyAddress gethcommon.Address,
+) (uint64, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+
+	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+}
+
+// Returns the delay within which deallocations are slashable.
+func (r *ChainReader) GetDeallocationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
+// Returns the delay before allocation delay modifications take effect.
+func (r *ChainReader) GetAllocationConfigurationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
 // Returns the maximum magnitude an operator can allocate for the given strategies.
 // Can return an error if the `AllocationManager` contract address was not provided, or due to
 // errors in the underlying contract call.
@@ -510,6 +544,46 @@ func (r *ChainReader) GetOperatorsShares(
 		return nil, errors.New("DelegationManager contract not provided")
 	}
 	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddresses, strategyAddresses)
+}
+
+// Returns whether `delegationApprover` has already used the given `salt`.
+func (r *ChainReader) GetDelegationApproverSaltIsSpent(
+	ctx context.Context,
+	delegationApprover gethcommon.Address,
+	approverSalt [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.DelegationApproverSaltIsSpent(
+		&bind.CallOpts{Context: ctx},
+		delegationApprover,
+		approverSalt,
+	)
+}
+
+// Returns whether a withdrawal is pending for a given `withdrawalRoot`.
+func (r *ChainReader) GetPendingWithdrawalStatus(
+	ctx context.Context,
+	withdrawalRoot [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
+}
+
+// Returns the total number of withdrawals that have been queued for a given `staker`
+func (r *ChainReader) GetCumulativeWithdrawalsQueued(
+	ctx context.Context,
+	staker common.Address,
+) (*big.Int, error) {
+	if r.delegationManager == nil {
+		return big.NewInt(0), errors.New("DelegationManager contract not provided")
+	}
+	return r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
 }
 
 // Returns the number of operator sets that an operator is part of.
