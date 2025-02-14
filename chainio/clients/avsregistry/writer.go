@@ -646,6 +646,30 @@ func (w *ChainWriter) SetEjectionCooldown(
 	return receipt, nil
 }
 
+// Adds new strategies and their associated multipliers to the specified quorum.
+func (w *ChainWriter) AddStrategies(
+	ctx context.Context,
+	quorumNumber types.QuorumNum,
+	strategyParams []stakeregistry.IStakeRegistryTypesStrategyParams,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("adding strategies for quorum ", quorumNumber.UnderlyingType())
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.AddStrategies(noSendTxOpts, quorumNumber.UnderlyingType(), strategyParams)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send AddStrategies tx with err", err)
+	}
+	return receipt, nil
+}
+
 // Updates the metadata URI for the AVS. Returns the receipt of the transaction in case of success.
 func (w *ChainWriter) UpdateAVSMetadataURI(
 	ctx context.Context,
