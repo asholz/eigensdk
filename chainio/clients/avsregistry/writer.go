@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -267,6 +269,168 @@ func (w *ChainWriter) UpdateStakesOfEntireOperatorSetForQuorums(
 	)
 	return receipt, nil
 
+}
+
+// Registers an operator while replacing existing operators in full quorums. If any quorum reaches its maximum
+// operator capacity, `operatorKickParams` is used to replace an old operator with the new one.
+func (w *ChainWriter) RegisterOperatorWithChurn(
+	ctx context.Context,
+	operatorEcdsaPrivateKey *ecdsa.PrivateKey,
+	churnApprovalEcdsaPrivateKey *ecdsa.PrivateKey,
+	blsKeyPair *bls.KeyPair,
+	quorumNumbers types.QuorumNums,
+	quorumNumbersToKick types.QuorumNums,
+	operatorsToKick []gethcommon.Address,
+	socket string,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	operatorAddr := crypto.PubkeyToAddress(operatorEcdsaPrivateKey.PublicKey)
+	g1HashedMsgToSign, err := w.registryCoordinator.PubkeyRegistrationMessageHash(&bind.CallOpts{}, operatorAddr)
+	if err != nil {
+		return nil, err
+	}
+	signedMsg := chainioutils.ConvertToBN254G1Point(
+		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
+	)
+	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
+	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
+		PubkeyRegistrationSignature: signedMsg,
+		PubkeyG1:                    G1pubkeyBN254,
+		PubkeyG2:                    G2pubkeyBN254,
+	}
+
+	// generate a random salt and 1 hour expiry for the signature
+	var signatureSalt [32]byte
+	_, err = rand.Read(signatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	curBlockNum, err := w.ethClient.BlockNumber(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	curBlock, err := w.ethClient.BlockByNumber(context.Background(), new(big.Int).SetUint64(curBlockNum))
+	if err != nil {
+		return nil, err
+	}
+	sigValidForSeconds := int64(60 * 60) // 1 hour
+
+	curTime := new(big.Int).SetUint64(curBlock.Time())
+	signatureExpiry := new(big.Int).Add(curTime, big.NewInt(sigValidForSeconds))
+
+	// params to register operator in delegation manager's operator-avs mapping
+	msgToSign, err := w.elReader.CalculateOperatorAVSRegistrationDigestHash(
+		ctx,
+		operatorAddr,
+		w.serviceManagerAddr,
+		signatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+	operatorSignature, err := crypto.Sign(msgToSign[:], operatorEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	operatorSignature[64] += 27
+	operatorSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: operatorSignature,
+		Salt:      signatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	var operatorKickParams []regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam
+	for i, operatorToKick := range operatorsToKick {
+		operatorKickParams = append(operatorKickParams, regcoord.ISlashingRegistryCoordinatorTypesOperatorKickParam{
+			Operator:     operatorToKick,
+			QuorumNumber: quorumNumbersToKick[i].UnderlyingType(),
+		})
+	}
+	var churnSignatureSalt [32]byte
+	_, err = rand.Read(churnSignatureSalt[:])
+	if err != nil {
+		return nil, err
+	}
+
+	var operatorIdBytes [32]byte
+
+	// `GetOperatorID()` returns the operator ID with `0x` prefix.
+	// We need to remove the prefix and decode the hex string to bytes.
+	operatorId := blsKeyPair.GetPubKeyG1().GetOperatorID()
+	operatorIdNoPrefix := strings.TrimPrefix(operatorId, "0x")
+	operatorIdBytesDecoded, err := hex.DecodeString(operatorIdNoPrefix)
+	if err != nil {
+		return nil, err
+	}
+	copy(operatorIdBytes[:], operatorIdBytesDecoded)
+
+	churnMsgToSign, err := w.registryCoordinator.CalculateOperatorChurnApprovalDigestHash(
+		&bind.CallOpts{Context: ctx},
+		operatorAddr,
+		operatorIdBytes,
+		operatorKickParams,
+		churnSignatureSalt,
+		signatureExpiry,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	churnApprovalSignature, err := crypto.Sign(churnMsgToSign[:], churnApprovalEcdsaPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
+	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
+	// and https://twitter.com/pcaversaccio/status/1671488928262529031
+	churnApprovalSignature[64] += 27
+	churnApproverSignatureWithSaltAndExpiry := regcoord.ISignatureUtilsSignatureWithSaltAndExpiry{
+		Signature: churnApprovalSignature,
+		Salt:      churnSignatureSalt,
+		Expiry:    signatureExpiry,
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := w.registryCoordinator.RegisterOperatorWithChurn(
+		noSendTxOpts,
+		quorumNumbers.UnderlyingType(),
+		socket,
+		pubkeyRegParams,
+		operatorKickParams,
+		churnApproverSignatureWithSaltAndExpiry,
+		operatorSignatureWithSaltAndExpiry,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx with err", err.Error())
+	}
+	w.logger.Info(
+		"successfully registered operator with AVS registry coordinator",
+		"txHash",
+		receipt.TxHash.String(),
+		"avs-service-manager",
+		w.serviceManagerAddr,
+		"operator",
+		operatorAddr,
+		"quorumNumbers",
+		quorumNumbers,
+	)
+	return receipt, nil
 }
 
 // Updates the stakes of a the given `operators` for all the quorums.
@@ -594,6 +758,36 @@ func (w *ChainWriter) SetEjector(
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, utils.WrapError("failed to send SetEjector tx with err", err)
+	}
+	return receipt, nil
+}
+
+// Modifies the multiplier of existing strategies for the given quorum number.
+func (w *ChainWriter) ModifyStrategyParams(
+	ctx context.Context,
+	quorumNumber types.QuorumNum,
+	strategyIndices []*big.Int,
+	multipliers []*big.Int,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	w.logger.Info("modifying strategy params for quorum ", quorumNumber)
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, err
+	}
+	tx, err := w.stakeRegistry.ModifyStrategyParams(
+		noSendTxOpts,
+		quorumNumber.UnderlyingType(),
+		strategyIndices,
+		multipliers,
+	)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send ModifyStrategyParams tx with err", err)
 	}
 	return receipt, nil
 }
