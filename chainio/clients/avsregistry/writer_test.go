@@ -844,7 +844,7 @@ func TestAddStrategies(t *testing.T) {
 
 	// contractAddrs.Erc20MockStrategy is already set as a strategy at index 0
 	strategyParam := stakeregistry.IStakeRegistryTypesStrategyParams{
-		Strategy:   gethcommon.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+		Strategy:   gethcommon.HexToAddress("0x1"),
 		Multiplier: big.NewInt(100),
 	}
 
