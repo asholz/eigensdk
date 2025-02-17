@@ -64,10 +64,10 @@ func TestReaderMethods(t *testing.T) {
 
 			_, _, err = chainReader.GetOperatorsStakeInQuorumsOfOperatorAtBlock(&bind.CallOpts{}, operatorId, 100)
 			require.Error(t, err)
-			require.Equal(
+			require.ErrorContains(
 				t,
-				err.Error(),
-				"Binding error(0) - Error happened while calling operatorStateRetriever.GetOperatorState0: execution reverted: revert: RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId",
+				err,
+				"no bitmap update found for operatorId",
 			)
 		})
 
@@ -93,10 +93,10 @@ func TestReaderMethods(t *testing.T) {
 			quorumNumbers,
 			[]types.OperatorId{operatorId},
 		)
-		require.Contains(
+		require.ErrorContains(
 			t,
-			err.Error(),
-			"Binding error(0) - Error happened while calling operatorStateRetriever.GetCheckSignaturesIndices: execution reverted: revert: RegistryCoordinator.getQuorumBitmapIndexAtBlockNumber: no bitmap update found for operatorId",
+			err,
+			"no bitmap update found for operatorId",
 		)
 	})
 
