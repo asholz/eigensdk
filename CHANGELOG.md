@@ -11,4 +11,17 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 ### Added
 ### Changed
 ### Breaking changes
+* refactor: add custom error struct in elcontracts reader methods by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/477>
+  * The errors now follow this format: `error name (error code) - error description: underlying error`.
+
+    For example, in this code section:
+    ```go
+	distributionRootsLength, err := r.rewardsCoordinator.GetDistributionRootsLength(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getDistributionRootsLength", err)
+		return &big.Int{}, wrappedError
+	}
+    ```
+    The returned error if err is not nil would be `Binding error (0) - Error happened while calling RewardsCoordinator.getDistributionRootsLength: *underlying error*`
+
 ### Removed
