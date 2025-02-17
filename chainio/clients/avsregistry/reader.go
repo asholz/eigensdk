@@ -31,6 +31,10 @@ type Config struct {
 	RegistryCoordinatorAddress    common.Address
 	OperatorStateRetrieverAddress common.Address
 
+	/// Setting this to true will disable the fetching of the AllocationManager address.
+	/// This is useful for older deployments, which don't have the contract deployed.
+	// TODO: remove this once mainnet is updated with the new contracts
+	DontUseAllocationManager bool
 	/// The address of the ServiceManager contract.
 	ServiceManagerAddress common.Address
 }
