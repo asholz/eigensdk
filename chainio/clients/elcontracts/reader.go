@@ -2,7 +2,6 @@ package elcontracts
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -518,7 +517,8 @@ func (r *ChainReader) GetOperatorSetSplit(
 	operatorSet rewardscoordinator.OperatorSet,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	operatorSetSplit, err := r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
@@ -535,7 +535,8 @@ func (r *ChainReader) GetCalculationIntervalSeconds(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	calculationIntervalSeconds, err := r.rewardsCoordinator.CALCULATIONINTERVALSECONDS(&bind.CallOpts{Context: ctx})
@@ -552,7 +553,8 @@ func (r *ChainReader) GetMaxRewardsDuration(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	maxRewardsDuration, err := r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
@@ -569,7 +571,8 @@ func (r *ChainReader) GetMaxRetroactiveLength(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	maxRetroactiveLength, err := r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
@@ -586,7 +589,8 @@ func (r *ChainReader) GetMaxFutureLength(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	maxFutureLength, err := r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
@@ -603,7 +607,8 @@ func (r *ChainReader) GetGenesisRewardsTimestamp(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	genesisRewardsTimestamp, err := r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
@@ -620,7 +625,8 @@ func (r *ChainReader) GetRewardsUpdater(
 	ctx context.Context,
 ) (gethcommon.Address, error) {
 	if r.rewardsCoordinator == nil {
-		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return gethcommon.Address{}, wrappedError
 	}
 
 	rewardsUpdaterAddress, err := r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
@@ -637,7 +643,8 @@ func (r *ChainReader) GetActivationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	activationDelay, err := r.rewardsCoordinator.ActivationDelay(&bind.CallOpts{Context: ctx})
@@ -654,7 +661,8 @@ func (r *ChainReader) GetCurrRewardsCalculationEndTimestamp(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	endTimestamp, err := r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
@@ -671,7 +679,8 @@ func (r *ChainReader) GetDefaultOperatorSplitBips(
 	ctx context.Context,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
 	operatorSplitBips, err := r.rewardsCoordinator.DefaultOperatorSplitBips(&bind.CallOpts{Context: ctx})
@@ -688,7 +697,8 @@ func (r *ChainReader) GetClaimerFor(
 	earner gethcommon.Address,
 ) (gethcommon.Address, error) {
 	if r.rewardsCoordinator == nil {
-		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return gethcommon.Address{}, wrappedError
 	}
 
 	claimer, err := r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
@@ -706,7 +716,8 @@ func (r *ChainReader) GetSubmissionNonce(
 	avs gethcommon.Address,
 ) (*big.Int, error) {
 	if r.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	submissionNonce, err := r.rewardsCoordinator.SubmissionNonce(&bind.CallOpts{Context: ctx}, avs)
@@ -725,7 +736,8 @@ func (r *ChainReader) GetIsAVSRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isSubmissionHash, err := r.rewardsCoordinator.IsAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
@@ -744,7 +756,8 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isSubmissionForAll, err := r.rewardsCoordinator.IsRewardsSubmissionForAllHash(&bind.CallOpts{Context: ctx}, avs, hash)
@@ -762,7 +775,8 @@ func (r *ChainReader) GetIsRewardsForAllSubmitter(
 	submitter gethcommon.Address,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isForAll, err := r.rewardsCoordinator.IsRewardsForAllSubmitter(&bind.CallOpts{Context: ctx}, submitter)
@@ -781,7 +795,8 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllEarnersHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isForAllEarners, err := r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(&bind.CallOpts{Context: ctx}, avs, hash)
@@ -800,7 +815,8 @@ func (r *ChainReader) GetIsOperatorDirectedAVSRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
@@ -819,7 +835,8 @@ func (r *ChainReader) GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(
@@ -869,7 +886,8 @@ func (r *ChainReader) GetEncumberedMagnitude(
 	strategyAddress gethcommon.Address,
 ) (uint64, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 
 	encumberedMagnitude, err := r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
@@ -886,7 +904,8 @@ func (r *ChainReader) GetDeallocationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 
 	deallocationDelay, err := r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
@@ -903,7 +922,8 @@ func (r *ChainReader) GetAllocationConfigurationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 
 	allocationConfigDelay, err := r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
@@ -1036,7 +1056,8 @@ func (r *ChainReader) GetDelegationApproverSaltIsSpent(
 	approverSalt [32]byte,
 ) (bool, error) {
 	if r.delegationManager == nil {
-		return false, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return false, wrappedError
 	}
 
 	isSpent, err := r.delegationManager.DelegationApproverSaltIsSpent(
@@ -1058,7 +1079,8 @@ func (r *ChainReader) GetPendingWithdrawalStatus(
 	withdrawalRoot [32]byte,
 ) (bool, error) {
 	if r.delegationManager == nil {
-		return false, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return false, wrappedError
 	}
 
 	pendingWithdrawals, err := r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
@@ -1076,7 +1098,8 @@ func (r *ChainReader) GetCumulativeWithdrawalsQueued(
 	staker gethcommon.Address,
 ) (*big.Int, error) {
 	if r.delegationManager == nil {
-		return big.NewInt(0), errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return big.NewInt(0), wrappedError // should we return nil instead?
 	}
 
 	cumulativeWithdrawalsQueued, err := r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
