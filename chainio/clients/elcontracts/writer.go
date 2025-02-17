@@ -466,6 +466,8 @@ func (w *ChainWriter) ProcessClaims(
 	return receipt, nil
 }
 
+// Modifies the proportions of slashable stake allocated to an operator set
+// from a list of strategies, for the given `operatorAddress`.
 func (w *ChainWriter) ModifyAllocations(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
