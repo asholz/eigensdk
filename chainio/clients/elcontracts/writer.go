@@ -466,46 +466,6 @@ func (w *ChainWriter) ProcessClaims(
 	return receipt, nil
 }
 
-// Deregisters an operator from each of the operator sets given by
-// `operatorSetIds` for the given AVS, by calling the function
-// `deregisterFromOperatorSets` in the AllocationManager.
-func (w *ChainWriter) ForceDeregisterFromOperatorSets(
-	ctx context.Context,
-	operator gethcommon.Address,
-	avs gethcommon.Address,
-	operatorSetIds []uint32,
-	waitForReceipt bool,
-) (*gethtypes.Receipt, error) {
-	if w.allocationManager == nil {
-		return nil, errors.New("AVSDirectory contract not provided")
-	}
-
-	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
-	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
-	}
-
-	tx, err := w.allocationManager.DeregisterFromOperatorSets(
-		noSendTxOpts,
-		allocationmanager.IAllocationManagerTypesDeregisterParams{
-			Operator:       operator,
-			Avs:            avs,
-			OperatorSetIds: operatorSetIds,
-		},
-	)
-
-	if err != nil {
-		return nil, utils.WrapError("failed to create ForceDeregisterFromOperatorSets tx", err)
-	}
-
-	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
-	}
-
-	return receipt, nil
-}
-
 // Modifies the proportions of slashable stake allocated to an operator set
 // from a list of strategies, for the given `operatorAddress`.
 func (w *ChainWriter) ModifyAllocations(
