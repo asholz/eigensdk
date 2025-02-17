@@ -21,10 +21,10 @@ import (
 )
 
 type Config struct {
-	DelegationManagerAddress    common.Address
-	AvsDirectoryAddress         common.Address
-	RewardsCoordinatorAddress   common.Address
-	PermissionControllerAddress common.Address
+	DelegationManagerAddress    gethcommon.Address
+	AvsDirectoryAddress         gethcommon.Address
+	RewardsCoordinatorAddress   gethcommon.Address
+	PermissionControllerAddress gethcommon.Address
 
 	/// Setting this to true will disable the fetching of the AllocationManager address.
 	/// This is useful for older deployments, which don't have the contract deployed.
