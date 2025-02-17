@@ -307,7 +307,7 @@ func (a *BlsAggregatorService) processNewSignature(
 	blsSignature *bls.Signature,
 	operatorId types.OperatorId,
 ) error {
-	// TODO: move this to a gorouting to avoid sharing state
+	// TODO: move this to a goroutine to avoid sharing state
 	a.taskChansMutex.Lock()
 	taskC, taskInitialized := a.signedTaskRespsCs[taskIndex]
 	a.taskChansMutex.Unlock()
