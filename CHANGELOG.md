@@ -16,7 +16,6 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 
     For example, in this code section:
     ```go
-	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if r.serviceManager == nil {
 		wrappedError := elcontracts.MissingContractError("ServiceManager")
 		return nil, wrappedError
