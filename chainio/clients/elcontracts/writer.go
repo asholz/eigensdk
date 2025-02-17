@@ -2,6 +2,7 @@ package elcontracts
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -18,15 +19,16 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
+	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type Reader interface {
@@ -40,7 +42,7 @@ type Reader interface {
 type ChainWriter struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	avsDirectory         *avsdirectory.ContractAVSDirectory
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
@@ -55,7 +57,7 @@ type ChainWriter struct {
 func NewChainWriter(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
@@ -439,6 +441,34 @@ func (w *ChainWriter) SetOperatorPISplit(
 	return receipt, nil
 }
 
+func (w *ChainWriter) SetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+	split uint16,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	if w.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
+	if err != nil {
+		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
 // Processes the claims given by `claims`.
 // The rewards are transferred to the given `recipientAddress`.
 func (w *ChainWriter) ProcessClaims(
@@ -468,50 +498,6 @@ func (w *ChainWriter) ProcessClaims(
 		wrappedError := TxGenerationError("RewardsCoordinator.processClaims", err)
 		return nil, wrappedError
 	}
-	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
-	if err != nil {
-		wrappedError := SendError(err)
-		return nil, wrappedError
-	}
-
-	return receipt, nil
-}
-
-// Deregisters an operator from each of the operator sets given by
-// `operatorSetIds` for the given AVS, by calling the function
-// `deregisterFromOperatorSets` in the AllocationManager.
-func (w *ChainWriter) ForceDeregisterFromOperatorSets(
-	ctx context.Context,
-	operator gethcommon.Address,
-	avs gethcommon.Address,
-	operatorSetIds []uint32,
-	waitForReceipt bool,
-) (*gethtypes.Receipt, error) {
-	if w.allocationManager == nil {
-		wrappedError := MissingContractError("AllocationManager")
-		return nil, wrappedError
-	}
-
-	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
-	if err != nil {
-		wrappedError := NoSendTxOptsFailedError(err)
-		return nil, wrappedError
-	}
-
-	tx, err := w.allocationManager.DeregisterFromOperatorSets(
-		noSendTxOpts,
-		allocationmanager.IAllocationManagerTypesDeregisterParams{
-			Operator:       operator,
-			Avs:            avs,
-			OperatorSetIds: operatorSetIds,
-		},
-	)
-
-	if err != nil {
-		wrappedError := TxGenerationError("AllocationManager.deregisterFromOperatorSets", err)
-		return nil, wrappedError
-	}
-
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		wrappedError := SendError(err)
@@ -697,7 +683,7 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, wrappedError
 	}
 
-	data, err := abiEncodeRegistrationParams(request.Socket, *pubkeyRegParams)
+	data, err := AbiEncodeRegistrationParams(RegistrationTypeNormal, request.Socket, *pubkeyRegParams)
 	if err != nil {
 		wrappedError := NestedErrorWithDescription("encode registration params", err)
 		return nil, wrappedError
@@ -1010,7 +996,7 @@ func getPubkeyRegistrationParams(
 	ethClient bind.ContractBackend,
 	registryCoordinatorAddr, operatorAddress gethcommon.Address,
 	blsKeyPair *bls.KeyPair,
-) (*regcoord.IBLSApkRegistryPubkeyRegistrationParams, error) {
+) (*regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams, error) {
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
 	if err != nil {
 		wrappedError := BindingError("regcoord.newContractRegistryCoordinator", err)
@@ -1030,7 +1016,7 @@ func getPubkeyRegistrationParams(
 	)
 	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
 	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
-	pubkeyRegParams := regcoord.IBLSApkRegistryPubkeyRegistrationParams{
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
 		PubkeyRegistrationSignature: signedMsg,
 		PubkeyG1:                    G1pubkeyBN254,
 		PubkeyG2:                    G2pubkeyBN254,
@@ -1039,11 +1025,13 @@ func getPubkeyRegistrationParams(
 }
 
 // Returns the ABI encoding of the given registration params.
-func abiEncodeRegistrationParams(
+func AbiEncodeRegistrationParams(
+	registrationType RegistrationType,
 	socket string,
-	pubkeyRegistrationParams regcoord.IBLSApkRegistryPubkeyRegistrationParams,
+	pubkeyRegistrationParams regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams,
 ) ([]byte, error) {
 	registrationParamsType, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "RegistrationType", Type: "uint8"},
 		{Name: "Socket", Type: "string"},
 		{Name: "PubkeyRegParams", Type: "tuple", Components: []abi.ArgumentMarshaling{
 			{Name: "PubkeyRegistrationSignature", Type: "tuple", Components: []abi.ArgumentMarshaling{
@@ -1066,9 +1054,11 @@ func abiEncodeRegistrationParams(
 	}
 
 	registrationParams := struct {
-		Socket          string
-		PubkeyRegParams regcoord.IBLSApkRegistryPubkeyRegistrationParams
+		RegistrationType RegistrationType
+		Socket           string
+		PubkeyRegParams  regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams
 	}{
+		registrationType,
 		socket,
 		pubkeyRegistrationParams,
 	}
