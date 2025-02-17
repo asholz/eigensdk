@@ -70,13 +70,17 @@ func NewBindingsFromConfig(
 			return nil, utils.WrapError("Failed to fetch StrategyManager contract", err)
 		}
 
-		allocationManagerAddr, err = contractDelegationManager.AllocationManager(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch AllocationManager address", err)
-		}
-		contractAllocationManager, err = allocationmanager.NewContractAllocationManager(allocationManagerAddr, client)
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
+		// NOTE: this is a hack to make this version of the SDK work with mainnet
+		// TODO: remove this once mainnet is updated with the new contracts
+		if !cfg.DontUseAllocationManager {
+			allocationManagerAddr, err = contractDelegationManager.AllocationManager(&bind.CallOpts{})
+			if err != nil {
+				return nil, utils.WrapError("Failed to fetch AllocationManager address", err)
+			}
+			contractAllocationManager, err = allocationmanager.NewContractAllocationManager(allocationManagerAddr, client)
+			if err != nil {
+				return nil, utils.WrapError("Failed to fetch AllocationManager contract", err)
+			}
 		}
 	}
 
