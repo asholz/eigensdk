@@ -72,7 +72,7 @@ func NewReaderFromConfig(
 ) (*ChainReader, error) {
 	bindings, err := NewBindingsFromConfig(cfg, client, logger)
 	if err != nil {
-		wrappedError := elcontracts.CreateForNestedError("NewBindingsFromConfig", err)
+		wrappedError := elcontracts.NestedError("NewBindingsFromConfig", err)
 		return nil, wrappedError
 	}
 
@@ -90,13 +90,13 @@ func NewReaderFromConfig(
 // Returns the total quorum count read from the RegistryCoordinator
 func (r *ChainReader) GetQuorumCount(opts *bind.CallOpts) (uint8, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return 0, wrappedError
 	}
 
 	cont, err := r.registryCoordinator.QuorumCount(opts)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.QuorumCount", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.QuorumCount", err)
 		return 0, wrappedError
 	}
 
@@ -114,17 +114,17 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsAtCurrentBlock(
 	}
 	curBlock, err := r.ethClient.BlockNumber(opts.Context)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+		wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 		return nil, wrappedError
 	}
 	if curBlock > math.MaxUint32 {
-		wrappedError := elcontracts.CreateForOtherError("Current block number is too large to fit into an uint32", err)
+		wrappedError := elcontracts.OtherError("Current block number is too large to fit into an uint32", err)
 		return nil, wrappedError
 	}
 
 	operatorStakes, err := r.GetOperatorsStakeInQuorumsAtBlock(opts, quorumNumbers, uint32(curBlock))
 	if err != nil {
-		wrappedError := elcontracts.CreateForNestedError("GetOperatorsStakeInQuorumsAtBlock", err)
+		wrappedError := elcontracts.NestedError("GetOperatorsStakeInQuorumsAtBlock", err)
 		return nil, wrappedError
 	}
 
@@ -139,7 +139,7 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsAtBlock(
 	blockNumber uint32,
 ) ([][]opstateretriever.OperatorStateRetrieverOperator, error) {
 	if r.operatorStateRetriever == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("OperatorStateRetriever")
+		wrappedError := elcontracts.MissingContractError("OperatorStateRetriever")
 		return nil, wrappedError
 	}
 
@@ -149,7 +149,7 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsAtBlock(
 		quorumNumbers.UnderlyingType(),
 		blockNumber)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("operatorStateRetriever.GetOperatorState", err)
+		wrappedError := elcontracts.BindingError("operatorStateRetriever.GetOperatorState", err)
 		return nil, wrappedError
 	}
 	return operatorStakes, nil
@@ -162,7 +162,7 @@ func (r *ChainReader) GetOperatorAddrsInQuorumsAtCurrentBlock(
 	quorumNumbers types.QuorumNums,
 ) ([][]common.Address, error) {
 	if r.operatorStateRetriever == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("OperatorStateRetriever")
+		wrappedError := elcontracts.MissingContractError("OperatorStateRetriever")
 		return nil, wrappedError
 	}
 	if opts.Context == nil {
@@ -170,11 +170,11 @@ func (r *ChainReader) GetOperatorAddrsInQuorumsAtCurrentBlock(
 	}
 	curBlock, err := r.ethClient.BlockNumber(opts.Context)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+		wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 		return nil, wrappedError
 	}
 	if curBlock > math.MaxUint32 {
-		wrappedError := elcontracts.CreateForOtherError("Current block number is too large to fit into an uint32", err)
+		wrappedError := elcontracts.OtherError("Current block number is too large to fit into an uint32", err)
 		return nil, wrappedError
 	}
 	operatorStakes, err := r.operatorStateRetriever.GetOperatorState(
@@ -184,7 +184,7 @@ func (r *ChainReader) GetOperatorAddrsInQuorumsAtCurrentBlock(
 		uint32(curBlock),
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("operatorStateRetriever.GetOperatorState", err)
+		wrappedError := elcontracts.BindingError("operatorStateRetriever.GetOperatorState", err)
 		return nil, wrappedError
 	}
 	var quorumOperatorAddrs [][]common.Address
@@ -208,7 +208,7 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsOfOperatorAtBlock(
 	blockNumber uint32,
 ) (types.QuorumNums, [][]opstateretriever.OperatorStateRetrieverOperator, error) {
 	if r.operatorStateRetriever == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("OperatorStateRetriever")
+		wrappedError := elcontracts.MissingContractError("OperatorStateRetriever")
 		return nil, nil, wrappedError
 	}
 
@@ -218,7 +218,7 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsOfOperatorAtBlock(
 		operatorId,
 		blockNumber)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("operatorStateRetriever.GetOperatorState0", err)
+		wrappedError := elcontracts.BindingError("operatorStateRetriever.GetOperatorState0", err)
 		return nil, nil, wrappedError
 	}
 	quorums := types.BitmapToQuorumIds(quorumBitmap)
@@ -236,17 +236,17 @@ func (r *ChainReader) GetOperatorsStakeInQuorumsOfOperatorAtCurrentBlock(
 	}
 	curBlock, err := r.ethClient.BlockNumber(opts.Context)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+		wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 		return nil, nil, wrappedError
 	}
 	if curBlock > math.MaxUint32 {
-		wrappedError := elcontracts.CreateForOtherError("Current block number is too large to fit into an uint32", err)
+		wrappedError := elcontracts.OtherError("Current block number is too large to fit into an uint32", err)
 		return nil, nil, wrappedError
 	}
 	opts.BlockNumber = big.NewInt(int64(curBlock))
 	quorums, operatorsStake, err := r.GetOperatorsStakeInQuorumsOfOperatorAtBlock(opts, operatorId, uint32(curBlock))
 	if err != nil {
-		wrappedError := elcontracts.CreateForNestedError("GetOperatorsStakeInQuorumsOfOperatorAtBlock", err)
+		wrappedError := elcontracts.NestedError("GetOperatorsStakeInQuorumsOfOperatorAtBlock", err)
 		return nil, nil, wrappedError
 	}
 
@@ -263,12 +263,12 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 	operatorId types.OperatorId,
 ) (map[types.QuorumNum]types.StakeAmount, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return nil, wrappedError
 	}
 
 	if r.stakeRegistry == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("StakeRegistry")
+		wrappedError := elcontracts.MissingContractError("StakeRegistry")
 		return nil, wrappedError
 	}
 
@@ -281,7 +281,7 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 		}
 		latestBlock, err := r.ethClient.BlockNumber(opts.Context)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+			wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 			return nil, wrappedError
 		}
 		opts.BlockNumber = big.NewInt(int64(latestBlock))
@@ -289,7 +289,7 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 
 	quorumBitmap, err := r.registryCoordinator.GetCurrentQuorumBitmap(opts, operatorId)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.GetCurrentQuorumBitmap", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.GetCurrentQuorumBitmap", err)
 		return nil, wrappedError
 	}
 	quorums := types.BitmapToQuorumIds(quorumBitmap)
@@ -301,7 +301,7 @@ func (r *ChainReader) GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
 			uint8(quorum),
 		)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("stakeRegistry.GetCurrentStake", err)
+			wrappedError := elcontracts.BindingError("stakeRegistry.GetCurrentStake", err)
 			return nil, wrappedError
 		}
 		quorumStakes[quorum] = stake
@@ -318,7 +318,7 @@ func (r *ChainReader) GetCheckSignaturesIndices(
 	nonSignerOperatorIds []types.OperatorId,
 ) (opstateretriever.OperatorStateRetrieverCheckSignaturesIndices, error) {
 	if r.operatorStateRetriever == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("OperatorStateRetriever")
+		wrappedError := elcontracts.MissingContractError("OperatorStateRetriever")
 		return opstateretriever.OperatorStateRetrieverCheckSignaturesIndices{}, wrappedError
 	}
 
@@ -334,7 +334,7 @@ func (r *ChainReader) GetCheckSignaturesIndices(
 		nonSignerOperatorIdsBytes,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("operatorStateRetriever.GetCheckSignaturesIndices", err)
+		wrappedError := elcontracts.BindingError("operatorStateRetriever.GetCheckSignaturesIndices", err)
 		return opstateretriever.OperatorStateRetrieverCheckSignaturesIndices{}, wrappedError
 	}
 	return checkSignatureIndices, nil
@@ -346,7 +346,7 @@ func (r *ChainReader) GetOperatorId(
 	operatorAddress common.Address,
 ) ([32]byte, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return [32]byte{}, wrappedError
 	}
 
@@ -355,7 +355,7 @@ func (r *ChainReader) GetOperatorId(
 		operatorAddress,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.GetOperatorId", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.GetOperatorId", err)
 		return [32]byte{}, wrappedError
 	}
 	return operatorId, nil
@@ -367,7 +367,7 @@ func (r *ChainReader) GetOperatorFromId(
 	operatorId types.OperatorId,
 ) (common.Address, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return common.Address{}, wrappedError
 	}
 
@@ -376,7 +376,7 @@ func (r *ChainReader) GetOperatorFromId(
 		operatorId,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.GetOperatorFromId", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.GetOperatorFromId", err)
 		return common.Address{}, wrappedError
 	}
 	return operatorAddress, nil
@@ -390,12 +390,12 @@ func (r *ChainReader) QueryRegistrationDetail(
 ) ([]bool, error) {
 	operatorId, err := r.GetOperatorId(opts, operatorAddress)
 	if err != nil {
-		wrappedError := elcontracts.CreateForNestedError("GetOperatorId", err)
+		wrappedError := elcontracts.NestedError("GetOperatorId", err)
 		return nil, wrappedError
 	}
 	value, err := r.registryCoordinator.GetCurrentQuorumBitmap(opts, operatorId)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.GetCurrentQuorumBitmap", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.GetCurrentQuorumBitmap", err)
 		return nil, wrappedError
 	}
 	numBits := value.BitLen()
@@ -406,7 +406,7 @@ func (r *ChainReader) QueryRegistrationDetail(
 	if len(quorums) == 0 {
 		numQuorums, err := r.GetQuorumCount(opts)
 		if err != nil {
-			wrappedError := elcontracts.CreateForNestedError("GetQuorumCount", err)
+			wrappedError := elcontracts.NestedError("GetQuorumCount", err)
 			return nil, wrappedError
 		}
 		for i := uint8(0); i < numQuorums; i++ {
@@ -422,13 +422,13 @@ func (r *ChainReader) IsOperatorRegistered(
 	operatorAddress common.Address,
 ) (bool, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return false, wrappedError
 	}
 
 	operatorStatus, err := r.registryCoordinator.GetOperatorStatus(opts, operatorAddress)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.GetOperatorStatus", err)
+		wrappedError := elcontracts.BindingError("registryCoordinator.GetOperatorStatus", err)
 		return false, wrappedError
 	}
 
@@ -448,7 +448,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorPubKeys(
 ) ([]types.OperatorAddr, []types.OperatorPubkeys, error) {
 	blsApkRegistryAbi, err := apkreg.ContractBLSApkRegistryMetaData.GetAbi()
 	if err != nil {
-		wrappedError := elcontracts.CreateForOtherError("Failed to get bls apk registry ABI", err)
+		wrappedError := elcontracts.OtherError("Failed to get bls apk registry ABI", err)
 		return nil, nil, wrappedError
 	}
 
@@ -458,7 +458,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorPubKeys(
 	if stopBlock == nil {
 		curBlockNum, err := r.ethClient.BlockNumber(ctx)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+			wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 			return nil, nil, wrappedError
 		}
 		stopBlock = new(big.Int).SetUint64(curBlockNum)
@@ -491,7 +491,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorPubKeys(
 
 		logs, err := r.ethClient.FilterLogs(ctx, query)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("ethClient.FilterLogs", err)
+			wrappedError := elcontracts.BindingError("ethClient.FilterLogs", err)
 			return nil, nil, wrappedError
 		}
 		r.logger.Debug(
@@ -511,7 +511,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorPubKeys(
 
 			event, err := blsApkRegistryAbi.Unpack("NewPubkeyRegistration", vLog.Data)
 			if err != nil {
-				wrappedError := elcontracts.CreateForOtherError("Failed to unpack event data", err)
+				wrappedError := elcontracts.OtherError("Failed to unpack event data", err)
 				return nil, nil, wrappedError
 			}
 
@@ -553,7 +553,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 	blockRange *big.Int,
 ) (map[types.OperatorId]types.Socket, error) {
 	if r.registryCoordinator == nil {
-		wrappedError := elcontracts.CreateErrorForMissingContract("RegistryCoordinator")
+		wrappedError := elcontracts.MissingContractError("RegistryCoordinator")
 		return nil, wrappedError
 	}
 
@@ -563,7 +563,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 	if stopBlock == nil {
 		curBlockNum, err := r.ethClient.BlockNumber(ctx)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+			wrappedError := elcontracts.BindingError("ethClient.BlockNumber", err)
 			return nil, wrappedError
 		}
 		stopBlock = new(big.Int).SetUint64(curBlockNum)
@@ -593,7 +593,7 @@ func (r *ChainReader) QueryExistingRegisteredOperatorSockets(
 		}
 		socketUpdates, err := r.registryCoordinator.FilterOperatorSocketUpdate(filterOpts, nil)
 		if err != nil {
-			wrappedError := elcontracts.CreateForBindingError("registryCoordinator.FilterOperatorSocketUpdate", err)
+			wrappedError := elcontracts.BindingError("registryCoordinator.FilterOperatorSocketUpdate", err)
 			return nil, wrappedError
 		}
 
