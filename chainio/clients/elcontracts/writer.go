@@ -19,10 +19,10 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
@@ -42,7 +42,7 @@ type Reader interface {
 type ChainWriter struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	avsDirectory         *avsdirectory.ContractAVSDirectory
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
@@ -57,7 +57,7 @@ type ChainWriter struct {
 func NewChainWriter(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
@@ -458,46 +458,6 @@ func (w *ChainWriter) ProcessClaims(
 	if err != nil {
 		return nil, utils.WrapError("failed to create ProcessClaims tx", err)
 	}
-	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
-	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
-	}
-
-	return receipt, nil
-}
-
-// Deregisters an operator from each of the operator sets given by
-// `operatorSetIds` for the given AVS, by calling the function
-// `deregisterFromOperatorSets` in the AllocationManager.
-func (w *ChainWriter) ForceDeregisterFromOperatorSets(
-	ctx context.Context,
-	operator gethcommon.Address,
-	avs gethcommon.Address,
-	operatorSetIds []uint32,
-	waitForReceipt bool,
-) (*gethtypes.Receipt, error) {
-	if w.allocationManager == nil {
-		return nil, errors.New("AVSDirectory contract not provided")
-	}
-
-	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
-	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
-	}
-
-	tx, err := w.allocationManager.DeregisterFromOperatorSets(
-		noSendTxOpts,
-		allocationmanager.IAllocationManagerTypesDeregisterParams{
-			Operator:       operator,
-			Avs:            avs,
-			OperatorSetIds: operatorSetIds,
-		},
-	)
-
-	if err != nil {
-		return nil, utils.WrapError("failed to create ForceDeregisterFromOperatorSets tx", err)
-	}
-
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
 		return nil, utils.WrapError("failed to send tx", err)
