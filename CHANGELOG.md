@@ -11,4 +11,17 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 ### Added
 ### Changed
 ### Breaking changes
+* refactor: add custom error struct in avs registry writer methods by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/489>
+  * The errors now follow this format: `error name (error code) - error description: underlying error`.
+
+    For example, in this code section:
+    ```go
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
+	}
+    ```
+    The returned error if err is not nil would be `Other errors (3) - Failed to get no send tx opts: *underlying error*`
+
 ### Removed
