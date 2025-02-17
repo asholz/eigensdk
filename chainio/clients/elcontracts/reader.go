@@ -521,7 +521,11 @@ func (r *ChainReader) GetOperatorSetSplit(
 		return 0, wrappedError
 	}
 
-	operatorSetSplit, err := r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
+	operatorSetSplit, err := r.rewardsCoordinator.GetOperatorSetSplit(
+		&bind.CallOpts{Context: ctx},
+		operator,
+		operatorSet,
+	)
 	if err != nil {
 		wrappedError := BindingError("RewardsCoordinator.getOperatorSetSplit", err)
 		return 0, wrappedError
@@ -760,7 +764,11 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllHash(
 		return false, wrappedError
 	}
 
-	isSubmissionForAll, err := r.rewardsCoordinator.IsRewardsSubmissionForAllHash(&bind.CallOpts{Context: ctx}, avs, hash)
+	isSubmissionForAll, err := r.rewardsCoordinator.IsRewardsSubmissionForAllHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
 	if err != nil {
 		wrappedError := BindingError("RewardsCoordinator.isRewardsSubmissionForAllHash", err)
 		return false, wrappedError
@@ -799,7 +807,11 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllEarnersHash(
 		return false, wrappedError
 	}
 
-	isForAllEarners, err := r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(&bind.CallOpts{Context: ctx}, avs, hash)
+	isForAllEarners, err := r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
 	if err != nil {
 		wrappedError := BindingError("RewardsCoordinator.isRewardsSubmissionForAllEarnersHash", err)
 		return false, wrappedError
@@ -819,7 +831,11 @@ func (r *ChainReader) GetIsOperatorDirectedAVSRewardsSubmissionHash(
 		return false, wrappedError
 	}
 
-	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
 	if err != nil {
 		wrappedError := BindingError("RewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash", err)
 		return false, wrappedError
@@ -890,7 +906,11 @@ func (r *ChainReader) GetEncumberedMagnitude(
 		return 0, wrappedError
 	}
 
-	encumberedMagnitude, err := r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+	encumberedMagnitude, err := r.allocationManager.EncumberedMagnitude(
+		&bind.CallOpts{Context: ctx},
+		operatorAddress,
+		strategyAddress,
+	)
 	if err != nil {
 		wrappedError := BindingError("AllocationManager.encumberedMagnitude", err)
 		return 0, wrappedError
@@ -1102,7 +1122,10 @@ func (r *ChainReader) GetCumulativeWithdrawalsQueued(
 		return big.NewInt(0), wrappedError // should we return nil instead?
 	}
 
-	cumulativeWithdrawalsQueued, err := r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
+	cumulativeWithdrawalsQueued, err := r.delegationManager.CumulativeWithdrawalsQueued(
+		&bind.CallOpts{Context: ctx},
+		staker,
+	)
 	if err != nil {
 		wrappedError := BindingError("DelegationManager.cumulativeWithdrawalsQueued", err)
 		return big.NewInt(0), wrappedError
