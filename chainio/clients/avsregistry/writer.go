@@ -400,7 +400,10 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		signatureExpiry,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForBindingError("RegistryCoordinator.calculateOperatorChurnApprovalDigestHash", err)
+		wrappedError := elcontracts.CreateForBindingError(
+			"RegistryCoordinator.calculateOperatorChurnApprovalDigestHash",
+			err,
+		)
 		return nil, wrappedError
 	}
 
@@ -663,7 +666,10 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 		strategyParams,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.createTotalDelegatedStakeQuorum", err)
+		wrappedError := elcontracts.CreateForTxGenerationError(
+			"RegistryCoordinator.createTotalDelegatedStakeQuorum",
+			err,
+		)
 		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
@@ -1093,7 +1099,10 @@ func (w *ChainWriter) CreateOperatorDirectedAVSRewardsSubmission(
 		operatorDirectedRewardsSubmissions,
 	)
 	if err != nil {
-		wrappedError := elcontracts.CreateForTxGenerationError("ServiceManager.createOperatorDirectedAVSRewardsSubmission", err)
+		wrappedError := elcontracts.CreateForTxGenerationError(
+			"ServiceManager.createOperatorDirectedAVSRewardsSubmission",
+			err,
+		)
 		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
