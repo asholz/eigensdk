@@ -339,7 +339,8 @@ func (r *ChainReader) WeightOfOperatorForQuorum(
 
 	stake, err := r.stakeRegistry.WeightOfOperatorForQuorum(opts, quorumNumber, operatorAddr)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get operator stake", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.weightOfOperatorForQuorum", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -356,7 +357,8 @@ func (r *ChainReader) StrategyParamsLength(
 
 	length, err := r.stakeRegistry.StrategyParamsLength(opts, quorumNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get strategy params length", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.strategyParamsLength", err)
+		return nil, wrappedError
 	}
 	return length, nil
 }
@@ -374,10 +376,8 @@ func (r *ChainReader) StrategyParamsByIndex(
 
 	param, err := r.stakeRegistry.StrategyParamsByIndex(opts, quorumNumber, index)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError(
-			"Failed to get strategy params by index",
-			err,
-		)
+		wrappedError := elcontracts.BindingError("StakeRegistry.strategyParamsByIndex", err)
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, wrappedError
 	}
 	return param, nil
 }
@@ -395,7 +395,8 @@ func (r *ChainReader) GetStakeHistoryLength(
 
 	length, err := r.stakeRegistry.GetStakeHistoryLength(opts, operatorId, quorumNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get stake history length", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeHistoryLength", err)
+		return nil, wrappedError
 	}
 	return length, nil
 }
@@ -414,7 +415,8 @@ func (r *ChainReader) GetStakeHistory(
 
 	stakeHistory, err := r.stakeRegistry.GetStakeHistory(opts, operatorId, quorumNumber)
 	if err != nil {
-		return []stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError("Failed to get stake history", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeHistory", err)
+		return []stakeregistry.IStakeRegistryTypesStakeUpdate{}, wrappedError
 	}
 	return stakeHistory, nil
 }
@@ -432,7 +434,8 @@ func (r *ChainReader) GetLatestStakeUpdate(
 
 	stakeUpdate, err := r.stakeRegistry.GetLatestStakeUpdate(opts, operatorId, quorumNumber)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError("Failed to get latest stake update", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getLatestStakeUpdate", err)
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, wrappedError
 	}
 	return stakeUpdate, nil
 }
@@ -452,10 +455,8 @@ func (r *ChainReader) GetStakeUpdateAtIndex(
 
 	stakeUpdate, err := r.stakeRegistry.GetStakeUpdateAtIndex(opts, quorumNumber, operatorId, index)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError(
-			"Failed to get stake update at index",
-			err,
-		)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeUpdateAtIndex", err)
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, wrappedError
 	}
 	return stakeUpdate, nil
 }
@@ -474,7 +475,8 @@ func (r *ChainReader) GetStakeAtBlockNumber(
 
 	stake, err := r.stakeRegistry.GetStakeAtBlockNumber(opts, operatorId, quorumNumber, blockNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get stake at block number", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeAtBlockNumber", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -498,7 +500,8 @@ func (r *ChainReader) GetStakeUpdateIndexAtBlockNumber(
 		blockNumber,
 	)
 	if err != nil {
-		return 0, utils.WrapError("Failed to get stake update index at block number", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeUpdateIndexAtBlockNumber", err)
+		return 0, wrappedError
 	}
 	return index, nil
 }
@@ -526,7 +529,8 @@ func (r *ChainReader) GetStakeAtBlockNumberAndIndex(
 		index,
 	)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get stake at block number and index", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getStakeAtBlockNumberAndIndex", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -543,7 +547,8 @@ func (r *ChainReader) GetTotalStakeHistoryLength(
 
 	length, err := r.stakeRegistry.GetTotalStakeHistoryLength(opts, quorumNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get total stake history length", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getTotalStakeHistoryLength", err)
+		return nil, wrappedError
 	}
 
 	return length, nil
@@ -592,7 +597,8 @@ func (r *ChainReader) GetCurrentTotalStake(
 
 	stake, err := r.stakeRegistry.GetCurrentTotalStake(opts, quorumNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get current total stake", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getCurrentTotalStake", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -609,10 +615,8 @@ func (r *ChainReader) GetTotalStakeUpdateAtIndex(
 
 	stakeUpdate, err := r.stakeRegistry.GetTotalStakeUpdateAtIndex(opts, quorumNumber, index)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, utils.WrapError(
-			"Failed to get total stake update at index",
-			err,
-		)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getTotalStakeUpdateAtIndex", err)
+		return stakeregistry.IStakeRegistryTypesStakeUpdate{}, wrappedError
 	}
 	return stakeUpdate, nil
 }
@@ -637,7 +641,8 @@ func (r *ChainReader) GetTotalStakeAtBlockNumberFromIndex(
 		index,
 	)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get total stake at block number from index", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getTotalStakeAtBlockNumberFromIndex", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -655,7 +660,8 @@ func (r *ChainReader) GetTotalStakeIndicesAtBlockNumber(
 
 	indices, err := r.stakeRegistry.GetTotalStakeIndicesAtBlockNumber(opts, blockNumber, quorumNumbers.UnderlyingType())
 	if err != nil {
-		return []uint32{}, utils.WrapError("Failed to get total stake indices at block number", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.getTotalStakeIndicesAtBlockNumber", err)
+		return []uint32{}, wrappedError
 	}
 	return indices, nil
 }
@@ -671,7 +677,8 @@ func (r *ChainReader) GetMinimumStakeForQuorum(
 
 	stake, err := r.stakeRegistry.MinimumStakeForQuorum(opts, quorumNumber)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get minimum stake for quorum", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.minimumStakeForQuorum", err)
+		return nil, wrappedError
 	}
 	return stake, nil
 }
@@ -687,7 +694,8 @@ func (r *ChainReader) GetStrategyParamsAtIndex(
 	}
 	params, err := r.stakeRegistry.StrategyParams(opts, quorumNumber, index)
 	if err != nil {
-		return stakeregistry.IStakeRegistryTypesStrategyParams{}, utils.WrapError("Failed to get strategy params", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.strategyParams", err)
+		return stakeregistry.IStakeRegistryTypesStrategyParams{}, wrappedError
 	}
 	return params, nil
 }
@@ -704,7 +712,8 @@ func (r *ChainReader) GetStrategyPerQuorumAtIndex(
 
 	strategy, err := r.stakeRegistry.StrategiesPerQuorum(opts, quorumNumber, index)
 	if err != nil {
-		return common.Address{}, utils.WrapError("Failed to get strategies per quorum", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.strategiesPerQuorum", err)
+		return common.Address{}, wrappedError
 	}
 	return strategy, nil
 }
@@ -719,7 +728,8 @@ func (r *ChainReader) GetRestakeableStrategies(opts *bind.CallOpts) ([]common.Ad
 
 	strategies, err := r.serviceManager.GetRestakeableStrategies(opts)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get restakeable strategies", err)
+		wrappedError := elcontracts.BindingError("ServiceManager.getRestakeableStrategies", err)
+		return nil, wrappedError
 	}
 	if len(strategies) == 0 {
 		return strategies, nil
@@ -740,7 +750,8 @@ func (r *ChainReader) GetOperatorRestakedStrategies(
 
 	strategies, err := r.serviceManager.GetOperatorRestakedStrategies(opts, operator)
 	if err != nil {
-		return nil, utils.WrapError("Failed to get operator restaked strategies", err)
+		wrappedError := elcontracts.BindingError("ServiceManager.getOperatorRestakedStrategies", err)
+		return nil, wrappedError
 	}
 	return removeDuplicateStrategies(strategies), nil
 }
@@ -756,7 +767,8 @@ func (r *ChainReader) GetStakeTypePerQuorum(
 
 	stakeType, err := r.stakeRegistry.StakeTypePerQuorum(opts, quorumNumber)
 	if err != nil {
-		return 0, utils.WrapError("Failed to get stake type per quorum", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.stakeTypePerQuorum", err)
+		return 0, wrappedError
 	}
 	return stakeType, nil
 }
@@ -772,7 +784,8 @@ func (r *ChainReader) GetSlashableStakeLookAheadPerQuorum(
 
 	lookAhead, err := r.stakeRegistry.SlashableStakeLookAheadPerQuorum(opts, quorumNumber)
 	if err != nil {
-		return 0, utils.WrapError("Failed to get slashable stake look ahead per quorum", err)
+		wrappedError := elcontracts.BindingError("StakeRegistry.slashableStakeLookAheadPerQuorum", err)
+		return 0, wrappedError
 	}
 	return lookAhead, nil
 }
@@ -905,7 +918,8 @@ func (r *ChainReader) GetOperatorIdFromOperatorAddress(
 
 	operatorPubkeyHash, err := r.blsApkRegistry.OperatorToPubkeyHash(opts, operatorAddress)
 	if err != nil {
-		return [32]byte{}, utils.WrapError("Failed to get operator pubkey hash", err)
+		wrappedError := elcontracts.BindingError("BLSApkRegistry.operatorToPubkeyHash", err)
+		return [32]byte{}, wrappedError
 	}
 	return operatorPubkeyHash, nil
 }
@@ -922,7 +936,8 @@ func (r *ChainReader) GetOperatorAddressFromOperatorId(
 
 	operatorAddress, err := r.blsApkRegistry.PubkeyHashToOperator(opts, operatorPubkeyHash)
 	if err != nil {
-		return common.Address{}, utils.WrapError("Failed to get operator address", err)
+		wrappedError := elcontracts.BindingError("BLSApkRegistry.pubkeyHashToOperator", err)
+		return common.Address{}, wrappedError
 	}
 	return operatorAddress, nil
 }
@@ -939,7 +954,8 @@ func (r *ChainReader) GetPubkeyFromOperatorAddress(
 
 	operatorPubkey, err := r.blsApkRegistry.OperatorToPubkey(opts, operatorAddress)
 	if err != nil {
-		return bls.G1Point{}, utils.WrapError("Failed to get operator pubkey", err)
+		wrappedError := elcontracts.BindingError("BLSApkRegistry.operatorToPubkey", err)
+		return bls.G1Point{}, wrappedError
 	}
 
 	operatorPubkeyG1 := bls.NewG1Point(operatorPubkey.X, operatorPubkey.Y)
@@ -960,7 +976,8 @@ func (r *ChainReader) GetApkUpdate(
 
 	update, err := r.blsApkRegistry.ApkHistory(opts, quorumNumber, index)
 	if err != nil {
-		return apkreg.IBLSApkRegistryTypesApkUpdate{}, utils.WrapError("Failed to get apk history", err)
+		wrappedError := elcontracts.BindingError("BLSApkRegistry.apkHistory", err)
+		return apkreg.IBLSApkRegistryTypesApkUpdate{}, wrappedError
 	}
 
 	apkUpdate := apkreg.IBLSApkRegistryTypesApkUpdate{
@@ -984,7 +1001,8 @@ func (r *ChainReader) GetCurrentApk(
 
 	apk, err := r.blsApkRegistry.CurrentApk(opts, quorumNumber)
 	if err != nil {
-		return bls.G1Point{}, utils.WrapError("Failed to get current apk", err)
+		wrappedError := elcontracts.BindingError("BLSApkRegistry.currentApk", err)
+		return bls.G1Point{}, wrappedError
 	}
 
 	apkG1 := bls.NewG1Point(apk.X, apk.Y)
