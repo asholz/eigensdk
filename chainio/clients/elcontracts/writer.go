@@ -2,7 +2,6 @@ package elcontracts
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,7 +27,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type Reader interface {
@@ -449,21 +447,25 @@ func (w *ChainWriter) SetOperatorSetSplit(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
 	if err != nil {
-		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.setOperatorSetSplit", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
