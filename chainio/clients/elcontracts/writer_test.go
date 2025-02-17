@@ -1533,6 +1533,19 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 	})
 
+	t.Run("set operator set split", func(t *testing.T) {
+		receipt, err := chainWriter.SetOperatorSetSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			rewardscoordinator.OperatorSet{},
+			uint16(1),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
+	})
+
 	t.Run("modify allocations", func(t *testing.T) {
 		strategyAddr := contractAddrs.Erc20MockStrategy
 		avsAddr := anvilFirstAddr
