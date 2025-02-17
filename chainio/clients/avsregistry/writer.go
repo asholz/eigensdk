@@ -25,7 +25,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type eLReader interface {
@@ -301,7 +300,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 	operatorAddr := crypto.PubkeyToAddress(operatorEcdsaPrivateKey.PublicKey)
 	g1HashedMsgToSign, err := w.registryCoordinator.PubkeyRegistrationMessageHash(&bind.CallOpts{}, operatorAddr)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("registryCoordinator.PubkeyRegistrationMessageHash", err)
+		return nil, wrappedError
 	}
 	signedMsg := chainioutils.ConvertToBN254G1Point(
 		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
@@ -318,16 +318,19 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 	var signatureSalt [32]byte
 	_, err = rand.Read(signatureSalt[:])
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForOtherError("Failed to generate a random salt for signature", err)
+		return nil, wrappedError
 	}
 
 	curBlockNum, err := w.ethClient.BlockNumber(context.Background())
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("ethClient.BlockNumber", err)
+		return nil, wrappedError
 	}
 	curBlock, err := w.ethClient.BlockByNumber(context.Background(), new(big.Int).SetUint64(curBlockNum))
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("ethClient.BlockByNumber", err)
+		return nil, wrappedError
 	}
 	sigValidForSeconds := int64(60 * 60) // 1 hour
 
@@ -343,11 +346,13 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		signatureExpiry,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("elReader.CalculateOperatorAVSRegistrationDigestHash", err)
+		return nil, wrappedError
 	}
 	operatorSignature, err := crypto.Sign(msgToSign[:], operatorEcdsaPrivateKey)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForOtherError("Failed to sign msg with private key", err)
+		return nil, wrappedError
 	}
 	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
 	// see https://github.com/ethereum/go-ethereum/issues/28757#issuecomment-1874525854
@@ -369,7 +374,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 	var churnSignatureSalt [32]byte
 	_, err = rand.Read(churnSignatureSalt[:])
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForOtherError("Failed to generate a random salt for churn signature", err)
+		return nil, wrappedError
 	}
 
 	var operatorIdBytes [32]byte
@@ -380,7 +386,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 	operatorIdNoPrefix := strings.TrimPrefix(operatorId, "0x")
 	operatorIdBytesDecoded, err := hex.DecodeString(operatorIdNoPrefix)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForOtherError("Failed to get the operator id", err)
+		return nil, wrappedError
 	}
 	copy(operatorIdBytes[:], operatorIdBytesDecoded)
 
@@ -393,12 +400,14 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		signatureExpiry,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("RegistryCoordinator.calculateOperatorChurnApprovalDigestHash", err)
+		return nil, wrappedError
 	}
 
 	churnApprovalSignature, err := crypto.Sign(churnMsgToSign[:], churnApprovalEcdsaPrivateKey)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForOtherError("Failed to sign churn msg with private key", err)
+		return nil, wrappedError
 	}
 
 	// the crypto library is low level and deals with 0/1 v values, whereas ethereum expects 27/28, so we add 27
@@ -413,7 +422,8 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.registryCoordinator.RegisterOperatorWithChurn(
@@ -425,13 +435,15 @@ func (w *ChainWriter) RegisterOperatorWithChurn(
 		churnApproverSignatureWithSaltAndExpiry,
 		operatorSignatureWithSaltAndExpiry,
 	)
-
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForBindingError("RegistryCoordinator.registerOperatorWithChurn", err)
+		return nil, wrappedError
 	}
+
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx with err", err.Error())
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	w.logger.Info(
 		"successfully registered operator with AVS registry coordinator",
@@ -548,7 +560,8 @@ func (w *ChainWriter) SetRewardsInitiator(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	// TODO: create ServiceManager binding in `NewChainWriter`
@@ -558,15 +571,18 @@ func (w *ChainWriter) SetRewardsInitiator(
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+		wrappedError := elcontracts.CreateForOtherError("Failed to create ServiceManager contract binding", err)
+		return nil, wrappedError
 	}
 	tx, err := serviceManagerContract.SetRewardsInitiator(noSendTxOpts, rewardsInitiatorAddr)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("ServiceManager.setRewardsInitiator", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetRewardsInitiator tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -582,15 +598,18 @@ func (w *ChainWriter) SetSlashableStakeLookahead(
 ) (*gethtypes.Receipt, error) {
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.stakeRegistry.SetSlashableStakeLookahead(noSendTxOpts, quorumNumber, lookAheadPeriod)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("StakeRegistry.setSlashableStakeLookahead", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetSlashableStakeLookahead tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -603,15 +622,18 @@ func (w *ChainWriter) SetMinimumStakeForQuorum(
 ) (*gethtypes.Receipt, error) {
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.stakeRegistry.SetMinimumStakeForQuorum(noSendTxOpts, quorumNumber, minimumStake)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("StakeRegistry.SetMinimumStakeForQuorum", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetMinimumStake tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -630,7 +652,8 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.registryCoordinator.CreateTotalDelegatedStakeQuorum(
@@ -640,11 +663,13 @@ func (w *ChainWriter) CreateTotalDelegatedStakeQuorum(
 		strategyParams,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.createTotalDelegatedStakeQuorum", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateTotalDelegatedStakeQuorum tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -666,7 +691,8 @@ func (w *ChainWriter) CreateSlashableStakeQuorum(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.registryCoordinator.CreateSlashableStakeQuorum(
@@ -677,11 +703,13 @@ func (w *ChainWriter) CreateSlashableStakeQuorum(
 		lookAheadPeriod,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.createSlashableStakeQuorum", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateSlashableStakeQuorum tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -698,15 +726,18 @@ func (w *ChainWriter) EjectOperator(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.EjectOperator(noSendTxOpts, operatorAddress, quorumNumbers.UnderlyingType())
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.ejectOperator", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send EjectOperator tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -724,15 +755,18 @@ func (w *ChainWriter) SetOperatorSetParams(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.SetOperatorSetParams(noSendTxOpts, quorumNumber, operatorSetParams)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.setOperatorSetParams", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetOperatorSetParams tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -748,15 +782,18 @@ func (w *ChainWriter) SetChurnApprover(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.SetChurnApprover(noSendTxOpts, churnApproverAddress)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.setChurnApprover", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetChurnApprover tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -772,15 +809,18 @@ func (w *ChainWriter) SetEjector(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.SetEjector(noSendTxOpts, ejectorAddress)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.setEjector", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjector tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -797,7 +837,8 @@ func (w *ChainWriter) ModifyStrategyParams(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.stakeRegistry.ModifyStrategyParams(
 		noSendTxOpts,
@@ -806,11 +847,13 @@ func (w *ChainWriter) ModifyStrategyParams(
 		multipliers,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.modifyStrategyParams", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send ModifyStrategyParams tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -826,15 +869,18 @@ func (w *ChainWriter) SetAccountIdentifier(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.SetAccountIdentifier(noSendTxOpts, accountIdentifierAddress)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.setAccountIdentifier", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetAccountIdentifier tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -850,15 +896,18 @@ func (w *ChainWriter) SetEjectionCooldown(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.registryCoordinator.SetEjectionCooldown(noSendTxOpts, ejectionCooldown)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("RegistryCoordinator.setEjectionCooldown", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send SetEjectionCooldown tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -874,15 +923,18 @@ func (w *ChainWriter) AddStrategies(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.stakeRegistry.AddStrategies(noSendTxOpts, quorumNumber.UnderlyingType(), strategyParams)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("StakeRegistry.addStrategies", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send AddStrategies tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -902,20 +954,24 @@ func (w *ChainWriter) UpdateAVSMetadataURI(
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+		wrappedError := elcontracts.CreateForOtherError("Failed to create ServiceManager contract binding", err)
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := serviceManagerContract.UpdateAVSMetadataURI(noSendTxOpts, metadataUri)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("ServiceManager.updateAVSMetadataURI", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send updateAVSMetadataURI tx", err.Error())
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -931,17 +987,20 @@ func (w *ChainWriter) RemoveStrategies(
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.stakeRegistry.RemoveStrategies(noSendTxOpts, quorumNumber.UnderlyingType(), indicesToRemove)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("StakeRegistry.removeStrategies", err)
+		return nil, wrappedError
 	}
 
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to remove strategies from quorum", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -970,20 +1029,24 @@ func (w *ChainWriter) CreateAVSRewardsSubmission(
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+		wrappedError := elcontracts.CreateForOtherError("Failed to create ServiceManager contract binding", err)
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := serviceManagerContract.CreateAVSRewardsSubmission(noSendTxOpts, rewardsSubmission)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("ServiceManager.createAVSRewardsSubmission", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateAVSRewardsSubmission tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
@@ -1016,23 +1079,27 @@ func (w *ChainWriter) CreateOperatorDirectedAVSRewardsSubmission(
 		w.ethClient,
 	)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ServiceManager contract", err)
+		wrappedError := elcontracts.CreateForOtherError("Failed to create ServiceManager contract binding", err)
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateNoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := serviceManagerContract.CreateOperatorDirectedAVSRewardsSubmission(
 		noSendTxOpts,
 		operatorDirectedRewardsSubmissions,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := elcontracts.CreateForTxGenerationError("ServiceManager.createOperatorDirectedAVSRewardsSubmission", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send CreateOperatorDirectedAVSRewardsSubmission tx with err", err)
+		wrappedError := elcontracts.CreateForSendError(err)
+		return nil, wrappedError
 	}
 	return receipt, nil
 }
