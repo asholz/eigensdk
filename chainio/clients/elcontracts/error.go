@@ -20,37 +20,42 @@ func (e Error) Unwrap() error {
 	return e.cause
 }
 
-func CreateErrorForMissingContract(contractName string) Error {
+func MissingContractError(contractName string) Error {
 	errDescription := fmt.Sprintf("%s contract not provided", contractName)
-	return Error{1, "Missing needed contract", errDescription, nil}
+	return Error{
+		code:        1,
+		message:     "Missing needed contract",
+		description: errDescription,
+		cause:       nil,
+	}
 }
 
-func CreateForBindingError(bindingName string, errorCause error) Error {
+func BindingError(bindingName string, errorCause error) Error {
 	errDescription := fmt.Sprintf("Error happened while calling %s", bindingName)
 	return Error{
-		0,
-		"Binding error",
-		errDescription,
-		errorCause,
+		code:        0,
+		message:     "Binding error",
+		description: errDescription,
+		cause:       errorCause,
 	}
 }
 
-func CreateForNestedError(functionName string, errorCause error) Error {
+func NestedError(functionName string, errorCause error) Error {
 	errDescription := fmt.Sprintf("Error happened while calling %s", functionName)
 	return Error{
-		2,
-		"Nested error",
-		errDescription,
-		errorCause,
+		code:        2,
+		message:     "Nested error",
+		description: errDescription,
+		cause:       errorCause,
 	}
 }
 
-func CreateForOtherError(errDescription string, errorCause error) Error {
+func OtherError(errDescription string, errorCause error) Error {
 	return Error{
-		3,
-		"Other error",
-		errDescription,
-		errorCause,
+		code:        3,
+		message:     "Other error",
+		description: errDescription,
+		cause:       errorCause,
 	}
 }
 
