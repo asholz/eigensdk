@@ -4,8 +4,16 @@ import (
 	"math/big"
 
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 
 	"github.com/ethereum/go-ethereum/common"
+)
+
+type RegistrationType uint8
+
+const (
+	RegistrationTypeNormal RegistrationType = 0
+	RegistrationTypeChurn  RegistrationType = 1
 )
 
 type OperatorSetStakes struct {
@@ -39,8 +47,9 @@ type RegistrationRequest struct {
 	AVSAddress      common.Address
 	OperatorSetIds  []uint32
 	WaitForReceipt  bool
+	BlsKeyPair      *bls.KeyPair
+	Socket          string
 }
-
 type RemovePermissionRequest struct {
 	AccountAddress   common.Address
 	AppointeeAddress common.Address

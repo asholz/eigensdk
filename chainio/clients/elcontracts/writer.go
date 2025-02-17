@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"math/big"
@@ -13,14 +14,17 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
+	chainioutils "github.com/Layr-Labs/eigensdk-go/chainio/utils"
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AVSDirectory"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -33,10 +37,12 @@ type Reader interface {
 	) (*strategy.ContractIStrategy, erc20.ContractIERC20Methods, gethcommon.Address, error)
 }
 
+// The ChainWriter provides methods to call the
+// EigenLayer core contract's state-changing functions.
 type ChainWriter struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	avsDirectory         *avsdirectory.ContractAVSDirectory
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
@@ -47,10 +53,11 @@ type ChainWriter struct {
 	txMgr                txmgr.TxManager
 }
 
+// Returns a new instance of ChainWriter.
 func NewChainWriter(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
@@ -78,51 +85,7 @@ func NewChainWriter(
 	}
 }
 
-// BuildELChainWriter builds an ChainWriter instance.
-// Deprecated: Use NewWriterFromConfig instead.
-func BuildELChainWriter(
-	delegationManagerAddr gethcommon.Address,
-	avsDirectoryAddr gethcommon.Address,
-	ethClient eth.HttpBackend,
-	logger logging.Logger,
-	eigenMetrics metrics.Metrics,
-	txMgr txmgr.TxManager,
-) (*ChainWriter, error) {
-	elContractBindings, err := NewEigenlayerContractBindings(
-		delegationManagerAddr,
-		avsDirectoryAddr,
-		ethClient,
-		logger,
-	)
-	if err != nil {
-		return nil, err
-	}
-	elChainReader := NewChainReader(
-		elContractBindings.DelegationManager,
-		elContractBindings.StrategyManager,
-		elContractBindings.AvsDirectory,
-		elContractBindings.RewardsCoordinator,
-		elContractBindings.AllocationManager,
-		elContractBindings.PermissionController,
-		logger,
-		ethClient,
-	)
-	return NewChainWriter(
-		elContractBindings.DelegationManager,
-		elContractBindings.StrategyManager,
-		elContractBindings.RewardsCoordinator,
-		elContractBindings.AvsDirectory,
-		elContractBindings.AllocationManager,
-		elContractBindings.PermissionController,
-		elContractBindings.StrategyManagerAddr,
-		elChainReader,
-		ethClient,
-		logger,
-		eigenMetrics,
-		txMgr,
-	), nil
-}
-
+// Returns a new instance of ChainWriter from a given config.
 func NewWriterFromConfig(
 	cfg Config,
 	ethClient eth.HttpBackend,
@@ -164,6 +127,8 @@ func NewWriterFromConfig(
 	), nil
 }
 
+// Registers the caller as an operator in EigenLayer through the
+// DelegationManager contract.
 func (w *ChainWriter) RegisterAsOperator(
 	ctx context.Context,
 	operator types.Operator,
@@ -190,13 +155,16 @@ func (w *ChainWriter) RegisterAsOperator(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx", err)
 	}
 	w.logger.Info("tx successfully included", "txHash", receipt.TxHash.String())
 
 	return receipt, nil
 }
 
+// Updates an operator's stored `delegationApprover` with
+// the given `operator.DelegationApproverAddress` by calling
+// the `modifyOperatorDetails` function in the DelegationManager contract.
 func (w *ChainWriter) UpdateOperatorDetails(
 	ctx context.Context,
 	operator types.Operator,
@@ -223,7 +191,7 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx", err)
 	}
 	w.logger.Info(
 		"successfully updated operator details",
@@ -236,6 +204,7 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	return receipt, nil
 }
 
+// Updates the metadata URI for the given operator.
 func (w *ChainWriter) UpdateMetadataURI(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -257,7 +226,7 @@ func (w *ChainWriter) UpdateMetadataURI(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx", err)
 	}
 	w.logger.Info(
 		"successfully updated operator metadata uri",
@@ -268,6 +237,8 @@ func (w *ChainWriter) UpdateMetadataURI(
 	return receipt, nil
 }
 
+// Deposits `amount` of the `strategyAddr` underlying token
+// into the strategy given by `strategyAddr`.
 func (w *ChainWriter) DepositERC20IntoStrategy(
 	ctx context.Context,
 	strategyAddr gethcommon.Address,
@@ -297,7 +268,7 @@ func (w *ChainWriter) DepositERC20IntoStrategy(
 	}
 	_, err = w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx", err)
 	}
 
 	tx, err = w.strategyManager.DepositIntoStrategy(noSendTxOpts, strategyAddr, underlyingTokenAddr, amount)
@@ -306,13 +277,16 @@ func (w *ChainWriter) DepositERC20IntoStrategy(
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, errors.New("failed to send tx with err: " + err.Error())
+		return nil, utils.WrapError("failed to send tx", err)
 	}
 
 	w.logger.Infof("deposited %s into strategy %s", amount.String(), strategyAddr)
 	return receipt, nil
 }
 
+// Sets `claimer` as the claimer for the earner (in this case the
+// earner is the caller). That means that `claimer` can call `processClaim`
+// on behalf of the earner.
 func (w *ChainWriter) SetClaimerFor(
 	ctx context.Context,
 	claimer gethcommon.Address,
@@ -339,10 +313,12 @@ func (w *ChainWriter) SetClaimerFor(
 	return receipt, nil
 }
 
+// Processes the given `claim` for rewards.
+// The rewards are transferred to the given `recipientAddress`.
 func (w *ChainWriter) ProcessClaim(
 	ctx context.Context,
 	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
-	earnerAddress gethcommon.Address,
+	recipientAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
@@ -354,7 +330,7 @@ func (w *ChainWriter) ProcessClaim(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.rewardsCoordinator.ProcessClaim(noSendTxOpts, claim, earnerAddress)
+	tx, err := w.rewardsCoordinator.ProcessClaim(noSendTxOpts, claim, recipientAddress)
 	if err != nil {
 		return nil, utils.WrapError("failed to create ProcessClaim tx", err)
 	}
@@ -366,6 +342,10 @@ func (w *ChainWriter) ProcessClaim(
 	return receipt, nil
 }
 
+// Sets the split for a specific operator for a specific AVS.
+// The caller must be a registered operator.
+// The split has to be between 0 and 10000 bips (inclusive).
+// The split will be activated after activation delay.
 func (w *ChainWriter) SetOperatorAVSSplit(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -394,6 +374,10 @@ func (w *ChainWriter) SetOperatorAVSSplit(
 	return receipt, nil
 }
 
+// Sets the split for a specific operator for Programmatic Incentives.
+// The caller must be a registered operator.
+// The split has to be between 0 and 10000 bips (inclusive).
+// The split will be activated after activation delay.
 func (w *ChainWriter) SetOperatorPISplit(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -421,10 +405,40 @@ func (w *ChainWriter) SetOperatorPISplit(
 	return receipt, nil
 }
 
+func (w *ChainWriter) SetOperatorSetSplit(
+	ctx context.Context,
+	operator gethcommon.Address,
+	operatorSet rewardscoordinator.OperatorSet,
+	split uint16,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	if w.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
+	if err != nil {
+		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
+// Processes the claims given by `claims`.
+// The rewards are transferred to the given `recipientAddress`.
 func (w *ChainWriter) ProcessClaims(
 	ctx context.Context,
 	claims []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
-	earnerAddress gethcommon.Address,
+	recipientAddress gethcommon.Address,
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
@@ -440,7 +454,7 @@ func (w *ChainWriter) ProcessClaims(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
-	tx, err := w.rewardsCoordinator.ProcessClaims(noSendTxOpts, claims, earnerAddress)
+	tx, err := w.rewardsCoordinator.ProcessClaims(noSendTxOpts, claims, recipientAddress)
 	if err != nil {
 		return nil, utils.WrapError("failed to create ProcessClaims tx", err)
 	}
@@ -480,6 +494,43 @@ func (w *ChainWriter) ModifyAllocations(
 	return receipt, nil
 }
 
+// Receives an operator address, and a list of strategies and numsToClear (number of elements to clear from queue),
+// and clears the operators deallocation queue in numbers to clear for the given strategies, by completing the
+// pending deallocations if their effect timestamps have passed. Note that strategies and numsToClear should have
+// equal length, since there should be a number of elements to clear from queue for each strategy queue.
+func (w *ChainWriter) ClearDeallocationQueue(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	strategies []gethcommon.Address,
+	numsToClear []uint16,
+	waitForReceipt bool,
+) (*gethtypes.Receipt, error) {
+	if w.allocationManager == nil {
+		return nil, errors.New("AllocationManager contract not provided")
+	}
+
+	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("failed to get no send tx opts", err)
+	}
+
+	tx, err := w.allocationManager.ClearDeallocationQueue(noSendTxOpts, operatorAddress, strategies, numsToClear)
+	if err != nil {
+		return nil, utils.WrapError("failed to create ClearDeallocationQueue tx", err)
+	}
+
+	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
+	if err != nil {
+		return nil, utils.WrapError("failed to send tx", err)
+	}
+
+	return receipt, nil
+}
+
+// Sets the allocation delay for an operator.
+// The allocation delay is the number of blocks between the operator
+// allocating a magnitude to an operator set, and the magnitude becoming
+// slashable.
 func (w *ChainWriter) SetAllocationDelay(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -507,6 +558,9 @@ func (w *ChainWriter) SetAllocationDelay(
 	return receipt, nil
 }
 
+// Deregister an operator from one or more of the AVS's operator sets.
+// If the operator has any slashable stake allocated to the AVS,
+// it remains slashable until the deallocation delay has passed.
 func (w *ChainWriter) DeregisterFromOperatorSets(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -540,8 +594,12 @@ func (w *ChainWriter) DeregisterFromOperatorSets(
 	return receipt, nil
 }
 
+// Register an operator for one or more operator sets for an AVS.
+// If the operator has any stake allocated to these operator sets,
+// it immediately becomes slashable.
 func (w *ChainWriter) RegisterForOperatorSets(
 	ctx context.Context,
+	registryCoordinatorAddr gethcommon.Address,
 	request RegistrationRequest,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
@@ -553,12 +611,27 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		return nil, utils.WrapError("failed to get no send tx opts", err)
 	}
 
+	pubkeyRegParams, err := getPubkeyRegistrationParams(
+		w.ethClient,
+		registryCoordinatorAddr,
+		request.OperatorAddress,
+		request.BlsKeyPair,
+	)
+	if err != nil {
+		return nil, utils.WrapError("failed to get public key registration params", err)
+	}
+
+	data, err := AbiEncodeRegistrationParams(RegistrationTypeNormal, request.Socket, *pubkeyRegParams)
+	if err != nil {
+		return nil, utils.WrapError("failed to encode registration params", err)
+	}
 	tx, err := w.allocationManager.RegisterForOperatorSets(
 		noSendTxOpts,
 		request.OperatorAddress,
 		allocationmanager.IAllocationManagerTypesRegisterParams{
 			Avs:            request.AVSAddress,
 			OperatorSetIds: request.OperatorSetIds,
+			Data:           data,
 		})
 	if err != nil {
 		return nil, utils.WrapError("failed to create RegisterForOperatorSets tx", err)
@@ -572,6 +645,8 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	return receipt, nil
 }
 
+// Removes permission of an appointee for a specific function
+// (given by request.selector) on a target contract, given an account address.
 func (w *ChainWriter) RemovePermission(
 	ctx context.Context,
 	request RemovePermissionRequest,
@@ -587,6 +662,7 @@ func (w *ChainWriter) RemovePermission(
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 }
 
+// Builds a transaction for the PermissionController's removeAppointee function.
 func (w *ChainWriter) NewRemovePermissionTx(
 	txOpts *bind.TransactOpts,
 	request RemovePermissionRequest,
@@ -594,6 +670,7 @@ func (w *ChainWriter) NewRemovePermissionTx(
 	if w.permissionController == nil {
 		return nil, errors.New("permission contract not provided")
 	}
+
 	return w.permissionController.RemoveAppointee(
 		txOpts,
 		request.AccountAddress,
@@ -603,6 +680,7 @@ func (w *ChainWriter) NewRemovePermissionTx(
 	)
 }
 
+// Builds a transaction for the PermissionController's setAppointee function.
 func (w *ChainWriter) NewSetPermissionTx(
 	txOpts *bind.TransactOpts,
 	request SetPermissionRequest,
@@ -619,6 +697,10 @@ func (w *ChainWriter) NewSetPermissionTx(
 	)
 }
 
+// Set an appointee for a given account.
+// Only the admin of the account can set an appointee.
+// The appointee will be able to call the function given
+// by `request.Selector` on the contract given by `request.Target`.
 func (w *ChainWriter) SetPermission(
 	ctx context.Context,
 	request SetPermissionRequest,
@@ -636,6 +718,7 @@ func (w *ChainWriter) SetPermission(
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 }
 
+// Builds a transaction for the PermissionController's acceptAdmin function.
 func (w *ChainWriter) NewAcceptAdminTx(
 	txOpts *bind.TransactOpts,
 	request AcceptAdminRequest,
@@ -646,6 +729,8 @@ func (w *ChainWriter) NewAcceptAdminTx(
 	return w.permissionController.AcceptAdmin(txOpts, request.AccountAddress)
 }
 
+// Accept a pending admin for the account given by `request.AccountAddress`.
+// The sender of the transaction must be the pending admin.
 func (w *ChainWriter) AcceptAdmin(
 	ctx context.Context,
 	request AcceptAdminRequest,
@@ -662,6 +747,7 @@ func (w *ChainWriter) AcceptAdmin(
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 }
 
+// Builds a transaction for the PermissionController's addPendingAdmin function.
 func (w *ChainWriter) NewAddPendingAdminTx(
 	txOpts *bind.TransactOpts,
 	request AddPendingAdminRequest,
@@ -672,6 +758,9 @@ func (w *ChainWriter) NewAddPendingAdminTx(
 	return w.permissionController.AddPendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
 }
 
+// Set a pending admin. Multiple admins can be set for an account.
+// The caller must be an admin. If the account does not have an admin,
+// the caller must be the account.
 func (w *ChainWriter) AddPendingAdmin(ctx context.Context, request AddPendingAdminRequest) (*gethtypes.Receipt, error) {
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
@@ -684,6 +773,7 @@ func (w *ChainWriter) AddPendingAdmin(ctx context.Context, request AddPendingAdm
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 }
 
+// Builds a transaction for the PermissionController's removeAdmin function.
 func (w *ChainWriter) NewRemoveAdminTx(
 	txOpts *bind.TransactOpts,
 	request RemoveAdminRequest,
@@ -694,6 +784,8 @@ func (w *ChainWriter) NewRemoveAdminTx(
 	return w.permissionController.RemoveAdmin(txOpts, request.AccountAddress, request.AdminAddress)
 }
 
+// Removes the admin given by `request.AdminAddress` from the account given
+// by `request.AccountAddress`. The sender of the transaction must be an admin.
 func (w *ChainWriter) RemoveAdmin(
 	ctx context.Context,
 	request RemoveAdminRequest,
@@ -710,6 +802,7 @@ func (w *ChainWriter) RemoveAdmin(
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 }
 
+// Builds a transaction for the PermissionController's removePendingAdmin function.
 func (w *ChainWriter) NewRemovePendingAdminTx(
 	txOpts *bind.TransactOpts,
 	request RemovePendingAdminRequest,
@@ -720,6 +813,8 @@ func (w *ChainWriter) NewRemovePendingAdminTx(
 	return w.permissionController.RemovePendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
 }
 
+// Remove pending admin given by `request.AdminAddress` from the account given
+// by `request.AccountAddress`. Only the admin of the account can remove a pending admin.
 func (w *ChainWriter) RemovePendingAdmin(
 	ctx context.Context,
 	request RemovePendingAdminRequest,
@@ -735,4 +830,86 @@ func (w *ChainWriter) RemovePendingAdmin(
 	}
 
 	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+}
+
+// Returns the pubkey registration params for the operator given by `operatorAddress`.
+func getPubkeyRegistrationParams(
+	ethClient bind.ContractBackend,
+	registryCoordinatorAddr, operatorAddress gethcommon.Address,
+	blsKeyPair *bls.KeyPair,
+) (*regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams, error) {
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
+	if err != nil {
+		return nil, utils.WrapError("failed to create registry coordinator", err)
+	}
+	// params to register bls pubkey with bls apk registry
+	g1HashedMsgToSign, err := registryCoordinator.PubkeyRegistrationMessageHash(
+		&bind.CallOpts{},
+		operatorAddress,
+	)
+	if err != nil {
+		return nil, err
+	}
+	signedMsg := chainioutils.ConvertToBN254G1Point(
+		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
+	)
+	G1pubkeyBN254 := chainioutils.ConvertToBN254G1Point(blsKeyPair.GetPubKeyG1())
+	G2pubkeyBN254 := chainioutils.ConvertToBN254G2Point(blsKeyPair.GetPubKeyG2())
+	pubkeyRegParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
+		PubkeyRegistrationSignature: signedMsg,
+		PubkeyG1:                    G1pubkeyBN254,
+		PubkeyG2:                    G2pubkeyBN254,
+	}
+	return &pubkeyRegParams, nil
+}
+
+// Returns the ABI encoding of the given registration params.
+func AbiEncodeRegistrationParams(
+	registrationType RegistrationType,
+	socket string,
+	pubkeyRegistrationParams regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams,
+) ([]byte, error) {
+	registrationParamsType, err := abi.NewType("tuple", "", []abi.ArgumentMarshaling{
+		{Name: "RegistrationType", Type: "uint8"},
+		{Name: "Socket", Type: "string"},
+		{Name: "PubkeyRegParams", Type: "tuple", Components: []abi.ArgumentMarshaling{
+			{Name: "PubkeyRegistrationSignature", Type: "tuple", Components: []abi.ArgumentMarshaling{
+				{Name: "X", Type: "uint256"},
+				{Name: "Y", Type: "uint256"},
+			}},
+			{Name: "PubkeyG1", Type: "tuple", Components: []abi.ArgumentMarshaling{
+				{Name: "X", Type: "uint256"},
+				{Name: "Y", Type: "uint256"},
+			}},
+			{Name: "PubkeyG2", Type: "tuple", Components: []abi.ArgumentMarshaling{
+				{Name: "X", Type: "uint256[2]"},
+				{Name: "Y", Type: "uint256[2]"},
+			}},
+		}},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	registrationParams := struct {
+		RegistrationType RegistrationType
+		Socket           string
+		PubkeyRegParams  regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams
+	}{
+		registrationType,
+		socket,
+		pubkeyRegistrationParams,
+	}
+
+	args := abi.Arguments{
+		{Type: registrationParamsType, Name: "registrationParams"},
+	}
+
+	data, err := args.Pack(&registrationParams)
+	if err != nil {
+		return nil, err
+	}
+	// The encoder is prepending 32 bytes to the data as if it was used in a dynamic function parameter.
+	// This is not used when decoding the bytes directly, so we need to remove it.
+	return data[32:], nil
 }

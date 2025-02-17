@@ -11,7 +11,7 @@ import (
 	avsdirectory "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AVSDirectory"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/utils"
@@ -30,7 +30,7 @@ type ContractBindings struct {
 	DelegationManager         *delegationmanager.ContractDelegationManager
 	StrategyManager           *strategymanager.ContractStrategyManager
 	AvsDirectory              *avsdirectory.ContractAVSDirectory
-	RewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
+	RewardsCoordinator        *rewardscoordinator.ContractRewardsCoordinator
 	AllocationManager         *allocationmanager.ContractAllocationManager
 	PermissionController      *permissioncontroller.ContractPermissionController
 }
@@ -49,7 +49,7 @@ func NewBindingsFromConfig(
 		strategyManagerAddr       gethcommon.Address
 		allocationManagerAddr     gethcommon.Address
 		avsDirectory              *avsdirectory.ContractAVSDirectory
-		rewardsCoordinator        *rewardscoordinator.ContractIRewardsCoordinator
+		rewardsCoordinator        *rewardscoordinator.ContractRewardsCoordinator
 		permissionController      *permissioncontroller.ContractPermissionController
 	)
 
@@ -80,11 +80,11 @@ func NewBindingsFromConfig(
 		}
 	}
 
-	if isZeroAddress(cfg.PermissionsControllerAddress) {
+	if isZeroAddress(cfg.PermissionControllerAddress) {
 		logger.Debug("PermissionController address not provided, the calls to the contract will not work")
 	} else {
 		permissionController, err = permissioncontroller.NewContractPermissionController(
-			cfg.PermissionsControllerAddress,
+			cfg.PermissionControllerAddress,
 			client,
 		)
 		if err != nil {
@@ -104,7 +104,7 @@ func NewBindingsFromConfig(
 	if isZeroAddress(cfg.RewardsCoordinatorAddress) {
 		logger.Debug("RewardsCoordinator address not provided, the calls to the contract will not work")
 	} else {
-		rewardsCoordinator, err = rewardscoordinator.NewContractIRewardsCoordinator(cfg.RewardsCoordinatorAddress, client)
+		rewardsCoordinator, err = rewardscoordinator.NewContractRewardsCoordinator(cfg.RewardsCoordinatorAddress, client)
 		if err != nil {
 			return nil, utils.WrapError("Failed to fetch RewardsCoordinator contract", err)
 		}
@@ -126,41 +126,4 @@ func NewBindingsFromConfig(
 }
 func isZeroAddress(address gethcommon.Address) bool {
 	return address == gethcommon.Address{}
-}
-
-// NewEigenlayerContractBindings creates a new ContractBindings struct with the provided contract addresses
-// Deprecated: Use NewBindingsFromConfig instead
-func NewEigenlayerContractBindings(
-	delegationManagerAddr gethcommon.Address,
-	avsDirectoryAddr gethcommon.Address,
-	ethclient eth.HttpBackend,
-	logger logging.Logger,
-) (*ContractBindings, error) {
-	contractDelegationManager, err := delegationmanager.NewContractDelegationManager(delegationManagerAddr, ethclient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create DelegationManager contract", err)
-	}
-
-	strategyManagerAddr, err := contractDelegationManager.StrategyManager(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch StrategyManager address", err)
-	}
-	contractStrategyManager, err := strategymanager.NewContractStrategyManager(strategyManagerAddr, ethclient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch StrategyManager contract", err)
-	}
-
-	avsDirectory, err := avsdirectory.NewContractAVSDirectory(avsDirectoryAddr, ethclient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch AVSDirectory contract", err)
-	}
-
-	return &ContractBindings{
-		StrategyManagerAddr:   strategyManagerAddr,
-		DelegationManagerAddr: delegationManagerAddr,
-		AvsDirectoryAddr:      avsDirectoryAddr,
-		StrategyManager:       contractStrategyManager,
-		DelegationManager:     contractDelegationManager,
-		AvsDirectory:          avsDirectory,
-	}, nil
 }

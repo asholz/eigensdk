@@ -38,91 +38,6 @@ type ContractBindings struct {
 	OperatorStateRetriever *opstateretriever.ContractOperatorStateRetriever
 }
 
-// NewAVSRegistryContractBindings creates a new instance of ContractBindings
-// Deprecated: Use NewBindingsFromConfig instead
-func NewAVSRegistryContractBindings(
-	registryCoordinatorAddr gethcommon.Address,
-	operatorStateRetrieverAddr gethcommon.Address,
-	ethclient eth.HttpBackend,
-	logger logging.Logger,
-) (*ContractBindings, error) {
-	contractBlsRegistryCoordinator, err := regcoordinator.NewContractRegistryCoordinator(
-		registryCoordinatorAddr,
-		ethclient,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create BLSRegistryCoordinator contract", err)
-	}
-
-	serviceManagerAddr, err := contractBlsRegistryCoordinator.ServiceManager(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
-	}
-	contractServiceManager, err := servicemanager.NewContractServiceManagerBase(
-		serviceManagerAddr,
-		ethclient,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch ServiceManager contract", err)
-	}
-
-	stakeregistryAddr, err := contractBlsRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch StakeRegistry address", err)
-	}
-	contractStakeRegistry, err := stakeregistry.NewContractStakeRegistry(
-		stakeregistryAddr,
-		ethclient,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch StakeRegistry contract", err)
-	}
-
-	blsApkRegistryAddr, err := contractBlsRegistryCoordinator.BlsApkRegistry(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch BLSPubkeyRegistry address", err)
-	}
-	contractBlsApkRegistry, err := blsapkregistry.NewContractBLSApkRegistry(
-		blsApkRegistryAddr,
-		ethclient,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch BLSPubkeyRegistry contract", err)
-	}
-
-	indexRegistryAddr, err := contractBlsRegistryCoordinator.IndexRegistry(&bind.CallOpts{})
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch IndexRegistry address", err)
-	}
-	contractIndexRegistry, err := indexregistry.NewContractIndexRegistry(indexRegistryAddr, ethclient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch IndexRegistry contract", err)
-	}
-
-	contractOperatorStateRetriever, err := opstateretriever.NewContractOperatorStateRetriever(
-		operatorStateRetrieverAddr,
-		ethclient,
-	)
-	if err != nil {
-		return nil, utils.WrapError("Failed to fetch OperatorStateRetriever contract", err)
-	}
-
-	return &ContractBindings{
-		ServiceManagerAddr:         serviceManagerAddr,
-		RegistryCoordinatorAddr:    registryCoordinatorAddr,
-		StakeRegistryAddr:          stakeregistryAddr,
-		BlsApkRegistryAddr:         blsApkRegistryAddr,
-		IndexRegistryAddr:          indexRegistryAddr,
-		OperatorStateRetrieverAddr: operatorStateRetrieverAddr,
-		ServiceManager:             contractServiceManager,
-		RegistryCoordinator:        contractBlsRegistryCoordinator,
-		StakeRegistry:              contractStakeRegistry,
-		BlsApkRegistry:             contractBlsApkRegistry,
-		IndexRegistry:              contractIndexRegistry,
-		OperatorStateRetriever:     contractOperatorStateRetriever,
-	}, nil
-}
-
 // NewBindingsFromConfig creates a new instance of ContractBindings
 func NewBindingsFromConfig(
 	cfg Config,
@@ -132,7 +47,6 @@ func NewBindingsFromConfig(
 	var (
 		err error
 
-		serviceManagerAddr    gethcommon.Address
 		stakeRegistryAddr     gethcommon.Address
 		blsApkRegistryAddr    gethcommon.Address
 		indexRegistryAddr     gethcommon.Address
@@ -157,18 +71,6 @@ func NewBindingsFromConfig(
 		)
 		if err != nil {
 			return nil, utils.WrapError("Failed to create BLSRegistryCoordinator contract", err)
-		}
-
-		serviceManagerAddr, err = contractBlsRegistryCoordinator.ServiceManager(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to fetch ServiceManager address", err)
-		}
-		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
-			serviceManagerAddr,
-			client,
-		)
-		if err != nil {
-			return nil, utils.WrapError("Failed to create ServiceManager contract", err)
 		}
 
 		stakeRegistryAddr, err = contractBlsRegistryCoordinator.StakeRegistry(&bind.CallOpts{})
@@ -208,10 +110,6 @@ func NewBindingsFromConfig(
 		if err != nil {
 			return nil, utils.WrapError("Failed to get DelegationManager address", err)
 		}
-		avsDirectoryAddr, err = contractServiceManager.AvsDirectory(&bind.CallOpts{})
-		if err != nil {
-			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
-		}
 
 		delegationManager, err := contractDelegationManager.NewContractDelegationManager(
 			delegationManagerAddr,
@@ -222,6 +120,23 @@ func NewBindingsFromConfig(
 		allocationManagerAddr, err = delegationManager.AllocationManager(&bind.CallOpts{})
 		if err != nil {
 			return nil, utils.WrapError("Failed to get AllocationManager address", err)
+		}
+	}
+
+	if isZeroAddress(cfg.ServiceManagerAddress) {
+		logger.Debug("ServiceManager address not provided, the calls to the contract will not work")
+	} else {
+		contractServiceManager, err = servicemanager.NewContractServiceManagerBase(
+			cfg.ServiceManagerAddress,
+			client,
+		)
+		if err != nil {
+			return nil, utils.WrapError("Failed to create ServiceManager contract", err)
+		}
+
+		avsDirectoryAddr, err = contractServiceManager.AvsDirectory(&bind.CallOpts{})
+		if err != nil {
+			return nil, utils.WrapError("Failed to get AvsDirectory address", err)
 		}
 	}
 
@@ -239,7 +154,7 @@ func NewBindingsFromConfig(
 	}
 
 	return &ContractBindings{
-		ServiceManagerAddr:         serviceManagerAddr,
+		ServiceManagerAddr:         cfg.ServiceManagerAddress,
 		RegistryCoordinatorAddr:    cfg.RegistryCoordinatorAddress,
 		StakeRegistryAddr:          stakeRegistryAddr,
 		BlsApkRegistryAddr:         blsApkRegistryAddr,
