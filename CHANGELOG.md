@@ -13,4 +13,26 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 * fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
 
 ### Breaking changes
+* refactor: update interface on `bls aggregation` in [#485](https://github.com/Layr-Labs/eigensdk-go/pull/485).
+  * Introduces a new struct `TaskMetadata` with a constructor `NewTaskMetadata` to initialize a new task and a method `WithWindowDuration` to set the window duration.
+  * Refactors `InitializeNewTask` and `singleTaskAggregatorGoroutineFunc` to accept a `TaskMetadata` struct instead of multiple parameters.
+
+    ```rust
+    // BEFORE
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+
+    blsAggServ.InitializeNewTask(
+			taskIndex,
+			blockNum,
+			quorumNumbers,
+			quorumThresholdPercentages,
+			tasksTimeToExpiry,
+		)
+    
+    // AFTER
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+
+    metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+    blsAggServ.InitializeNewTask(metadata)
+    ```
 ### Removed
