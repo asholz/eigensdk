@@ -17,7 +17,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
   * Introduces a new struct `TaskMetadata` with a constructor `NewTaskMetadata` to initialize a new task and a method `WithWindowDuration` to set the window duration.
   * Refactors `InitializeNewTask` and `singleTaskAggregatorGoroutineFunc` to accept a `TaskMetadata` struct instead of multiple parameters.
 
-    ```rust
+    ```go
     // BEFORE
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
@@ -33,6 +33,33 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
     metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+    blsAggServ.InitializeNewTask(metadata)
+    ```
+
+  * Removes `InitializeNewTaskWithWindow` since `windowDuration` can now be set in `TaskMetadata`.
+
+    ```go
+    // BEFORE
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+    err = blsAggServ.InitializeNewTaskWithWindow(
+			taskIndex,
+			blockNum,
+			quorumNumbers,
+			quorumThresholdPercentages,
+			timeToExpiry,
+			windowDuration,
+		)
+
+    // AFTER
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+
+    metadata := NewTaskMetadata(
+			taskIndex,
+			blockNum,
+			quorumNumbers,
+			quorumThresholdPercentages,
+			tasksTimeToExpiry,
+		).WithWindowDuration(windowDuration)
     blsAggServ.InitializeNewTask(metadata)
     ```
 ### Removed
