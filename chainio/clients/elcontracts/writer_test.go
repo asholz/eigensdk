@@ -11,10 +11,10 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	mockerc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/MockERC20"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
@@ -696,12 +696,11 @@ func TestSetAndRemovePermission(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
@@ -942,13 +941,11 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
@@ -1007,13 +1004,12 @@ func TestAcceptAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
@@ -1068,13 +1064,11 @@ func TestRemoveAdmin(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
-
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
@@ -1366,7 +1360,7 @@ func setTestRewardsCoordinatorActivationDelay(
 		return nil, utils.WrapError("Failed to create eth client", err)
 	}
 
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
 	if err != nil {
 		return nil, utils.WrapError("Failed to create rewards coordinator", err)
 	}
@@ -1861,7 +1855,7 @@ func newTestClaim(
 		return nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
 	}
 
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
 	if err != nil {
 		return nil, utils.WrapError("Failed to create rewards coordinator contract", err)
 	}

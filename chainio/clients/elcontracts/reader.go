@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
@@ -13,9 +14,9 @@ import (
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
 	delegationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/DelegationManager"
 	erc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IERC20"
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	permissioncontroller "github.com/Layr-Labs/eigensdk-go/contracts/bindings/PermissionController"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
@@ -23,10 +24,15 @@ import (
 )
 
 type Config struct {
-	DelegationManagerAddress     gethcommon.Address
-	AvsDirectoryAddress          gethcommon.Address
-	RewardsCoordinatorAddress    gethcommon.Address
-	PermissionsControllerAddress gethcommon.Address
+	DelegationManagerAddress    common.Address
+	AvsDirectoryAddress         common.Address
+	RewardsCoordinatorAddress   common.Address
+	PermissionControllerAddress common.Address
+
+	/// Setting this to true will disable the fetching of the AllocationManager address.
+	/// This is useful for older deployments, which don't have the contract deployed.
+	// TODO: remove this once mainnet is updated with the new contracts
+	DontUseAllocationManager bool
 }
 
 type ChainReader struct {
@@ -34,7 +40,7 @@ type ChainReader struct {
 	delegationManager    *delegationmanager.ContractDelegationManager
 	strategyManager      *strategymanager.ContractStrategyManager
 	avsDirectory         *avsdirectory.ContractAVSDirectory
-	rewardsCoordinator   *rewardscoordinator.ContractIRewardsCoordinator
+	rewardsCoordinator   *rewardscoordinator.ContractRewardsCoordinator
 	allocationManager    *allocationmanager.ContractAllocationManager
 	permissionController *permissioncontroller.ContractPermissionController
 	ethClient            eth.HttpBackend
@@ -42,11 +48,12 @@ type ChainReader struct {
 
 var errLegacyAVSsNotSupported = errors.New("method not supported for legacy AVSs")
 
+// Returns a new instance of ChainReader from a given set of bindings.
 func NewChainReader(
 	delegationManager *delegationmanager.ContractDelegationManager,
 	strategyManager *strategymanager.ContractStrategyManager,
 	avsDirectory *avsdirectory.ContractAVSDirectory,
-	rewardsCoordinator *rewardscoordinator.ContractIRewardsCoordinator,
+	rewardsCoordinator *rewardscoordinator.ContractRewardsCoordinator,
 	allocationManager *allocationmanager.ContractAllocationManager,
 	permissionController *permissioncontroller.ContractPermissionController,
 	logger logging.Logger,
@@ -66,6 +73,7 @@ func NewChainReader(
 	}
 }
 
+// Returns a new instance of ChainReader from a given config.
 func NewReaderFromConfig(
 	cfg Config,
 	ethClient eth.HttpBackend,
@@ -91,6 +99,9 @@ func NewReaderFromConfig(
 	), nil
 }
 
+// Returns `true` if the operator is registered to the EigenLayer protocol, `false` otherwise.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) IsOperatorRegistered(
 	ctx context.Context,
 	operator types.Operator,
@@ -102,8 +113,9 @@ func (r *ChainReader) IsOperatorRegistered(
 	return r.delegationManager.IsOperator(&bind.CallOpts{Context: ctx}, gethcommon.HexToAddress(operator.Address))
 }
 
-// GetStakerShares returns the amount of shares that a staker has in all of the strategies in which they have nonzero
-// shares
+// Returns the amount of shares that a staker has in all of the strategies they have shares in.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetStakerShares(
 	ctx context.Context,
 	stakerAddress gethcommon.Address,
@@ -114,7 +126,9 @@ func (r *ChainReader) GetStakerShares(
 	return r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 
-// GetDelegatedOperator returns the operator that a staker has delegated to
+// Returns the operator that a staker has delegated to.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetDelegatedOperator(
 	ctx context.Context,
 	stakerAddress gethcommon.Address,
@@ -126,6 +140,9 @@ func (r *ChainReader) GetDelegatedOperator(
 	return r.delegationManager.DelegatedTo(&bind.CallOpts{Context: ctx}, stakerAddress)
 }
 
+// Returns detailed information on an operator.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorDetails(
 	ctx context.Context,
 	operator types.Operator,
@@ -168,7 +185,8 @@ func (r *ChainReader) GetOperatorDetails(
 	}, nil
 }
 
-// GetStrategyAndUnderlyingToken returns the strategy contract and the underlying token address
+// Returns the bindings of a given strategy and the address of its underlying token.
+// Can return an error due to errors in the underlying contract call.
 func (r *ChainReader) GetStrategyAndUnderlyingToken(
 	ctx context.Context,
 	strategyAddr gethcommon.Address,
@@ -185,8 +203,8 @@ func (r *ChainReader) GetStrategyAndUnderlyingToken(
 	return contractStrategy, underlyingTokenAddr, nil
 }
 
-// GetStrategyAndUnderlyingERC20Token returns the strategy contract, the erc20 bindings for the underlying token
-// and the underlying token address
+// Returns the bindings of a given strategy and the bindings and address of its underlying token.
+// Can return an error due to errors in the underlying contract call.
 func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	ctx context.Context,
 	strategyAddr gethcommon.Address,
@@ -208,6 +226,9 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	return contractStrategy, contractUnderlyingToken, underlyingTokenAddr, nil
 }
 
+// Returns the shares an operator has in a given strategy.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorSharesInStrategy(
 	ctx context.Context,
 	operatorAddr gethcommon.Address,
@@ -224,6 +245,10 @@ func (r *ChainReader) GetOperatorSharesInStrategy(
 	)
 }
 
+// Returns the digest hash to be signed by the operator's delegation approver to be used
+// when delegating to an operator.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) CalculateDelegationApprovalDigestHash(
 	ctx context.Context,
 	staker gethcommon.Address,
@@ -246,6 +271,9 @@ func (r *ChainReader) CalculateDelegationApprovalDigestHash(
 	)
 }
 
+// Returns the digest hash to be signed by an operator to register with an AVS.
+// Can return an error if the `AVSDirectory` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -266,6 +294,9 @@ func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 	)
 }
 
+// Returns the number of distribution roots published.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int, error) {
 	if r.rewardsCoordinator == nil {
 		return nil, errors.New("RewardsCoordinator contract not provided")
@@ -274,6 +305,9 @@ func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int,
 	return r.rewardsCoordinator.GetDistributionRootsLength(&bind.CallOpts{Context: ctx})
 }
 
+// Returns the timestamp until which rewards submissions have been calculated.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (uint32, error) {
 	if r.rewardsCoordinator == nil {
 		return 0, errors.New("RewardsCoordinator contract not provided")
@@ -282,6 +316,9 @@ func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (u
 	return r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
 }
 
+// Returns the latest root that can be claimed against.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetCurrentClaimableDistributionRoot(
 	ctx context.Context,
 ) (rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot, error) {
@@ -294,6 +331,9 @@ func (r *ChainReader) GetCurrentClaimableDistributionRoot(
 	return r.rewardsCoordinator.GetCurrentClaimableDistributionRoot(&bind.CallOpts{Context: ctx})
 }
 
+// Returns the index of the latest root that can be claimed against.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetRootIndexFromHash(
 	ctx context.Context,
 	rootHash [32]byte,
@@ -305,6 +345,9 @@ func (r *ChainReader) GetRootIndexFromHash(
 	return r.rewardsCoordinator.GetRootIndexFromHash(&bind.CallOpts{Context: ctx}, rootHash)
 }
 
+// Returns the number of `token` tokens the `earner` has claimed.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetCumulativeClaimed(
 	ctx context.Context,
 	earner gethcommon.Address,
@@ -317,6 +360,10 @@ func (r *ChainReader) GetCumulativeClaimed(
 	return r.rewardsCoordinator.CumulativeClaimed(&bind.CallOpts{Context: ctx}, earner, token)
 }
 
+// Returns `true` if the claim would currently pass the check in
+// `ChainWriter.ProcessClaims` or return an error if invalid.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) CheckClaim(
 	ctx context.Context,
 	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
@@ -325,9 +372,13 @@ func (r *ChainReader) CheckClaim(
 		return false, errors.New("RewardsCoordinator contract not provided")
 	}
 
+	// TODO: this returns an error if the claim is invalid. We map this error to false instead
 	return r.rewardsCoordinator.CheckClaim(&bind.CallOpts{Context: ctx}, claim)
 }
 
+// Returns the split configured by the `operator` for the `avs`.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorAVSSplit(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -340,6 +391,9 @@ func (r *ChainReader) GetOperatorAVSSplit(
 	return r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
 }
 
+// Returns the split configured by the `operator` for Programmatic Incentives.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorPISplit(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -351,6 +405,9 @@ func (r *ChainReader) GetOperatorPISplit(
 	return r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
 }
 
+// Returns the split for an operator in an operator set.
+// Can return an error if the `RewardsCoordinator` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorSetSplit(
 	ctx context.Context,
 	operator gethcommon.Address,
@@ -363,6 +420,196 @@ func (r *ChainReader) GetOperatorSetSplit(
 	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
 }
 
+// Gets the interval in seconds at which the calculation for rewards distribution is done.
+func (r *ChainReader) GetCalculationIntervalSeconds(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.CALCULATIONINTERVALSECONDS(&bind.CallOpts{Context: ctx})
+}
+
+// Gets the maximum amount of time (seconds) that a rewards submission can span over
+func (r *ChainReader) GetMaxRewardsDuration(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
+}
+
+// Get the max amount of time (seconds) that a rewards submission can start in the past
+func (r *ChainReader) GetMaxRetroactiveLength(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
+}
+
+// Get the max amount of time (seconds) that a rewards submission can start in the future
+func (r *ChainReader) GetMaxFutureLength(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
+}
+
+// Get absolute min timestamp (seconds) that a rewards submission can start at
+func (r *ChainReader) GetGenesisRewardsTimestamp(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
+}
+
+// Get the address of the entity that can update the contract with new merkle roots
+func (r *ChainReader) GetRewardsUpdater(
+	ctx context.Context,
+) (gethcommon.Address, error) {
+	if r.rewardsCoordinator == nil {
+		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
+}
+
+// Get delay in timestamp (seconds) before a posted root can be claimed against
+func (r *ChainReader) GetActivationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.ActivationDelay(&bind.CallOpts{Context: ctx})
+}
+
+// Get timestamp for last submitted DistributionRoot
+func (r *ChainReader) GetCurrRewardsCalculationEndTimestamp(
+	ctx context.Context,
+) (uint32, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+}
+
+// Get the default split for all operators across all avss in bips.
+func (r *ChainReader) GetDefaultOperatorSplitBips(
+	ctx context.Context,
+) (uint16, error) {
+	if r.rewardsCoordinator == nil {
+		return 0, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.DefaultOperatorSplitBips(&bind.CallOpts{Context: ctx})
+}
+
+func (r *ChainReader) GetClaimerFor(
+	ctx context.Context,
+	earner gethcommon.Address,
+) (gethcommon.Address, error) {
+	if r.rewardsCoordinator == nil {
+		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
+}
+
+// Returns the submission nonce for an avs
+func (r *ChainReader) GetSubmissionNonce(
+	ctx context.Context,
+	avs gethcommon.Address,
+) (*big.Int, error) {
+	if r.rewardsCoordinator == nil {
+		return nil, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.SubmissionNonce(&bind.CallOpts{Context: ctx}, avs)
+}
+
+// Returns whether a hash is a valid rewards submission hash for a given avs
+func (r *ChainReader) GetIsAVSRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid rewards submission for all hash for a given avs
+func (r *ChainReader) GetIsRewardsSubmissionForAllHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsSubmissionForAllHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a submitter is a valid rewards for all submitter
+func (r *ChainReader) GetIsRewardsForAllSubmitter(
+	ctx context.Context,
+	submitter gethcommon.Address,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsForAllSubmitter(&bind.CallOpts{Context: ctx}, submitter)
+}
+
+// Returns whether a hash is a valid rewards submission for all earners hash for a given avs
+func (r *ChainReader) GetIsRewardsSubmissionForAllEarnersHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
+func (r *ChainReader) GetIsOperatorDirectedAVSRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+}
+
+// Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
+func (r *ChainReader) GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
+	ctx context.Context,
+	avs gethcommon.Address,
+	hash [32]byte,
+) (bool, error) {
+	if r.rewardsCoordinator == nil {
+		return false, errors.New("RewardsCoordinator contract not provided")
+	}
+	return r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
+}
+
+// Returns the amount of magnitude on a strategy not currently allocated to any operator set,
+// by an operator.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetAllocatableMagnitude(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -375,6 +622,42 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	return r.allocationManager.GetAllocatableMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
 }
 
+// Returns the amount of magnitude an operator has allocated to operator sets for a given strategy
+func (r *ChainReader) GetEncumberedMagnitude(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+	strategyAddress gethcommon.Address,
+) (uint64, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+
+	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+}
+
+// Returns the delay within which deallocations are slashable.
+func (r *ChainReader) GetDeallocationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
+// Returns the delay before allocation delay modifications take effect.
+func (r *ChainReader) GetAllocationConfigurationDelay(
+	ctx context.Context,
+) (uint32, error) {
+	if r.allocationManager == nil {
+		return 0, errors.New("AllocationManager contract not provided")
+	}
+	return r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
+}
+
+// Returns the maximum magnitude an operator can allocate for the given strategies.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetMaxMagnitudes(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -387,6 +670,9 @@ func (r *ChainReader) GetMaxMagnitudes(
 	return r.allocationManager.GetMaxMagnitudes0(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddresses)
 }
 
+// Returns the allocation info of a given operator and strategy.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetAllocationInfo(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -420,6 +706,9 @@ func (r *ChainReader) GetAllocationInfo(
 	return allocationsInfo, nil
 }
 
+// Returns the shares an operator has delegated to them on a strategy.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorShares(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -434,6 +723,9 @@ func (r *ChainReader) GetOperatorShares(
 	}, operatorAddress, strategyAddresses)
 }
 
+// Returns the shares that a set of operators have delegated to them in a set of strategies.
+// Can return an error if the `DelegationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorsShares(
 	ctx context.Context,
 	operatorAddresses []gethcommon.Address,
@@ -445,8 +737,50 @@ func (r *ChainReader) GetOperatorsShares(
 	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddresses, strategyAddresses)
 }
 
-// GetNumOperatorSetsForOperator returns the number of operator sets that an operator is part of
-// Doesn't include M2 AVSs
+// Returns whether `delegationApprover` has already used the given `salt`.
+func (r *ChainReader) GetDelegationApproverSaltIsSpent(
+	ctx context.Context,
+	delegationApprover gethcommon.Address,
+	approverSalt [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.DelegationApproverSaltIsSpent(
+		&bind.CallOpts{Context: ctx},
+		delegationApprover,
+		approverSalt,
+	)
+}
+
+// Returns whether a withdrawal is pending for a given `withdrawalRoot`.
+func (r *ChainReader) GetPendingWithdrawalStatus(
+	ctx context.Context,
+	withdrawalRoot [32]byte,
+) (bool, error) {
+	if r.delegationManager == nil {
+		return false, errors.New("DelegationManager contract not provided")
+	}
+
+	return r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
+}
+
+// Returns the total number of withdrawals that have been queued for a given `staker`
+func (r *ChainReader) GetCumulativeWithdrawalsQueued(
+	ctx context.Context,
+	staker common.Address,
+) (*big.Int, error) {
+	if r.delegationManager == nil {
+		return big.NewInt(0), errors.New("DelegationManager contract not provided")
+	}
+	return r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
+}
+
+// Returns the number of operator sets that an operator is part of.
+// This doesn't include M2 quorums.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetNumOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -461,8 +795,10 @@ func (r *ChainReader) GetNumOperatorSetsForOperator(
 	return big.NewInt(int64(len(opSets))), nil
 }
 
-// GetOperatorSetsForOperator returns the list of operator sets that an operator is part of
-// Doesn't include M2 AVSs
+// Returns the list of operator sets the operator has current or pending allocations/deallocations in.
+// This doesn't include M2 quorums.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorSetsForOperator(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -475,7 +811,9 @@ func (r *ChainReader) GetOperatorSetsForOperator(
 	return r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 }
 
-// IsOperatorRegisteredWithOperatorSet returns if an operator is registered with a specific operator set
+// Returns `true` if an operator is registered with a specific operator set or M2 quorum.
+// Can return an error if the `AVSDirectory` or `AllocationManager` contract addresses were
+// not provided, or due to errors in the underlying contract call.
 func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -513,8 +851,10 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 	}
 }
 
-// GetOperatorsForOperatorSet returns the list of operators in a specific operator set
-// Not supported for M2 AVSs
+// Returns the list of operators in a specific operator set.
+// Not supported for M2 AVSs.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetOperatorsForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
@@ -530,7 +870,10 @@ func (r *ChainReader) GetOperatorsForOperatorSet(
 	}
 }
 
-// GetNumOperatorsForOperatorSet returns the number of operators in a specific operator set
+// Returns the number of operators in a specific operator set.
+// Not supported for M2 AVSs.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetNumOperatorsForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
@@ -546,8 +889,10 @@ func (r *ChainReader) GetNumOperatorsForOperatorSet(
 	}
 }
 
-// GetStrategiesForOperatorSet returns the list of strategies that an operator set takes into account
-// Not supported for M2 AVSs
+// Returns the list of strategies that an operator set takes into account.
+// Not supported for M2 AVSs.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetStrategiesForOperatorSet(
 	ctx context.Context,
 	operatorSet allocationmanager.OperatorSet,
@@ -563,6 +908,10 @@ func (r *ChainReader) GetStrategiesForOperatorSet(
 	}
 }
 
+// Returns a list of the number of shares slashable by the operator set
+// for each of the given strategies.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetSlashableShares(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -603,9 +952,11 @@ func (r *ChainReader) GetSlashableShares(
 	return slashableShareStrategyMap, nil
 }
 
-// GetSlashableSharesForOperatorSets returns the strategies the operatorSets take into account, their
+// Returns the strategies the `operatorSets` take into account, their
 // operators, and the minimum amount of shares that are slashable by the operatorSets.
-// Not supported for M2 AVSs
+// Not supported for M2 AVSs.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetSlashableSharesForOperatorSets(
 	ctx context.Context,
 	operatorSets []allocationmanager.OperatorSet,
@@ -618,11 +969,13 @@ func (r *ChainReader) GetSlashableSharesForOperatorSets(
 	return r.GetSlashableSharesForOperatorSetsBefore(ctx, operatorSets, uint32(currentBlock))
 }
 
-// GetSlashableSharesForOperatorSetsBefore returns the strategies the operatorSets take into account, their
+// Returns the strategies the `operatorSets` take into account, their
 // operators, and the minimum amount of shares slashable by the
-// operatorSets before a given timestamp.
-// Timestamp must be in the future. Used to underestimate future slashable stake.
-// Not supported for M2 AVSs
+// `operatorSets` before a given timestamp.
+// Timestamp must be in the future. Used to estimate future slashable stake.
+// Not supported for M2 AVSs.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 	ctx context.Context,
 	operatorSets []allocationmanager.OperatorSet,
@@ -667,6 +1020,11 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 	return operatorSetStakes, nil
 }
 
+// Returns the time in blocks between an operator allocating slashable magnitude
+// and the magnitude becoming slashable.
+// Returns an error if the operator has not set an allocation delay.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetAllocationDelay(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -685,6 +1043,9 @@ func (r *ChainReader) GetAllocationDelay(
 	return delay, nil
 }
 
+// Returns a list of all operator sets the operator is registered for.
+// Can return an error if the `AllocationManager` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) GetRegisteredSets(
 	ctx context.Context,
 	operatorAddress gethcommon.Address,
@@ -695,6 +1056,10 @@ func (r *ChainReader) GetRegisteredSets(
 	return r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 }
 
+// Returns `true` if `appointeeAddress` has permission to call the function with the given
+// `selector` on the `target` contract, on behalf of `accountAddress`, and `false` otherwise.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) CanCall(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -716,6 +1081,10 @@ func (r *ChainReader) CanCall(
 	return canCall, nil
 }
 
+// Returns the list of appointees for a given account, target and function selector.
+// Note that this doesn't include any of the appointed admins.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) ListAppointees(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -735,6 +1104,9 @@ func (r *ChainReader) ListAppointees(
 	return appointees, nil
 }
 
+// Returns the list of permissions of an appointee for a given account.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) ListAppointeePermissions(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -752,6 +1124,9 @@ func (r *ChainReader) ListAppointeePermissions(
 	return targets, selectors, nil
 }
 
+// Returns the pending admins of an account.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) ListPendingAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -764,6 +1139,9 @@ func (r *ChainReader) ListPendingAdmins(
 	return pendingAdmins, nil
 }
 
+// Returns the admins of an account.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) ListAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -776,6 +1154,9 @@ func (r *ChainReader) ListAdmins(
 	return pendingAdmins, nil
 }
 
+// Returns `true` if `pendingAdminAddress` is a pending admin for `accountAddress`, `false` otherwise.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) IsPendingAdmin(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
@@ -793,6 +1174,9 @@ func (r *ChainReader) IsPendingAdmin(
 	return isPendingAdmin, nil
 }
 
+// Returns `true` if `adminAddress` is an admin of `accountAddress`.
+// Can return an error if the `PermissionController` contract address was not provided, or due to
+// errors in the underlying contract call.
 func (r *ChainReader) IsAdmin(
 	ctx context.Context,
 	accountAddress gethcommon.Address,

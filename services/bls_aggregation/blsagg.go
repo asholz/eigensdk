@@ -305,34 +305,45 @@ func (a *BlsAggregatorService) InitializeNewTaskWithWindow(
 
 func (a *BlsAggregatorService) ProcessNewSignature(
 	ctx context.Context,
-	task TaskSignature,
+	taskSignature TaskSignature,
 ) error {
+	respC := make(chan error)
+	go func() {
+		respC <- a.processNewSignature(taskSignature)
+	}()
+
+	// NOTE: we do this to let the goroutine consume the result of the operation
+	//   but allow the operation to end early if the context is cancelled
+	select {
+	case err := <-respC:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (a *BlsAggregatorService) processNewSignature(
+	taskSignature TaskSignature,
+) error {
+	// TODO: move this to a goroutine to avoid sharing state
 	a.taskChansMutex.Lock()
-	taskC, taskInitialized := a.signedTaskRespsCs[task.taskIndex]
+	taskC, taskInitialized := a.signedTaskRespsCs[taskSignature.taskIndex]
 	a.taskChansMutex.Unlock()
 	if !taskInitialized {
-		return TaskNotFoundErrorFn(task.taskIndex)
+		return TaskNotFoundErrorFn(taskSignature.taskIndex)
 	}
 
 	signatureVerificationErrorC := make(chan error)
 	// send the task to the goroutine processing this task
 	// and return the error (if any) returned by the signature verification routine
 
-	select {
-	// we need to send this as part of select because if the goroutine is processing another SignedTaskResponseDigest
-	// and cannot receive this one, we want the context to be able to cancel the request
-	case taskC <- types.SignedTaskResponseDigest{
-		TaskResponse:                task.taskResponse,
-		BlsSignature:                task.blsSignature,
-		OperatorId:                  task.operatorId,
+	taskC <- types.SignedTaskResponseDigest{
+		TaskResponse:                taskSignature.taskResponse,
+		BlsSignature:                taskSignature.blsSignature,
+		OperatorId:                  taskSignature.operatorId,
 		SignatureVerificationErrorC: signatureVerificationErrorC,
-	}:
-		// note that we need to wait synchronously here for this response because we want to
-		// send back an informative error message to the operator who sent his signature to the aggregator
-		return <-signatureVerificationErrorC
-	case <-ctx.Done():
-		return ctx.Err()
 	}
+	return <-signatureVerificationErrorC
 }
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
