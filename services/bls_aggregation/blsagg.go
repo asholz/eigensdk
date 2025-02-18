@@ -286,6 +286,57 @@ func (a *BlsAggregatorService) Start(
 	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregate_receiver: aggResponsesC}, nil
 }
 
+func (a *BlsAggregatorService) run(
+	initializeTaskChannel chan InitializeTaskRequest,
+	processSignatureChannel chan ProcessSignatureRequest,
+	aggResponsesC chan types.SignedTaskResponseDigest,
+) {
+	taskChannels := make(map[types.TaskIndex]chan types.SignedTaskResponseDigest)
+
+	for {
+		select {
+		case taskInitReq, ok := <-initializeTaskChannel:
+			// Initialize task
+			if !ok {
+				return
+			}
+			taskIndex := taskInitReq.metadata.taskIndex
+
+			if _, taskExists := taskChannels[taskIndex]; taskExists {
+				continue
+			}
+			signedTaskRespsC := make(chan types.SignedTaskResponseDigest)
+			taskChannels[taskIndex] = signedTaskRespsC
+
+			go a.singleTaskAggregatorGoroutineFunc(
+				taskInitReq.metadata,
+				aggResponsesC,
+			)
+
+		case signatureReq, ok := <-processSignatureChannel:
+			// Process signature
+			if !ok {
+				return
+			}
+			taskIndex := signatureReq.metadata.taskIndex
+
+			if signedTaskRespsC, taskExists := taskChannels[taskIndex]; taskExists {
+				errC := make(chan error, 1)
+				signedDigest := types.SignedTaskResponseDigest{
+					TaskResponse:                signatureReq.metadata.taskResponse,
+					BlsSignature:                signatureReq.metadata.blsSignature,
+					OperatorId:                  signatureReq.metadata.operatorId,
+					SignatureVerificationErrorC: errC,
+				}
+
+				signedTaskRespsC <- signedDigest
+				result := <-errC
+				signatureReq.errC <- result
+			}
+		}
+	}
+}
+
 func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
 	return a.aggregatedResponsesC
 }
