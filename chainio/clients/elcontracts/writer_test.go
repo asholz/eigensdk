@@ -340,6 +340,7 @@ func TestChainWriter(t *testing.T) {
 			true,
 		)
 		assert.Error(t, err, "cannot update operator details for an address that is not an operator")
+		assert.ErrorContains(t, err, "execution reverted: custom error 0x932d94f7")
 	})
 
 	t.Run("update metadata URI", func(t *testing.T) {
@@ -364,6 +365,7 @@ func TestChainWriter(t *testing.T) {
 			true,
 		)
 		assert.Error(t, err, "cannot update metadata URI for an address that is not an operator")
+		assert.ErrorContains(t, err, "execution reverted: custom error 0x932d94f7")
 	})
 
 	t.Run("deposit ERC20 into strategy", func(t *testing.T) {
@@ -1418,6 +1420,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("DelegationManager"))
 	})
 
 	t.Run("update operator details", func(t *testing.T) {
@@ -1428,6 +1431,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("DelegationManager"))
 	})
 
 	t.Run("update metadata URI", func(t *testing.T) {
@@ -1439,6 +1443,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("DelegationManager"))
 	})
 
 	t.Run("deposit erc20 into strategy", func(t *testing.T) {
@@ -1450,6 +1455,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("StrategyManager"))
 	})
 
 	t.Run("set claimer for", func(t *testing.T) {
@@ -1460,6 +1466,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 	})
 
 	t.Run("process claim and process claims", func(t *testing.T) {
@@ -1488,6 +1495,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 
 		receipt, err = chainWriter.ProcessClaims(
 			context.Background(),
@@ -1497,6 +1505,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 	})
 
 	t.Run("set operator AVS split", func(t *testing.T) {
@@ -1509,6 +1518,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 	})
 
 	t.Run("set operator PI split", func(t *testing.T) {
@@ -1520,6 +1530,20 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
+	})
+
+	t.Run("set operator set split", func(t *testing.T) {
+		receipt, err := chainWriter.SetOperatorSetSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			rewardscoordinator.OperatorSet{},
+			uint16(1),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("RewardsCoordinator"))
 	})
 
 	t.Run("modify allocations", func(t *testing.T) {
@@ -1548,6 +1572,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("AllocationManager"))
 	})
 
 	t.Run("clear deallocation queue", func(t *testing.T) {
@@ -1575,6 +1600,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("AllocationManager"))
 	})
 
 	t.Run("deregister from operator sets", func(t *testing.T) {
@@ -1593,6 +1619,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("AllocationManager"))
 	})
 
 	t.Run("register for operator sets", func(t *testing.T) {
@@ -1619,6 +1646,7 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Equal(t, err.Error(), elcontracts.CommonErrorMissingContract("AllocationManager"))
 	})
 
 	t.Run("remove permission", func(t *testing.T) {
@@ -1642,6 +1670,11 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new remove permission Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 
 	t.Run("set permission", func(t *testing.T) {
@@ -1665,6 +1698,10 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new set permission Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 
 	t.Run("accept admin", func(t *testing.T) {
@@ -1680,6 +1717,10 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new accept admin Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 
 	t.Run("add pending admin", func(t *testing.T) {
@@ -1698,6 +1739,10 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new add pending admin Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 
 	t.Run("remove admin", func(t *testing.T) {
@@ -1716,6 +1761,10 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new remove admin Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 
 	t.Run("remove pending admin", func(t *testing.T) {
@@ -1732,6 +1781,10 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		expectedErrMsg := elcontracts.NestedErrorMessage("create a new remove pending admin Tx",
+			elcontracts.CommonErrorMissingContract("PermissionController"),
+		)
+		assert.Equal(t, err.Error(), expectedErrMsg)
 	})
 }
 

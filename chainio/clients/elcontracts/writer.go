@@ -2,7 +2,6 @@ package elcontracts
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,7 +27,6 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/metrics"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type Reader interface {
@@ -99,7 +97,8 @@ func NewWriterFromConfig(
 		logger,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := NestedErrorWithFunction("NewBindingsFromConfig", err)
+		return nil, wrappedError
 	}
 	elChainReader := NewChainReader(
 		elContractBindings.DelegationManager,
@@ -135,14 +134,16 @@ func (w *ChainWriter) RegisterAsOperator(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.delegationManager == nil {
-		return nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, wrappedError
 	}
 
 	w.logger.Infof("registering operator %s to EigenLayer", operator.Address)
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.delegationManager.RegisterAsOperator(
 		noSendTxOpts,
@@ -151,11 +152,13 @@ func (w *ChainWriter) RegisterAsOperator(
 		operator.MetadataUrl,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := TxGenerationError("DelegationManager.registerAsOperator", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 	w.logger.Info("tx successfully included", "txHash", receipt.TxHash.String())
 
@@ -171,14 +174,16 @@ func (w *ChainWriter) UpdateOperatorDetails(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.delegationManager == nil {
-		return nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, wrappedError
 	}
 
 	w.logger.Infof("updating operator details of operator %s to EigenLayer", operator.Address)
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.delegationManager.ModifyOperatorDetails(
@@ -187,11 +192,13 @@ func (w *ChainWriter) UpdateOperatorDetails(
 		gethcommon.HexToAddress(operator.DelegationApproverAddress),
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := TxGenerationError("DelegationManager.modifyOperatorDetails", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 	w.logger.Info(
 		"successfully updated operator details",
@@ -212,21 +219,25 @@ func (w *ChainWriter) UpdateMetadataURI(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.delegationManager == nil {
-		return nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.delegationManager.UpdateOperatorMetadataURI(noSendTxOpts, operatorAddress, uri)
 	if err != nil {
-		return nil, err
+		wrappedError := TxGenerationError("DelegationManager.updateOperatorMetadataURI", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 	w.logger.Info(
 		"successfully updated operator metadata uri",
@@ -246,38 +257,45 @@ func (w *ChainWriter) DepositERC20IntoStrategy(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.strategyManager == nil {
-		return nil, errors.New("StrategyManager contract not provided")
+		wrappedError := MissingContractError("StrategyManager")
+		return nil, wrappedError
 	}
 
 	w.logger.Infof("depositing %s tokens into strategy %s", amount.String(), strategyAddr)
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	_, underlyingTokenContract, underlyingTokenAddr, err := w.elChainReader.GetStrategyAndUnderlyingERC20Token(
 		ctx,
 		strategyAddr,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := NestedErrorWithFunction("elChainReader.GetStrategyAndUnderlyingERC20Token", err)
+		return nil, wrappedError
 	}
 
 	tx, err := underlyingTokenContract.Approve(noSendTxOpts, w.strategyManagerAddr, amount)
 	if err != nil {
-		return nil, errors.Join(errors.New("failed to approve token transfer"), err)
+		wrappedError := OtherError("failed to approve token transfer", err)
+		return nil, wrappedError
 	}
 	_, err = w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	tx, err = w.strategyManager.DepositIntoStrategy(noSendTxOpts, strategyAddr, underlyingTokenAddr, amount)
 	if err != nil {
-		return nil, err
+		wrappedError := TxGenerationError("StrategyManager.depositIntoStrategy", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	w.logger.Infof("deposited %s into strategy %s", amount.String(), strategyAddr)
@@ -293,21 +311,25 @@ func (w *ChainWriter) SetClaimerFor(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, err
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.SetClaimerFor(noSendTxOpts, claimer)
 	if err != nil {
-		return nil, err
+		wrappedError := TxGenerationError("RewardsCoordinator.setClaimerFor", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -322,21 +344,25 @@ func (w *ChainWriter) ProcessClaim(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.ProcessClaim(noSendTxOpts, claim, recipientAddress)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ProcessClaim tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.processClaim", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -354,21 +380,25 @@ func (w *ChainWriter) SetOperatorAVSSplit(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.SetOperatorAVSSplit(noSendTxOpts, operator, avs, split)
 	if err != nil {
-		return nil, utils.WrapError("failed to create SetOperatorAVSSplit tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.setOperatorAVSSplit", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -385,21 +415,25 @@ func (w *ChainWriter) SetOperatorPISplit(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.SetOperatorPISplit(noSendTxOpts, operator, split)
 	if err != nil {
-		return nil, utils.WrapError("failed to create SetOperatorAVSSplit tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.setOperatorPISplit", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -413,21 +447,25 @@ func (w *ChainWriter) SetOperatorSetSplit(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.SetOperatorSetSplit(noSendTxOpts, operator, operatorSet, split)
 	if err != nil {
-		return nil, utils.WrapError("failed to create SetOperatorSetSplit tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.setOperatorSetSplit", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -442,25 +480,30 @@ func (w *ChainWriter) ProcessClaims(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
 	if len(claims) == 0 {
-		return nil, errors.New("claims is empty, at least one claim must be provided")
+		wrappedError := OtherError("No claims were found to process, at least one claim must be provided", nil)
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.rewardsCoordinator.ProcessClaims(noSendTxOpts, claims, recipientAddress)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ProcessClaims tx", err)
+		wrappedError := TxGenerationError("RewardsCoordinator.processClaims", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -475,22 +518,26 @@ func (w *ChainWriter) ModifyAllocations(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.allocationManager.ModifyAllocations(noSendTxOpts, operatorAddress, allocations)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ModifyAllocations tx", err)
+		wrappedError := TxGenerationError("AllocationManager.modifyAllocations", err)
+		return nil, wrappedError
 	}
 
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -508,22 +555,26 @@ func (w *ChainWriter) ClearDeallocationQueue(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.allocationManager.ClearDeallocationQueue(noSendTxOpts, operatorAddress, strategies, numsToClear)
 	if err != nil {
-		return nil, utils.WrapError("failed to create ClearDeallocationQueue tx", err)
+		wrappedError := TxGenerationError("AllocationManager.clearDeallocationQueue", err)
+		return nil, wrappedError
 	}
 
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -540,21 +591,25 @@ func (w *ChainWriter) SetAllocationDelay(
 	waitForReceipt bool,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.allocationManager.SetAllocationDelay(noSendTxOpts, operatorAddress, delay)
 	if err != nil {
-		return nil, utils.WrapError("failed to create InitializeAllocationDelay tx", err)
+		wrappedError := TxGenerationError("AllocationManager.setAllocationDelay", err)
+		return nil, wrappedError
 	}
 	receipt, err := w.txMgr.Send(ctx, tx, waitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -569,12 +624,14 @@ func (w *ChainWriter) DeregisterFromOperatorSets(
 	request DeregistrationRequest,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.allocationManager.DeregisterFromOperatorSets(
@@ -585,12 +642,14 @@ func (w *ChainWriter) DeregisterFromOperatorSets(
 			OperatorSetIds: request.OperatorSetIds,
 		})
 	if err != nil {
-		return nil, utils.WrapError("failed to create DeregisterFromOperatorSets tx", err)
+		wrappedError := TxGenerationError("AllocationManager.deregisterFromOperatorSets", err)
+		return nil, wrappedError
 	}
 
 	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -605,12 +664,14 @@ func (w *ChainWriter) RegisterForOperatorSets(
 	request RegistrationRequest,
 ) (*gethtypes.Receipt, error) {
 	if w.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	pubkeyRegParams, err := getPubkeyRegistrationParams(
@@ -620,12 +681,14 @@ func (w *ChainWriter) RegisterForOperatorSets(
 		request.BlsKeyPair,
 	)
 	if err != nil {
-		return nil, utils.WrapError("failed to get public key registration params", err)
+		wrappedError := NestedErrorWithDescription("get public key registration params", err)
+		return nil, wrappedError
 	}
 
 	data, err := AbiEncodeRegistrationParams(RegistrationTypeNormal, request.Socket, *pubkeyRegParams)
 	if err != nil {
-		return nil, utils.WrapError("failed to encode registration params", err)
+		wrappedError := NestedErrorWithDescription("encode registration params", err)
+		return nil, wrappedError
 	}
 	tx, err := w.allocationManager.RegisterForOperatorSets(
 		noSendTxOpts,
@@ -636,12 +699,14 @@ func (w *ChainWriter) RegisterForOperatorSets(
 			Data:           data,
 		})
 	if err != nil {
-		return nil, utils.WrapError("failed to create RegisterForOperatorSets tx", err)
+		wrappedError := TxGenerationError("AllocationManager.registerForOperatorSets", err)
+		return nil, wrappedError
 	}
 
 	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
 	if err != nil {
-		return nil, utils.WrapError("failed to send tx", err)
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
 	return receipt, nil
@@ -655,13 +720,21 @@ func (w *ChainWriter) RemovePermission(
 ) (*gethtypes.Receipt, error) {
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no-send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.NewRemovePermissionTx(txOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create NewRemovePermissionTx", err)
+		wrappedError := NestedErrorWithDescription("create a new remove permission Tx", err)
+		return nil, wrappedError
 	}
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
+	}
+
+	return receipt, nil
 }
 
 // Builds a transaction for the PermissionController's removeAppointee function.
@@ -670,16 +743,23 @@ func (w *ChainWriter) NewRemovePermissionTx(
 	request RemovePermissionRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
 
-	return w.permissionController.RemoveAppointee(
+	tx, err := w.permissionController.RemoveAppointee(
 		txOpts,
 		request.AccountAddress,
 		request.AppointeeAddress,
 		request.Target,
 		request.Selector,
 	)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.removeAppointee", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Builds a transaction for the PermissionController's setAppointee function.
@@ -688,15 +768,23 @@ func (w *ChainWriter) NewSetPermissionTx(
 	request SetPermissionRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
-	return w.permissionController.SetAppointee(
+
+	tx, err := w.permissionController.SetAppointee(
 		txOpts,
 		request.AccountAddress,
 		request.AppointeeAddress,
 		request.Target,
 		request.Selector,
 	)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.setAppointee", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Set an appointee for a given account.
@@ -709,15 +797,22 @@ func (w *ChainWriter) SetPermission(
 ) (*gethtypes.Receipt, error) {
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no-send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.NewSetPermissionTx(txOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create NewSetPermissionTx", err)
+		wrappedError := NestedErrorWithDescription("create a new set permission Tx", err)
+		return nil, wrappedError
+	}
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
 	}
 
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	return receipt, nil
 }
 
 // Builds a transaction for the PermissionController's acceptAdmin function.
@@ -726,9 +821,17 @@ func (w *ChainWriter) NewAcceptAdminTx(
 	request AcceptAdminRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
-	return w.permissionController.AcceptAdmin(txOpts, request.AccountAddress)
+
+	tx, err := w.permissionController.AcceptAdmin(txOpts, request.AccountAddress)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.acceptAdmin", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Accept a pending admin for the account given by `request.AccountAddress`.
@@ -739,14 +842,22 @@ func (w *ChainWriter) AcceptAdmin(
 ) (*gethtypes.Receipt, error) {
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.NewAcceptAdminTx(noSendTxOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create AcceptAdmin transaction", err)
+		wrappedError := NestedErrorWithDescription("create a new accept admin Tx", err)
+		return nil, wrappedError
 	}
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
+	}
+
+	return receipt, nil
 }
 
 // Builds a transaction for the PermissionController's addPendingAdmin function.
@@ -755,9 +866,17 @@ func (w *ChainWriter) NewAddPendingAdminTx(
 	request AddPendingAdminRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
-	return w.permissionController.AddPendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+
+	tx, err := w.permissionController.AddPendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.addPendingAdmin", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Set a pending admin. Multiple admins can be set for an account.
@@ -766,13 +885,21 @@ func (w *ChainWriter) NewAddPendingAdminTx(
 func (w *ChainWriter) AddPendingAdmin(ctx context.Context, request AddPendingAdminRequest) (*gethtypes.Receipt, error) {
 	txOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 	tx, err := w.NewAddPendingAdminTx(txOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create AddPendingAdminTx", err)
+		wrappedError := NestedErrorWithDescription("create a new add pending admin Tx", err)
+		return nil, wrappedError
 	}
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
+	}
+
+	return receipt, nil
 }
 
 // Builds a transaction for the PermissionController's removeAdmin function.
@@ -781,9 +908,17 @@ func (w *ChainWriter) NewRemoveAdminTx(
 	request RemoveAdminRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
-	return w.permissionController.RemoveAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+
+	tx, err := w.permissionController.RemoveAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.removeAdmin", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Removes the admin given by `request.AdminAddress` from the account given
@@ -794,14 +929,22 @@ func (w *ChainWriter) RemoveAdmin(
 ) (*gethtypes.Receipt, error) {
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.NewRemoveAdminTx(noSendTxOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create RemoveAdmin transaction", err)
+		wrappedError := NestedErrorWithDescription("create a new remove admin Tx", err)
+		return nil, wrappedError
 	}
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
+	}
+
+	return receipt, nil
 }
 
 // Builds a transaction for the PermissionController's removePendingAdmin function.
@@ -810,9 +953,17 @@ func (w *ChainWriter) NewRemovePendingAdminTx(
 	request RemovePendingAdminRequest,
 ) (*gethtypes.Transaction, error) {
 	if w.permissionController == nil {
-		return nil, errors.New("permission contract not provided")
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
 	}
-	return w.permissionController.RemovePendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+
+	tx, err := w.permissionController.RemovePendingAdmin(txOpts, request.AccountAddress, request.AdminAddress)
+	if err != nil {
+		wrappedError := TxGenerationError("PermissionController.removePendingAdmin", err)
+		return nil, wrappedError
+	}
+
+	return tx, nil
 }
 
 // Remove pending admin given by `request.AdminAddress` from the account given
@@ -823,15 +974,23 @@ func (w *ChainWriter) RemovePendingAdmin(
 ) (*gethtypes.Receipt, error) {
 	noSendTxOpts, err := w.txMgr.GetNoSendTxOpts()
 	if err != nil {
-		return nil, utils.WrapError("failed to get no send tx opts", err)
+		wrappedError := NoSendTxOptsFailedError(err)
+		return nil, wrappedError
 	}
 
 	tx, err := w.NewRemovePendingAdminTx(noSendTxOpts, request)
 	if err != nil {
-		return nil, utils.WrapError("failed to create RemovePendingAdmin transaction", err)
+		wrappedError := NestedErrorWithDescription("create a new remove pending admin Tx", err)
+		return nil, wrappedError
 	}
 
-	return w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	receipt, err := w.txMgr.Send(ctx, tx, request.WaitForReceipt)
+	if err != nil {
+		wrappedError := SendError(err)
+		return nil, wrappedError
+	}
+
+	return receipt, nil
 }
 
 // Returns the pubkey registration params for the operator given by `operatorAddress`.
@@ -842,7 +1001,8 @@ func getPubkeyRegistrationParams(
 ) (*regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams, error) {
 	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(registryCoordinatorAddr, ethClient)
 	if err != nil {
-		return nil, utils.WrapError("failed to create registry coordinator", err)
+		wrappedError := BindingError("regcoord.newContractRegistryCoordinator", err)
+		return nil, wrappedError
 	}
 	// params to register bls pubkey with bls apk registry
 	g1HashedMsgToSign, err := registryCoordinator.PubkeyRegistrationMessageHash(
@@ -850,7 +1010,8 @@ func getPubkeyRegistrationParams(
 		operatorAddress,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("RegistryCoordinator.pubkeyRegistrationMessageHash", err)
+		return nil, wrappedError
 	}
 	signedMsg := chainioutils.ConvertToBN254G1Point(
 		blsKeyPair.SignHashedToCurveMessage(chainioutils.ConvertBn254GethToGnark(g1HashedMsgToSign)).G1Point,
@@ -890,7 +1051,8 @@ func AbiEncodeRegistrationParams(
 		}},
 	})
 	if err != nil {
-		return nil, err
+		wrappedError := OtherError("Failed to encode abi params", err)
+		return nil, wrappedError
 	}
 
 	registrationParams := struct {
@@ -909,7 +1071,8 @@ func AbiEncodeRegistrationParams(
 
 	data, err := args.Pack(&registrationParams)
 	if err != nil {
-		return nil, err
+		wrappedError := OtherError("Failed to pack arguments", err)
+		return nil, wrappedError
 	}
 	// The encoder is prepending 32 bytes to the data as if it was used in a dynamic function parameter.
 	// This is not used when decoding the bytes directly, so we need to remove it.
