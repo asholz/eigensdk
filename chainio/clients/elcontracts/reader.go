@@ -2,11 +2,9 @@ package elcontracts
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
@@ -20,14 +18,13 @@ import (
 	strategymanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/StrategyManager"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/types"
-	"github.com/Layr-Labs/eigensdk-go/utils"
 )
 
 type Config struct {
-	DelegationManagerAddress    common.Address
-	AvsDirectoryAddress         common.Address
-	RewardsCoordinatorAddress   common.Address
-	PermissionControllerAddress common.Address
+	DelegationManagerAddress    gethcommon.Address
+	AvsDirectoryAddress         gethcommon.Address
+	RewardsCoordinatorAddress   gethcommon.Address
+	PermissionControllerAddress gethcommon.Address
 
 	/// Setting this to true will disable the fetching of the AllocationManager address.
 	/// This is useful for older deployments, which don't have the contract deployed.
@@ -46,7 +43,7 @@ type ChainReader struct {
 	ethClient            eth.HttpBackend
 }
 
-var errLegacyAVSsNotSupported = errors.New("method not supported for legacy AVSs")
+var errLegacyAVSsNotSupported = OtherError("Method not supported for legacy AVSs", nil)
 
 // Returns a new instance of ChainReader from a given set of bindings.
 func NewChainReader(
@@ -85,7 +82,8 @@ func NewReaderFromConfig(
 		logger,
 	)
 	if err != nil {
-		return nil, err
+		wrappedError := NestedError("NewBindingsFromConfig", err)
+		return nil, wrappedError
 	}
 	return NewChainReader(
 		elContractBindings.DelegationManager,
@@ -107,10 +105,20 @@ func (r *ChainReader) IsOperatorRegistered(
 	operator types.Operator,
 ) (bool, error) {
 	if r.delegationManager == nil {
-		return false, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return false, wrappedError
 	}
 
-	return r.delegationManager.IsOperator(&bind.CallOpts{Context: ctx}, gethcommon.HexToAddress(operator.Address))
+	isRegistered, err := r.delegationManager.IsOperator(
+		&bind.CallOpts{Context: ctx},
+		gethcommon.HexToAddress(operator.Address),
+	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.isOperator", err)
+		return false, wrappedError
+	}
+
+	return isRegistered, nil
 }
 
 // Returns the amount of shares that a staker has in all of the strategies they have shares in.
@@ -121,9 +129,17 @@ func (r *ChainReader) GetStakerShares(
 	stakerAddress gethcommon.Address,
 ) ([]gethcommon.Address, []*big.Int, error) {
 	if r.delegationManager == nil {
-		return nil, nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, nil, wrappedError
 	}
-	return r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
+
+	addresses, shares, err := r.delegationManager.GetDepositedShares(&bind.CallOpts{Context: ctx}, stakerAddress)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.getDepositedShares", err)
+		return nil, nil, wrappedError
+	}
+
+	return addresses, shares, nil
 }
 
 // Returns the operator that a staker has delegated to.
@@ -135,9 +151,17 @@ func (r *ChainReader) GetDelegatedOperator(
 	blockNumber *big.Int,
 ) (gethcommon.Address, error) {
 	if r.delegationManager == nil {
-		return gethcommon.Address{}, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return gethcommon.Address{}, wrappedError
 	}
-	return r.delegationManager.DelegatedTo(&bind.CallOpts{Context: ctx}, stakerAddress)
+
+	delegatedOperator, err := r.delegationManager.DelegatedTo(&bind.CallOpts{Context: ctx}, stakerAddress)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.delegatedTo", err)
+		return gethcommon.Address{}, wrappedError
+	}
+
+	return delegatedOperator, nil
 }
 
 // Returns detailed information on an operator.
@@ -148,7 +172,8 @@ func (r *ChainReader) GetOperatorDetails(
 	operator types.Operator,
 ) (types.Operator, error) {
 	if r.delegationManager == nil {
-		return types.Operator{}, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return types.Operator{}, wrappedError
 	}
 
 	delegationManagerAddress, err := r.delegationManager.DelegationApprover(
@@ -157,9 +182,11 @@ func (r *ChainReader) GetOperatorDetails(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return types.Operator{}, err
+		wrappedError := BindingError("DelegationManager.delegationApprover", err)
+		return types.Operator{}, wrappedError
 	}
 
+	// Should we check if (allocationManager != nil)?
 	isSet, delay, err := r.allocationManager.GetAllocationDelay(
 		&bind.CallOpts{
 			Context: ctx,
@@ -168,7 +195,8 @@ func (r *ChainReader) GetOperatorDetails(
 	)
 	// This call should not fail
 	if err != nil {
-		return types.Operator{}, err
+		wrappedError := BindingError("AllocationManager.getAllocationDelay", err)
+		return types.Operator{}, wrappedError
 	}
 
 	var allocationDelay uint32
@@ -194,11 +222,13 @@ func (r *ChainReader) GetStrategyAndUnderlyingToken(
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
 	// This call should not fail since it's an init
 	if err != nil {
-		return nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
+		wrappedError := BindingError("strategy contract", err)
+		return nil, gethcommon.Address{}, wrappedError
 	}
 	underlyingTokenAddr, err := contractStrategy.UnderlyingToken(&bind.CallOpts{Context: ctx})
 	if err != nil {
-		return nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
+		wrappedError := BindingError("token contract", err)
+		return nil, gethcommon.Address{}, wrappedError
 	}
 	return contractStrategy, underlyingTokenAddr, nil
 }
@@ -212,16 +242,19 @@ func (r *ChainReader) GetStrategyAndUnderlyingERC20Token(
 	contractStrategy, err := strategy.NewContractIStrategy(strategyAddr, r.ethClient)
 	// This call should not fail since it's an init
 	if err != nil {
-		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch strategy contract", err)
+		wrappedError := BindingError("strategy contract", err)
+		return nil, nil, gethcommon.Address{}, wrappedError
 	}
 	underlyingTokenAddr, err := contractStrategy.UnderlyingToken(&bind.CallOpts{Context: ctx})
 	if err != nil {
-		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
+		wrappedError := BindingError("token contract", err)
+		return nil, nil, gethcommon.Address{}, wrappedError
 	}
 	contractUnderlyingToken, err := erc20.NewContractIERC20(underlyingTokenAddr, r.ethClient)
 	// This call should not fail, if the strategy does not have an underlying token then it would enter the if above
 	if err != nil {
-		return nil, nil, gethcommon.Address{}, utils.WrapError("Failed to fetch token contract", err)
+		wrappedError := BindingError("erc20 token contract", err)
+		return nil, nil, gethcommon.Address{}, wrappedError
 	}
 	return contractStrategy, contractUnderlyingToken, underlyingTokenAddr, nil
 }
@@ -235,14 +268,21 @@ func (r *ChainReader) GetOperatorSharesInStrategy(
 	strategyAddr gethcommon.Address,
 ) (*big.Int, error) {
 	if r.delegationManager == nil {
-		return &big.Int{}, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return &big.Int{}, wrappedError
 	}
 
-	return r.delegationManager.OperatorShares(
+	shares, err := r.delegationManager.OperatorShares(
 		&bind.CallOpts{Context: ctx},
 		operatorAddr,
 		strategyAddr,
 	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.operatorShares", err)
+		return &big.Int{}, wrappedError
+	}
+
+	return shares, nil
 }
 
 // Returns the digest hash to be signed by the operator's delegation approver to be used
@@ -258,10 +298,11 @@ func (r *ChainReader) CalculateDelegationApprovalDigestHash(
 	expiry *big.Int,
 ) ([32]byte, error) {
 	if r.delegationManager == nil {
-		return [32]byte{}, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return [32]byte{}, wrappedError
 	}
 
-	return r.delegationManager.CalculateDelegationApprovalDigestHash(
+	digestHash, err := r.delegationManager.CalculateDelegationApprovalDigestHash(
 		&bind.CallOpts{Context: ctx},
 		staker,
 		operator,
@@ -269,6 +310,12 @@ func (r *ChainReader) CalculateDelegationApprovalDigestHash(
 		approverSalt,
 		expiry,
 	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.calculateDelegationApprovalDigestHash", err)
+		return [32]byte{}, wrappedError
+	}
+
+	return digestHash, nil
 }
 
 // Returns the digest hash to be signed by an operator to register with an AVS.
@@ -282,16 +329,23 @@ func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 	expiry *big.Int,
 ) ([32]byte, error) {
 	if r.avsDirectory == nil {
-		return [32]byte{}, errors.New("AVSDirectory contract not provided")
+		wrappedError := MissingContractError("AVSDirectory")
+		return [32]byte{}, wrappedError
 	}
 
-	return r.avsDirectory.CalculateOperatorAVSRegistrationDigestHash(
+	digestHash, err := r.avsDirectory.CalculateOperatorAVSRegistrationDigestHash(
 		&bind.CallOpts{Context: ctx},
 		operator,
 		avs,
 		salt,
 		expiry,
 	)
+	if err != nil {
+		wrappedError := BindingError("AvsDirectory.calculateOperatorAVSRegistrationDigestHash", err)
+		return [32]byte{}, wrappedError
+	}
+
+	return digestHash, nil
 }
 
 // Returns the number of distribution roots published.
@@ -299,10 +353,17 @@ func (r *ChainReader) CalculateOperatorAVSRegistrationDigestHash(
 // errors in the underlying contract call.
 func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int, error) {
 	if r.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return &big.Int{}, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetDistributionRootsLength(&bind.CallOpts{Context: ctx})
+	distributionRootsLength, err := r.rewardsCoordinator.GetDistributionRootsLength(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getDistributionRootsLength", err)
+		return &big.Int{}, wrappedError
+	}
+
+	return distributionRootsLength, nil
 }
 
 // Returns the timestamp until which rewards submissions have been calculated.
@@ -310,10 +371,17 @@ func (r *ChainReader) GetDistributionRootsLength(ctx context.Context) (*big.Int,
 // errors in the underlying contract call.
 func (r *ChainReader) CurrRewardsCalculationEndTimestamp(ctx context.Context) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
-	return r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+	endTimestamp, err := r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.currRewardsCalculationEndTimestamp", err)
+		return 0, wrappedError
+	}
+
+	return endTimestamp, nil
 }
 
 // Returns the latest root that can be claimed against.
@@ -323,12 +391,17 @@ func (r *ChainReader) GetCurrentClaimableDistributionRoot(
 	ctx context.Context,
 ) (rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot, error) {
 	if r.rewardsCoordinator == nil {
-		return rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot{}, errors.New(
-			"RewardsCoordinator contract not provided",
-		)
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot{}, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetCurrentClaimableDistributionRoot(&bind.CallOpts{Context: ctx})
+	distributionRoot, err := r.rewardsCoordinator.GetCurrentClaimableDistributionRoot(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getCurrentClaimableDistributionRoot", err)
+		return rewardscoordinator.IRewardsCoordinatorTypesDistributionRoot{}, wrappedError
+	}
+
+	return distributionRoot, nil
 }
 
 // Returns the index of the latest root that can be claimed against.
@@ -339,10 +412,17 @@ func (r *ChainReader) GetRootIndexFromHash(
 	rootHash [32]byte,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetRootIndexFromHash(&bind.CallOpts{Context: ctx}, rootHash)
+	rootIndex, err := r.rewardsCoordinator.GetRootIndexFromHash(&bind.CallOpts{Context: ctx}, rootHash)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getRootIndexFromHash", err)
+		return 0, wrappedError
+	}
+
+	return rootIndex, nil
 }
 
 // Returns the number of `token` tokens the `earner` has claimed.
@@ -354,10 +434,17 @@ func (r *ChainReader) GetCumulativeClaimed(
 	token gethcommon.Address,
 ) (*big.Int, error) {
 	if r.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
 
-	return r.rewardsCoordinator.CumulativeClaimed(&bind.CallOpts{Context: ctx}, earner, token)
+	cumulativeClaimed, err := r.rewardsCoordinator.CumulativeClaimed(&bind.CallOpts{Context: ctx}, earner, token)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.cumulativeClaimed", err)
+		return nil, wrappedError
+	}
+
+	return cumulativeClaimed, nil
 }
 
 // Returns `true` if the claim would currently pass the check in
@@ -369,11 +456,18 @@ func (r *ChainReader) CheckClaim(
 	claim rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
 
 	// TODO: this returns an error if the claim is invalid. We map this error to false instead
-	return r.rewardsCoordinator.CheckClaim(&bind.CallOpts{Context: ctx}, claim)
+	claimChecked, err := r.rewardsCoordinator.CheckClaim(&bind.CallOpts{Context: ctx}, claim)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.checkClaim", err)
+		return false, wrappedError
+	}
+
+	return claimChecked, nil
 }
 
 // Returns the split configured by the `operator` for the `avs`.
@@ -385,10 +479,17 @@ func (r *ChainReader) GetOperatorAVSSplit(
 	avs gethcommon.Address,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
+	operatorSplit, err := r.rewardsCoordinator.GetOperatorAVSSplit(&bind.CallOpts{Context: ctx}, operator, avs)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getOperatorAVSSplit", err)
+		return 0, wrappedError
+	}
+
+	return operatorSplit, nil
 }
 
 // Returns the split configured by the `operator` for Programmatic Incentives.
@@ -399,10 +500,17 @@ func (r *ChainReader) GetOperatorPISplit(
 	operator gethcommon.Address,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
+	operatorSplit, err := r.rewardsCoordinator.GetOperatorPISplit(&bind.CallOpts{Context: ctx}, operator)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getOperatorPISplit", err)
+		return 0, wrappedError
+	}
+
+	return operatorSplit, nil
 }
 
 // Returns the split for an operator in an operator set.
@@ -414,10 +522,21 @@ func (r *ChainReader) GetOperatorSetSplit(
 	operatorSet rewardscoordinator.OperatorSet,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
 
-	return r.rewardsCoordinator.GetOperatorSetSplit(&bind.CallOpts{Context: ctx}, operator, operatorSet)
+	operatorSetSplit, err := r.rewardsCoordinator.GetOperatorSetSplit(
+		&bind.CallOpts{Context: ctx},
+		operator,
+		operatorSet,
+	)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.getOperatorSetSplit", err)
+		return 0, wrappedError
+	}
+
+	return operatorSetSplit, nil
 }
 
 // Gets the interval in seconds at which the calculation for rewards distribution is done.
@@ -425,9 +544,17 @@ func (r *ChainReader) GetCalculationIntervalSeconds(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.CALCULATIONINTERVALSECONDS(&bind.CallOpts{Context: ctx})
+
+	calculationIntervalSeconds, err := r.rewardsCoordinator.CALCULATIONINTERVALSECONDS(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.CALCULATIONINTERVALSECONDS", err)
+		return 0, wrappedError
+	}
+
+	return calculationIntervalSeconds, nil
 }
 
 // Gets the maximum amount of time (seconds) that a rewards submission can span over
@@ -435,9 +562,17 @@ func (r *ChainReader) GetMaxRewardsDuration(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
+
+	maxRewardsDuration, err := r.rewardsCoordinator.MAXREWARDSDURATION(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.MAXREWARDSDURATION", err)
+		return 0, wrappedError
+	}
+
+	return maxRewardsDuration, nil
 }
 
 // Get the max amount of time (seconds) that a rewards submission can start in the past
@@ -445,9 +580,17 @@ func (r *ChainReader) GetMaxRetroactiveLength(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
+
+	maxRetroactiveLength, err := r.rewardsCoordinator.MAXRETROACTIVELENGTH(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.MAXRETROACTIVELENGTH", err)
+		return 0, wrappedError
+	}
+
+	return maxRetroactiveLength, nil
 }
 
 // Get the max amount of time (seconds) that a rewards submission can start in the future
@@ -455,9 +598,17 @@ func (r *ChainReader) GetMaxFutureLength(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
+
+	maxFutureLength, err := r.rewardsCoordinator.MAXFUTURELENGTH(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.MAXFUTURELENGTH", err)
+		return 0, wrappedError
+	}
+
+	return maxFutureLength, nil
 }
 
 // Get absolute min timestamp (seconds) that a rewards submission can start at
@@ -465,9 +616,17 @@ func (r *ChainReader) GetGenesisRewardsTimestamp(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
+
+	genesisRewardsTimestamp, err := r.rewardsCoordinator.GENESISREWARDSTIMESTAMP(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.GENESISREWARDSTIMESTAMP", err)
+		return 0, wrappedError
+	}
+
+	return genesisRewardsTimestamp, nil
 }
 
 // Get the address of the entity that can update the contract with new merkle roots
@@ -475,9 +634,17 @@ func (r *ChainReader) GetRewardsUpdater(
 	ctx context.Context,
 ) (gethcommon.Address, error) {
 	if r.rewardsCoordinator == nil {
-		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return gethcommon.Address{}, wrappedError
 	}
-	return r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
+
+	rewardsUpdaterAddress, err := r.rewardsCoordinator.RewardsUpdater(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.rewardsUpdater", err)
+		return gethcommon.Address{}, wrappedError
+	}
+
+	return rewardsUpdaterAddress, nil
 }
 
 // Get delay in timestamp (seconds) before a posted root can be claimed against
@@ -485,9 +652,17 @@ func (r *ChainReader) GetActivationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.ActivationDelay(&bind.CallOpts{Context: ctx})
+
+	activationDelay, err := r.rewardsCoordinator.ActivationDelay(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.activationDelay", err)
+		return 0, wrappedError
+	}
+
+	return activationDelay, nil
 }
 
 // Get timestamp for last submitted DistributionRoot
@@ -495,9 +670,17 @@ func (r *ChainReader) GetCurrRewardsCalculationEndTimestamp(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+
+	endTimestamp, err := r.rewardsCoordinator.CurrRewardsCalculationEndTimestamp(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.currRewardsCalculationEndTimestamp", err)
+		return 0, wrappedError
+	}
+
+	return endTimestamp, nil
 }
 
 // Get the default split for all operators across all avss in bips.
@@ -505,9 +688,17 @@ func (r *ChainReader) GetDefaultOperatorSplitBips(
 	ctx context.Context,
 ) (uint16, error) {
 	if r.rewardsCoordinator == nil {
-		return 0, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return 0, wrappedError
 	}
-	return r.rewardsCoordinator.DefaultOperatorSplitBips(&bind.CallOpts{Context: ctx})
+
+	operatorSplitBips, err := r.rewardsCoordinator.DefaultOperatorSplitBips(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.defaultOperatorSplitBips", err)
+		return 0, wrappedError
+	}
+
+	return operatorSplitBips, nil
 }
 
 func (r *ChainReader) GetClaimerFor(
@@ -515,9 +706,17 @@ func (r *ChainReader) GetClaimerFor(
 	earner gethcommon.Address,
 ) (gethcommon.Address, error) {
 	if r.rewardsCoordinator == nil {
-		return gethcommon.Address{}, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return gethcommon.Address{}, wrappedError
 	}
-	return r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
+
+	claimer, err := r.rewardsCoordinator.ClaimerFor(&bind.CallOpts{Context: ctx}, earner)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.claimerFor", err)
+		return gethcommon.Address{}, wrappedError
+	}
+
+	return claimer, nil
 }
 
 // Returns the submission nonce for an avs
@@ -526,9 +725,17 @@ func (r *ChainReader) GetSubmissionNonce(
 	avs gethcommon.Address,
 ) (*big.Int, error) {
 	if r.rewardsCoordinator == nil {
-		return nil, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return nil, wrappedError
 	}
-	return r.rewardsCoordinator.SubmissionNonce(&bind.CallOpts{Context: ctx}, avs)
+
+	submissionNonce, err := r.rewardsCoordinator.SubmissionNonce(&bind.CallOpts{Context: ctx}, avs)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.submissionNonce", err)
+		return nil, wrappedError
+	}
+
+	return submissionNonce, nil
 }
 
 // Returns whether a hash is a valid rewards submission hash for a given avs
@@ -538,9 +745,17 @@ func (r *ChainReader) GetIsAVSRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+
+	isSubmissionHash, err := r.rewardsCoordinator.IsAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isAVSRewardsSubmissionHash", err)
+		return false, wrappedError
+	}
+
+	return isSubmissionHash, nil
 }
 
 // Returns whether a hash is a valid rewards submission for all hash for a given avs
@@ -550,9 +765,21 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsRewardsSubmissionForAllHash(&bind.CallOpts{Context: ctx}, avs, hash)
+
+	isSubmissionForAll, err := r.rewardsCoordinator.IsRewardsSubmissionForAllHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isRewardsSubmissionForAllHash", err)
+		return false, wrappedError
+	}
+
+	return isSubmissionForAll, nil
 }
 
 // Returns whether a submitter is a valid rewards for all submitter
@@ -561,9 +788,17 @@ func (r *ChainReader) GetIsRewardsForAllSubmitter(
 	submitter gethcommon.Address,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsRewardsForAllSubmitter(&bind.CallOpts{Context: ctx}, submitter)
+
+	isForAll, err := r.rewardsCoordinator.IsRewardsForAllSubmitter(&bind.CallOpts{Context: ctx}, submitter)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isRewardsForAllSubmitter", err)
+		return false, wrappedError
+	}
+
+	return isForAll, nil
 }
 
 // Returns whether a hash is a valid rewards submission for all earners hash for a given avs
@@ -573,9 +808,21 @@ func (r *ChainReader) GetIsRewardsSubmissionForAllEarnersHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(&bind.CallOpts{Context: ctx}, avs, hash)
+
+	isForAllEarners, err := r.rewardsCoordinator.IsRewardsSubmissionForAllEarnersHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isRewardsSubmissionForAllEarnersHash", err)
+		return false, wrappedError
+	}
+
+	return isForAllEarners, nil
 }
 
 // Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
@@ -585,9 +832,21 @@ func (r *ChainReader) GetIsOperatorDirectedAVSRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(&bind.CallOpts{Context: ctx}, avs, hash)
+
+	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedAVSRewardsSubmissionHash(
+		&bind.CallOpts{Context: ctx},
+		avs,
+		hash,
+	)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash", err)
+		return false, wrappedError
+	}
+
+	return isSubmissionHash, nil
 }
 
 // Returns whether a hash is a valid operator set performance rewards submission hash for a given avs
@@ -597,13 +856,21 @@ func (r *ChainReader) GetIsOperatorDirectedOperatorSetRewardsSubmissionHash(
 	hash [32]byte,
 ) (bool, error) {
 	if r.rewardsCoordinator == nil {
-		return false, errors.New("RewardsCoordinator contract not provided")
+		wrappedError := MissingContractError("RewardsCoordinator")
+		return false, wrappedError
 	}
-	return r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(
+
+	isSubmissionHash, err := r.rewardsCoordinator.IsOperatorDirectedOperatorSetRewardsSubmissionHash(
 		&bind.CallOpts{Context: ctx},
 		avs,
 		hash,
 	)
+	if err != nil {
+		wrappedError := BindingError("RewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash", err)
+		return false, wrappedError
+	}
+
+	return isSubmissionHash, nil
 }
 
 // Returns the amount of magnitude on a strategy not currently allocated to any operator set,
@@ -616,10 +883,21 @@ func (r *ChainReader) GetAllocatableMagnitude(
 	strategyAddress gethcommon.Address,
 ) (uint64, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 
-	return r.allocationManager.GetAllocatableMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+	allocatableMagnitude, err := r.allocationManager.GetAllocatableMagnitude(
+		&bind.CallOpts{Context: ctx},
+		operatorAddress,
+		strategyAddress,
+	)
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.getAllocatableMagnitude", err)
+		return 0, wrappedError
+	}
+
+	return allocatableMagnitude, nil
 }
 
 // Returns the amount of magnitude an operator has allocated to operator sets for a given strategy
@@ -629,10 +907,21 @@ func (r *ChainReader) GetEncumberedMagnitude(
 	strategyAddress gethcommon.Address,
 ) (uint64, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 
-	return r.allocationManager.EncumberedMagnitude(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddress)
+	encumberedMagnitude, err := r.allocationManager.EncumberedMagnitude(
+		&bind.CallOpts{Context: ctx},
+		operatorAddress,
+		strategyAddress,
+	)
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.encumberedMagnitude", err)
+		return 0, wrappedError
+	}
+
+	return encumberedMagnitude, nil
 }
 
 // Returns the delay within which deallocations are slashable.
@@ -640,9 +929,17 @@ func (r *ChainReader) GetDeallocationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
-	return r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
+
+	deallocationDelay, err := r.allocationManager.DEALLOCATIONDELAY(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.DEALLOCATIONDELAY", err)
+		return 0, wrappedError
+	}
+
+	return deallocationDelay, nil
 }
 
 // Returns the delay before allocation delay modifications take effect.
@@ -650,9 +947,17 @@ func (r *ChainReader) GetAllocationConfigurationDelay(
 	ctx context.Context,
 ) (uint32, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
-	return r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
+
+	allocationConfigDelay, err := r.allocationManager.ALLOCATIONCONFIGURATIONDELAY(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.ALLOCATIONCONFIGURATIONDELAY", err)
+		return 0, wrappedError
+	}
+
+	return allocationConfigDelay, nil
 }
 
 // Returns the maximum magnitude an operator can allocate for the given strategies.
@@ -664,10 +969,21 @@ func (r *ChainReader) GetMaxMagnitudes(
 	strategyAddresses []gethcommon.Address,
 ) ([]uint64, error) {
 	if r.allocationManager == nil {
-		return []uint64{}, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return []uint64{}, wrappedError
 	}
 
-	return r.allocationManager.GetMaxMagnitudes0(&bind.CallOpts{Context: ctx}, operatorAddress, strategyAddresses)
+	maxMagnitudes, err := r.allocationManager.GetMaxMagnitudes0(
+		&bind.CallOpts{Context: ctx},
+		operatorAddress,
+		strategyAddresses,
+	)
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.getMaxMagnitudes0", err)
+		return []uint64{}, wrappedError
+	}
+
+	return maxMagnitudes, nil
 }
 
 // Returns the allocation info of a given operator and strategy.
@@ -679,7 +995,8 @@ func (r *ChainReader) GetAllocationInfo(
 	strategyAddress gethcommon.Address,
 ) ([]AllocationInfo, error) {
 	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	opSets, allocationInfo, err := r.allocationManager.GetStrategyAllocations(
@@ -689,7 +1006,8 @@ func (r *ChainReader) GetAllocationInfo(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("AllocationManager.getStrategyAllocations", err)
+		return nil, wrappedError
 	}
 
 	allocationsInfo := make([]AllocationInfo, len(opSets))
@@ -715,12 +1033,19 @@ func (r *ChainReader) GetOperatorShares(
 	strategyAddresses []gethcommon.Address,
 ) ([]*big.Int, error) {
 	if r.delegationManager == nil {
-		return nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, wrappedError
 	}
 
-	return r.delegationManager.GetOperatorShares(&bind.CallOpts{
+	operatorShares, err := r.delegationManager.GetOperatorShares(&bind.CallOpts{
 		Context: ctx,
 	}, operatorAddress, strategyAddresses)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.getOperatorShares", err)
+		return nil, wrappedError
+	}
+
+	return operatorShares, nil
 }
 
 // Returns the shares that a set of operators have delegated to them in a set of strategies.
@@ -732,9 +1057,21 @@ func (r *ChainReader) GetOperatorsShares(
 	strategyAddresses []gethcommon.Address,
 ) ([][]*big.Int, error) {
 	if r.delegationManager == nil {
-		return nil, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return nil, wrappedError
 	}
-	return r.delegationManager.GetOperatorsShares(&bind.CallOpts{Context: ctx}, operatorAddresses, strategyAddresses)
+
+	operatorsShares, err := r.delegationManager.GetOperatorsShares(
+		&bind.CallOpts{Context: ctx},
+		operatorAddresses,
+		strategyAddresses,
+	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.getOperatorsShares", err)
+		return nil, wrappedError
+	}
+
+	return operatorsShares, nil
 }
 
 // Returns whether `delegationApprover` has already used the given `salt`.
@@ -744,14 +1081,21 @@ func (r *ChainReader) GetDelegationApproverSaltIsSpent(
 	approverSalt [32]byte,
 ) (bool, error) {
 	if r.delegationManager == nil {
-		return false, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return false, wrappedError
 	}
 
-	return r.delegationManager.DelegationApproverSaltIsSpent(
+	isSpent, err := r.delegationManager.DelegationApproverSaltIsSpent(
 		&bind.CallOpts{Context: ctx},
 		delegationApprover,
 		approverSalt,
 	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.delegationApproverSaltIsSpent", err)
+		return false, wrappedError
+	}
+
+	return isSpent, nil
 }
 
 // Returns whether a withdrawal is pending for a given `withdrawalRoot`.
@@ -760,21 +1104,39 @@ func (r *ChainReader) GetPendingWithdrawalStatus(
 	withdrawalRoot [32]byte,
 ) (bool, error) {
 	if r.delegationManager == nil {
-		return false, errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return false, wrappedError
 	}
 
-	return r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
+	pendingWithdrawals, err := r.delegationManager.PendingWithdrawals(&bind.CallOpts{Context: ctx}, withdrawalRoot)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.pendingWithdrawals", err)
+		return false, wrappedError
+	}
+
+	return pendingWithdrawals, nil
 }
 
 // Returns the total number of withdrawals that have been queued for a given `staker`
 func (r *ChainReader) GetCumulativeWithdrawalsQueued(
 	ctx context.Context,
-	staker common.Address,
+	staker gethcommon.Address,
 ) (*big.Int, error) {
 	if r.delegationManager == nil {
-		return big.NewInt(0), errors.New("DelegationManager contract not provided")
+		wrappedError := MissingContractError("DelegationManager")
+		return big.NewInt(0), wrappedError // should we return nil instead?
 	}
-	return r.delegationManager.CumulativeWithdrawalsQueued(&bind.CallOpts{Context: ctx}, staker)
+
+	cumulativeWithdrawalsQueued, err := r.delegationManager.CumulativeWithdrawalsQueued(
+		&bind.CallOpts{Context: ctx},
+		staker,
+	)
+	if err != nil {
+		wrappedError := BindingError("DelegationManager.cumulativeWithdrawalsQueued", err)
+		return big.NewInt(0), wrappedError
+	}
+
+	return cumulativeWithdrawalsQueued, nil
 }
 
 // Returns the number of operator sets that an operator is part of.
@@ -786,11 +1148,13 @@ func (r *ChainReader) GetNumOperatorSetsForOperator(
 	operatorAddress gethcommon.Address,
 ) (*big.Int, error) {
 	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 	opSets, err := r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("AllocationManager.getAllocatedSets", err)
+		return nil, wrappedError
 	}
 	return big.NewInt(int64(len(opSets))), nil
 }
@@ -804,11 +1168,18 @@ func (r *ChainReader) GetOperatorSetsForOperator(
 	operatorAddress gethcommon.Address,
 ) ([]allocationmanager.OperatorSet, error) {
 	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 	// TODO: we're fetching max int64 operatorSets here. What's the practical limit for timeout by RPC? do we need to
 	// paginate?
-	return r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+	allocatedSets, err := r.allocationManager.GetAllocatedSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.getAllocatedSets", err)
+		return nil, wrappedError
+	}
+
+	return allocatedSets, nil
 }
 
 // Returns `true` if an operator is registered with a specific operator set or M2 quorum.
@@ -822,24 +1193,28 @@ func (r *ChainReader) IsOperatorRegisteredWithOperatorSet(
 	if operatorSet.Id == 0 {
 		// this is an M2 AVS
 		if r.avsDirectory == nil {
-			return false, errors.New("AVSDirectory contract not provided")
+			wrappedError := MissingContractError("AVSDirectory")
+			return false, wrappedError
 		}
 
 		status, err := r.avsDirectory.AvsOperatorStatus(&bind.CallOpts{Context: ctx}, operatorSet.Avs, operatorAddress)
 		// This call should not fail since it's a getter
 		if err != nil {
-			return false, err
+			wrappedError := BindingError("AvsDirectory.avsOperatorStatus", err)
+			return false, wrappedError
 		}
 
 		return status == 1, nil
 	} else {
 		if r.allocationManager == nil {
-			return false, errors.New("AllocationManager contract not provided")
+			wrappedError := MissingContractError("AllocationManager")
+			return false, wrappedError
 		}
 		registeredOperatorSets, err := r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
 		// This call should not fail since it's a getter
 		if err != nil {
-			return false, err
+			wrappedError := BindingError("AllocationManager.getRegisteredSets", err)
+			return false, wrappedError
 		}
 		for _, registeredOperatorSet := range registeredOperatorSets {
 			if registeredOperatorSet.Id == operatorSet.Id && registeredOperatorSet.Avs == operatorSet.Avs {
@@ -863,10 +1238,17 @@ func (r *ChainReader) GetOperatorsForOperatorSet(
 		return nil, errLegacyAVSsNotSupported
 	} else {
 		if r.allocationManager == nil {
-			return nil, errors.New("AllocationManager contract not provided")
+			wrappedError := MissingContractError("AllocationManager")
+			return nil, wrappedError
 		}
 
-		return r.allocationManager.GetMembers(&bind.CallOpts{Context: ctx}, operatorSet)
+		members, err := r.allocationManager.GetMembers(&bind.CallOpts{Context: ctx}, operatorSet)
+		if err != nil {
+			wrappedError := BindingError("AllocationManager.getMembers", err)
+			return nil, wrappedError
+		}
+
+		return members, nil
 	}
 }
 
@@ -882,10 +1264,17 @@ func (r *ChainReader) GetNumOperatorsForOperatorSet(
 		return nil, errLegacyAVSsNotSupported
 	} else {
 		if r.allocationManager == nil {
-			return nil, errors.New("AllocationManager contract not provided")
+			wrappedError := MissingContractError("AllocationManager")
+			return nil, wrappedError
 		}
 
-		return r.allocationManager.GetMemberCount(&bind.CallOpts{Context: ctx}, operatorSet)
+		memberCount, err := r.allocationManager.GetMemberCount(&bind.CallOpts{Context: ctx}, operatorSet)
+		if err != nil {
+			wrappedError := BindingError("AllocationManager.getMemberCount", err)
+			return nil, wrappedError
+		}
+
+		return memberCount, nil
 	}
 }
 
@@ -901,10 +1290,17 @@ func (r *ChainReader) GetStrategiesForOperatorSet(
 		return nil, errLegacyAVSsNotSupported
 	} else {
 		if r.allocationManager == nil {
-			return nil, errors.New("AllocationManager contract not provided")
+			wrappedError := MissingContractError("AllocationManager")
+			return nil, wrappedError
 		}
 
-		return r.allocationManager.GetStrategiesInOperatorSet(&bind.CallOpts{Context: ctx}, operatorSet)
+		strategiesInSet, err := r.allocationManager.GetStrategiesInOperatorSet(&bind.CallOpts{Context: ctx}, operatorSet)
+		if err != nil {
+			wrappedError := BindingError("AllocationManager.getStrategiesInOperatorSet", err)
+			return nil, wrappedError
+		}
+
+		return strategiesInSet, nil
 	}
 }
 
@@ -919,13 +1315,15 @@ func (r *ChainReader) GetSlashableShares(
 	strategies []gethcommon.Address,
 ) (map[gethcommon.Address]*big.Int, error) {
 	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
 
 	currentBlock, err := r.ethClient.BlockNumber(ctx)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("EthClient.blockNumber", err)
+		return nil, wrappedError
 	}
 
 	slashableShares, err := r.allocationManager.GetMinimumSlashableStake(
@@ -937,10 +1335,12 @@ func (r *ChainReader) GetSlashableShares(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("AllocationManager.getMinimumSlashableStake", err)
+		return nil, wrappedError
 	}
 	if len(slashableShares) == 0 {
-		return nil, errors.New("no slashable shares found for operator")
+		wrappedError := OtherError("No slashable shares found for operator", err)
+		return nil, wrappedError
 	}
 
 	slashableShareStrategyMap := make(map[gethcommon.Address]*big.Int)
@@ -964,9 +1364,17 @@ func (r *ChainReader) GetSlashableSharesForOperatorSets(
 	currentBlock, err := r.ethClient.BlockNumber(ctx)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, err
+		wrappedError := BindingError("EthClient.blockNumber", err)
+		return nil, wrappedError
 	}
-	return r.GetSlashableSharesForOperatorSetsBefore(ctx, operatorSets, uint32(currentBlock))
+
+	operatorSetStakes, err := r.GetSlashableSharesForOperatorSetsBefore(ctx, operatorSets, uint32(currentBlock))
+	if err != nil {
+		wrappedError := NestedError("GetSlashableSharesForOperatorSetsBefore", err)
+		return nil, wrappedError
+	}
+
+	return operatorSetStakes, nil
 }
 
 // Returns the strategies the `operatorSets` take into account, their
@@ -985,13 +1393,15 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 	for i, operatorSet := range operatorSets {
 		operators, err := r.GetOperatorsForOperatorSet(ctx, operatorSet)
 		if err != nil {
-			return nil, err
+			wrappedError := NestedError("GetOperatorsForOperatorSet", err)
+			return nil, wrappedError
 		}
 
 		strategies, err := r.GetStrategiesForOperatorSet(ctx, operatorSet)
 		// If operator setId is 0 will fail on if above
 		if err != nil {
-			return nil, err
+			wrappedError := NestedError("GetStrategiesForOperatorSet", err)
+			return nil, wrappedError
 		}
 
 		slashableShares, err := r.allocationManager.GetMinimumSlashableStake(
@@ -1006,7 +1416,8 @@ func (r *ChainReader) GetSlashableSharesForOperatorSetsBefore(
 		)
 		// This call should not fail since it's a getter
 		if err != nil {
-			return nil, err
+			wrappedError := BindingError("AllocationManager.getMinimumSlashableStake", err)
+			return nil, wrappedError
 		}
 
 		operatorSetStakes[i] = OperatorSetStakes{
@@ -1030,15 +1441,18 @@ func (r *ChainReader) GetAllocationDelay(
 	operatorAddress gethcommon.Address,
 ) (uint32, error) {
 	if r.allocationManager == nil {
-		return 0, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return 0, wrappedError
 	}
 	isSet, delay, err := r.allocationManager.GetAllocationDelay(&bind.CallOpts{Context: ctx}, operatorAddress)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return 0, err
+		wrappedError := BindingError("AllocationManager.getAllocationDelay", err)
+		return 0, wrappedError
 	}
 	if !isSet {
-		return 0, errors.New("allocation delay not set")
+		wrappedError := OtherError("Allocation delay not set", err)
+		return 0, wrappedError
 	}
 	return delay, nil
 }
@@ -1051,9 +1465,17 @@ func (r *ChainReader) GetRegisteredSets(
 	operatorAddress gethcommon.Address,
 ) ([]allocationmanager.OperatorSet, error) {
 	if r.allocationManager == nil {
-		return nil, errors.New("AllocationManager contract not provided")
+		wrappedError := MissingContractError("AllocationManager")
+		return nil, wrappedError
 	}
-	return r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+
+	registeredSets, err := r.allocationManager.GetRegisteredSets(&bind.CallOpts{Context: ctx}, operatorAddress)
+	if err != nil {
+		wrappedError := BindingError("AllocationManager.getRegisteredSets", err)
+		return nil, wrappedError
+	}
+
+	return registeredSets, nil
 }
 
 // Returns `true` if `appointeeAddress` has permission to call the function with the given
@@ -1067,6 +1489,11 @@ func (r *ChainReader) CanCall(
 	target gethcommon.Address,
 	selector [4]byte,
 ) (bool, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return false, wrappedError
+	}
+
 	canCall, err := r.permissionController.CanCall(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -1076,7 +1503,8 @@ func (r *ChainReader) CanCall(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return false, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.canCall", err)
+		return false, wrappedError
 	}
 	return canCall, nil
 }
@@ -1091,6 +1519,11 @@ func (r *ChainReader) ListAppointees(
 	target gethcommon.Address,
 	selector [4]byte,
 ) ([]gethcommon.Address, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
+	}
+
 	appointees, err := r.permissionController.GetAppointees(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -1099,7 +1532,8 @@ func (r *ChainReader) ListAppointees(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.getAppointees", err)
+		return nil, wrappedError
 	}
 	return appointees, nil
 }
@@ -1112,6 +1546,11 @@ func (r *ChainReader) ListAppointeePermissions(
 	accountAddress gethcommon.Address,
 	appointeeAddress gethcommon.Address,
 ) ([]gethcommon.Address, [][4]byte, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return nil, nil, wrappedError
+	}
+
 	targets, selectors, err := r.permissionController.GetAppointeePermissions(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -1119,7 +1558,8 @@ func (r *ChainReader) ListAppointeePermissions(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, nil, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.getAppointeePermissions", err)
+		return nil, nil, wrappedError
 	}
 	return targets, selectors, nil
 }
@@ -1131,10 +1571,16 @@ func (r *ChainReader) ListPendingAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
+	}
+
 	pendingAdmins, err := r.permissionController.GetPendingAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.getPendingAdmins", err)
+		return nil, wrappedError
 	}
 	return pendingAdmins, nil
 }
@@ -1146,10 +1592,16 @@ func (r *ChainReader) ListAdmins(
 	ctx context.Context,
 	accountAddress gethcommon.Address,
 ) ([]gethcommon.Address, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return nil, wrappedError
+	}
+
 	pendingAdmins, err := r.permissionController.GetAdmins(&bind.CallOpts{Context: ctx}, accountAddress)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return nil, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.getAdmins", err)
+		return nil, wrappedError
 	}
 	return pendingAdmins, nil
 }
@@ -1162,6 +1614,11 @@ func (r *ChainReader) IsPendingAdmin(
 	accountAddress gethcommon.Address,
 	pendingAdminAddress gethcommon.Address,
 ) (bool, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return false, wrappedError
+	}
+
 	isPendingAdmin, err := r.permissionController.IsPendingAdmin(
 		&bind.CallOpts{Context: ctx},
 		accountAddress,
@@ -1169,7 +1626,8 @@ func (r *ChainReader) IsPendingAdmin(
 	)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return false, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.isPendingAdmin", err)
+		return false, wrappedError
 	}
 	return isPendingAdmin, nil
 }
@@ -1182,10 +1640,16 @@ func (r *ChainReader) IsAdmin(
 	accountAddress gethcommon.Address,
 	adminAddress gethcommon.Address,
 ) (bool, error) {
+	if r.permissionController == nil {
+		wrappedError := MissingContractError("PermissionController")
+		return false, wrappedError
+	}
+
 	isAdmin, err := r.permissionController.IsAdmin(&bind.CallOpts{Context: ctx}, accountAddress, adminAddress)
 	// This call should not fail since it's a getter
 	if err != nil {
-		return false, utils.WrapError("call to permission controller failed", err)
+		wrappedError := BindingError("PermissionController.isAdmin", err)
+		return false, wrappedError
 	}
 	return isAdmin, nil
 }
