@@ -337,6 +337,21 @@ func (a *BlsAggregatorService) run(
 	}
 }
 
+func (a *ServiceHandler) InitializeNewTask(
+	metadata TaskMetadata,
+) error {
+	errChan := make(chan error)
+	a.TaskInitC <- InitializeTaskRequest{metadata, errChan}
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		return nil
+	}
+}
+
+// TODO: continue by adding the process signature option
+
 func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
 	return a.aggregatedResponsesC
 }
