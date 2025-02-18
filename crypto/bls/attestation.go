@@ -158,38 +158,14 @@ type KeyPair struct {
 	PubKey  *G1Point
 }
 
-func NewKeyPair(sk *PrivateKey) *KeyPair {
-	pk := bn254utils.MulByGeneratorG1(sk)
-	return &KeyPair{sk, &G1Point{pk}}
+type BLSKey struct {
+	key *KeyPair
 }
 
-func NewKeyPairFromString(sk string) (*KeyPair, error) {
-	ele, err := new(fr.Element).SetString(sk)
-	if err != nil {
-		return nil, err
-	}
-	return NewKeyPair(ele), nil
-}
-
-func GenRandomBlsKeys() (*KeyPair, error) {
-
-	//Max random value is order of the curve
-	max := new(big.Int)
-	max.SetString(fr.Modulus().String(), 10)
-
-	//Generate cryptographically strong pseudo-random between 0 - max
-	n, err := rand.Int(rand.Reader, max)
-	if err != nil {
-		return nil, err
-	}
-
-	sk := new(PrivateKey).SetBigInt(n)
-	return NewKeyPair(sk), nil
-}
-
-// SaveToFile saves the private key in an encrypted keystore file
-func (k *KeyPair) SaveToFile(path string, password string) error {
-	data, err := k.EncryptedString(path, password)
+// Saves a BLS key in a file located in the received path, encrypted
+// by a given password string
+func (e BLSKey) Save(path, password string) error {
+	data, err := e.key.encryptedString(password)
 	if err != nil {
 		return err
 	}
@@ -206,7 +182,73 @@ func (k *KeyPair) SaveToFile(path string, password string) error {
 	return nil
 }
 
-func (k *KeyPair) EncryptedString(path string, password string) ([]byte, error) {
+// Reads a BLS key from a file located in the received path, decrypted
+// by a received password string
+func (e BLSKey) Read(path, password string) (BLSKey, error) {
+	keyStoreContents, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return BLSKey{}, err
+	}
+
+	encryptedBLSStruct := &encryptedBLSKeyJSONV3{}
+	err = json.Unmarshal(keyStoreContents, encryptedBLSStruct)
+	if err != nil {
+		return BLSKey{}, err
+	}
+
+	// Check if pubkey is present, if not return error
+	// There is an issue where if you specify ecdsa key file
+	// it still works and returns a keypair since the format of storage is same.
+	// This is to prevent and make sure pubkey is present.
+	// ecdsa keys doesn't have that field
+	if encryptedBLSStruct.PubKey == "" {
+		return BLSKey{}, fmt.Errorf("invalid bls key file. pubkey field not found")
+	}
+
+	skBytes, err := keystore.DecryptDataV3(encryptedBLSStruct.Crypto, password)
+	if err != nil {
+		return BLSKey{}, err
+	}
+
+	privKey := new(fr.Element).SetBytes(skBytes)
+	keyPair := NewKeyPair(privKey)
+	return BLSKey{keyPair}, nil
+}
+
+// Generates a random new BLS key
+func CreateNewBLSKey() (BLSKey, error) {
+	//Max random value is order of the curve
+	max := new(big.Int)
+	max.SetString(fr.Modulus().String(), 10)
+
+	//Generate cryptographically strong pseudo-random between 0 - max
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return BLSKey{}, err
+	}
+
+	sk := new(PrivateKey).SetBigInt(n)
+	return BLSKey{key: NewKeyPair(sk)}, nil
+}
+
+func (e BLSKey) GetKeyPair() *KeyPair {
+	return e.key
+}
+
+func NewKeyPair(sk *PrivateKey) *KeyPair {
+	pk := bn254utils.MulByGeneratorG1(sk)
+	return &KeyPair{sk, &G1Point{pk}}
+}
+
+func NewKeyPairFromString(sk string) (*KeyPair, error) {
+	ele, err := new(fr.Element).SetString(sk)
+	if err != nil {
+		return nil, err
+	}
+	return NewKeyPair(ele), nil
+}
+
+func (k *KeyPair) encryptedString(password string) ([]byte, error) {
 	sk32Bytes := k.PrivKey.Bytes()
 	skBytes := make([]byte, 32)
 	for i := 0; i < 32; i++ {
@@ -234,36 +276,7 @@ func (k *KeyPair) EncryptedString(path string, password string) ([]byte, error) 
 	return data, nil
 }
 
-func ReadPrivateKeyFromFile(path string, password string) (*KeyPair, error) {
-	keyStoreContents, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedBLSStruct := &encryptedBLSKeyJSONV3{}
-	err = json.Unmarshal(keyStoreContents, encryptedBLSStruct)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if pubkey is present, if not return error
-	// There is an issue where if you specify ecdsa key file
-	// it still works and returns a keypair since the format of storage is same.
-	// This is to prevent and make sure pubkey is present.
-	// ecdsa keys doesn't have that field
-	if encryptedBLSStruct.PubKey == "" {
-		return nil, fmt.Errorf("invalid bls key file. pubkey field not found")
-	}
-
-	skBytes, err := keystore.DecryptDataV3(encryptedBLSStruct.Crypto, password)
-	if err != nil {
-		return nil, err
-	}
-
-	privKey := new(fr.Element).SetBytes(skBytes)
-	keyPair := NewKeyPair(privKey)
-	return keyPair, nil
-}
+// Sign related
 
 // This signs a message on G1, and so will require a G2Pubkey to verify
 func (k *KeyPair) SignMessage(message [32]byte) *Signature {
@@ -277,6 +290,8 @@ func (k *KeyPair) SignHashedToCurveMessage(g1HashedMsg *bn254.G1Affine) *Signatu
 	sig := new(bn254.G1Affine).ScalarMultiplication(g1HashedMsg, k.PrivKey.BigInt(new(big.Int)))
 	return &Signature{&G1Point{sig}}
 }
+
+// Getters
 
 func (k *KeyPair) GetPubKeyG2() *G2Point {
 	return &G2Point{bn254utils.MulByGeneratorG2(k.PrivKey)}

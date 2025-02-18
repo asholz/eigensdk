@@ -9,27 +9,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	gethcommon "github.com/ethereum/go-ethereum/common"
-
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 )
 
-func WriteKeyFromHex(path, privateKeyHex, password string) error {
-	privateKey, err := crypto.HexToECDSA(privateKeyHex)
-	if err != nil {
-		return err
-	}
-	return WriteKey(path, privateKey, password)
+type ECDSAKey struct {
+	key *ecdsa.PrivateKey
 }
 
-// WriteKey writes the private key to the given path
-// The key is encrypted using the given password
-// This function will create the directory if it doesn't exist
-// If there's an existing file at the given path, it will be overwritten
-func WriteKey(path string, privateKey *ecdsa.PrivateKey, password string) error {
+// Saves a BLS key in a file located in the received path, encrypted
+// by a given password string
+func (e ECDSAKey) Save(path string, password string) error {
 	UUID, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -39,8 +31,8 @@ func WriteKey(path string, privateKey *ecdsa.PrivateKey, password string) error 
 	// to store the keys which requires us to have random UUID for encryption
 	key := &keystore.Key{
 		Id:         UUID,
-		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
-		PrivateKey: privateKey,
+		Address:    crypto.PubkeyToAddress(e.key.PublicKey),
+		PrivateKey: e.key,
 	}
 
 	encryptedBytes, err := keystore.EncryptKey(key, password, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -49,6 +41,44 @@ func WriteKey(path string, privateKey *ecdsa.PrivateKey, password string) error 
 	}
 
 	return writeBytesToFile(path, encryptedBytes)
+}
+
+// Reads a BLS key from a file located in the received path, decrypted
+// by a received password string
+func (e *ECDSAKey) Read(path string, password string) (ECDSAKey, error) {
+	keyStoreContents, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return ECDSAKey{}, err
+	}
+
+	sk, err := keystore.DecryptKey(keyStoreContents, password)
+	if err != nil {
+		return ECDSAKey{}, err
+	}
+
+	return ECDSAKey{key: sk.PrivateKey}, nil
+}
+
+// Generates a random new ECDSA key
+func CreateNewEcdsaKey() (ECDSAKey, error) {
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		return ECDSAKey{}, err
+	}
+	return ECDSAKey{key: privateKey}, nil
+}
+
+// CreateNewEcdsaKey generates a new ECDSA private key
+func CreateNewEcdsaKeyFromHex(privateKeyHex string) (ECDSAKey, error) {
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return ECDSAKey{}, err
+	}
+	return ECDSAKey{key: privateKey}, nil
+}
+
+func (e ECDSAKey) GetPrivateKey() *ecdsa.PrivateKey {
+	return e.key
 }
 
 func writeBytesToFile(path string, data []byte) error {
@@ -80,39 +110,25 @@ func writeBytesToFile(path string, data []byte) error {
 	return err
 }
 
-func ReadKey(keyStoreFile string, password string) (*ecdsa.PrivateKey, error) {
-	keyStoreContents, err := os.ReadFile(filepath.Clean(keyStoreFile))
-	if err != nil {
-		return nil, err
-	}
-
-	sk, err := keystore.DecryptKey(keyStoreContents, password)
-	if err != nil {
-		return nil, err
-	}
-
-	return sk.PrivateKey, nil
-}
-
 // GetAddressFromKeyStoreFile We are using Web3 format defined by
 // https://ethereum.org/en/developers/docs/data-structures-and-encoding/web3-secret-storage/
-func GetAddressFromKeyStoreFile(keyStoreFile string) (gethcommon.Address, error) {
+func GetAddressFromKeyStoreFile(keyStoreFile string) (common.Address, error) {
 	keyJson, err := os.ReadFile(filepath.Clean(keyStoreFile))
 	if err != nil {
-		return gethcommon.Address{}, err
+		return common.Address{}, err
 	}
 
 	// The reason we have map[string]interface{} is because `address` is string but the `crypto` field is an object
 	// we don't care about the object in this method, but we still need to unmarshal it
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(keyJson, &m); err != nil {
-		return gethcommon.Address{}, err
+		return common.Address{}, err
 	}
 
 	if address, ok := m["address"].(string); !ok {
-		return gethcommon.Address{}, fmt.Errorf("address not found in key file")
+		return common.Address{}, fmt.Errorf("address not found in key file")
 	} else {
-		return gethcommon.HexToAddress(address), nil
+		return common.HexToAddress(address), nil
 	}
 }
 
