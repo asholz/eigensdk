@@ -10,6 +10,8 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 ## [Unreleased]
 ### Added
 ### Changed
+* fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
+
 ### Breaking changes
 * refactor: add custom error struct in elcontracts reader methods by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/477>
   * The errors now follow this format: `error name (error code) - error description: underlying error`.
