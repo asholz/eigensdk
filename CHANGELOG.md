@@ -30,7 +30,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 		)
     
     // AFTER
-    taskSignature := NewTaskSiganture(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
+    taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 
     blsAggServ.ProcessNewSignature(
 			context.Background(),
