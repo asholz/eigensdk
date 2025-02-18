@@ -243,6 +243,49 @@ func NewBlsAggregatorService(
 	}
 }
 
+// The service handler is a structure used to use the service without the complexity of it.
+type ServiceHandler struct {
+	//This channels are used to send messages (requests) to the service.
+	TaskInitC         chan InitializeTaskRequest
+	processSignatureC chan ProcessSignatureRequest // The type of the channel is being discussed
+}
+
+type InitializeTaskRequest struct {
+	metadata TaskMetadata
+	errC     chan error
+}
+
+type ProcessSignatureRequest struct {
+	metadata TaskSignature
+	errC     chan error
+}
+
+type AggregateReceiver struct {
+	/// Channel to receive the aggregated responses from the BLS Aggregator Service
+	aggregate_receiver chan types.SignedTaskResponseDigest
+}
+
+func (a *BlsAggregatorService) Start(
+	taskIndex types.TaskIndex,
+	taskCreatedBlock uint32,
+	quorumNumbers types.QuorumNums,
+	quorumThresholdPercentages types.QuorumThresholdPercentages,
+	timeToExpiry time.Duration,
+) (ServiceHandler, AggregateReceiver, error) {
+	// Create channels to handle requests
+	initializeTaskC := make(chan InitializeTaskRequest)
+	processSignatureC := make(chan ProcessSignatureRequest)
+
+	aggResponsesC := make(chan types.SignedTaskResponseDigest)
+
+	go func() {
+		a.run(initializeTaskC, processSignatureC, aggResponsesC)
+		close(aggResponsesC)
+	}()
+
+	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregate_receiver: aggResponsesC}, nil
+}
+
 func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
 	return a.aggregatedResponsesC
 }
