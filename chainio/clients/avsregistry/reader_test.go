@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 
@@ -25,25 +26,19 @@ import (
 func TestReaderMethods(t *testing.T) {
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	chainReader := clients.ReadClients.AvsRegistryChainReader
+	chainWriter := clients.AvsRegistryChainWriter
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	ecdsaPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 	strategy := contractAddrs.Erc20MockStrategy
 	quorumNumber := types.QuorumNum(0)
 	quorumNumbers := types.QuorumNums{0}
-
-	operatorPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-
-	config := avsregistry.Config{
-		RegistryCoordinatorAddress:    contractAddrs.RegistryCoordinator,
-		OperatorStateRetrieverAddress: contractAddrs.OperatorStateRetriever,
-		ServiceManagerAddress:         contractAddrs.ServiceManager,
-	}
-
-	chainWriter, err := testclients.NewTestAvsRegistryWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
-	require.NoError(t, err)
-
-	keypair, err := bls.NewKeyPairFromString("0x01")
-	require.NoError(t, err)
-	require.NoError(t, err)
 
 	t.Run("get quorum state", func(t *testing.T) {
 		count, err := chainReader.GetQuorumCount(&bind.CallOpts{})
@@ -69,8 +64,7 @@ func TestReaderMethods(t *testing.T) {
 		require.NotNil(t, addresses)
 	})
 
-	t.Run(
-		"get operators stake in quorums of operator at block returns error for non-registered operator",
+	t.Run("get operators stake in quorums of operator at block returns error for non-registered operator",
 		func(t *testing.T) {
 			operatorAddress := common.Address{0x1}
 			operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
@@ -78,11 +72,14 @@ func TestReaderMethods(t *testing.T) {
 
 			_, _, err = chainReader.GetOperatorsStakeInQuorumsOfOperatorAtBlock(&bind.CallOpts{}, operatorId, 100)
 			require.Error(t, err)
-			require.Contains(t, err.Error(), "Failed to get operators state")
+			require.ErrorContains(
+				t,
+				err,
+				"no bitmap update found for operatorId",
+			)
 		})
 
-	t.Run(
-		"get single operator stake in quorums of operator at current block returns error for non-registered operator",
+	t.Run("get single operator stake in quorums of operator at current block returns error for non-registered operator",
 		func(t *testing.T) {
 			operatorAddress := common.Address{0x1}
 			operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
@@ -104,7 +101,11 @@ func TestReaderMethods(t *testing.T) {
 			quorumNumbers,
 			[]types.OperatorId{operatorId},
 		)
-		require.Contains(t, err.Error(), "Failed to get check signatures indices")
+		require.ErrorContains(
+			t,
+			err,
+			"no bitmap update found for operatorId",
+		)
 	})
 
 	t.Run("get operator id", func(t *testing.T) {
@@ -138,18 +139,17 @@ func TestReaderMethods(t *testing.T) {
 		require.False(t, isRegistered)
 	})
 
-	t.Run(
-		"query existing registered operator pub keys", func(t *testing.T) {
-			addresses, pubKeys, err := chainReader.QueryExistingRegisteredOperatorPubKeys(
-				context.Background(),
-				big.NewInt(0),
-				nil,
-				nil,
-			)
-			require.NoError(t, err)
-			require.Equal(t, 0, len(pubKeys))
-			require.Equal(t, 0, len(addresses))
-		})
+	t.Run("query existing registered operator pub keys", func(t *testing.T) {
+		addresses, pubKeys, err := chainReader.QueryExistingRegisteredOperatorPubKeys(
+			context.Background(),
+			big.NewInt(0),
+			nil,
+			nil,
+		)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(pubKeys))
+		require.Equal(t, 0, len(addresses))
+	})
 
 	t.Run(
 		"query existing registered operator sockets", func(t *testing.T) {
@@ -163,60 +163,21 @@ func TestReaderMethods(t *testing.T) {
 			require.Equal(t, 0, len(address_to_sockets))
 		})
 
-	t.Run("Get weight of operator for quorum", func(t *testing.T) {
-		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
-		// A quorum registered in the old workflow should return 0
-		weight, err := chainReader.WeightOfOperatorForQuorum(
-			&bind.CallOpts{},
-			0,
-			operatorAddress,
+	t.Run("get operators stake in quorums", func(t *testing.T) {
+		receipt, err := chainWriter.RegisterOperator(
+			context.Background(),
+			ecdsaPrivateKey,
+			keypair,
+			quorumNumbers,
+			"",
+			true,
 		)
 		require.NoError(t, err)
-		require.Equal(t, int64(0), weight.Int64())
-	})
+		require.NotNil(t, receipt)
 
-	t.Run("Get strategy params length", func(t *testing.T) {
-		quorumNumber := types.QuorumNum(0)
-		length, err := chainReader.StrategyParamsLength(&bind.CallOpts{}, quorumNumber.UnderlyingType())
-		require.NoError(t, err)
-		require.Equal(t, int64(1), length.Int64())
-	})
-
-	t.Run("Get Stake History", func(t *testing.T) {
-		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
-		require.NoError(t, err)
-		stakeHistory, err := chainReader.GetStakeHistory(&bind.CallOpts{}, operatorId, quorumNumber.UnderlyingType())
-		require.NoError(t, err)
-		require.Equal(t, 0, len(stakeHistory))
-	})
-
-	t.Run("Get strategy params by index", func(t *testing.T) {
-		params, err := chainReader.StrategyParamsByIndex(&bind.CallOpts{}, quorumNumber.UnderlyingType(), big.NewInt(0))
-		require.NoError(t, err)
-		require.Equal(t, strategy, params.Strategy)
-	})
-
-	operatorPrivateKey, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
-	require.NoError(t, err)
-
-	operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
-	//REGISTER OPERATOR
-	receipt, err := chainWriter.RegisterOperator(
-		context.Background(),
-		operatorPrivateKey,
-		keypair,
-		quorumNumbers,
-		"",
-		true,
-	)
-	require.NoError(t, err)
-	require.NotNil(t, receipt)
-
-	t.Run("get operators stake in quorums", func(t *testing.T) {
 		blockNumber := uint32(receipt.BlockNumber.Uint64())
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		t.Run("get operators stake in quorums at block", func(t *testing.T) {
@@ -271,8 +232,42 @@ func TestReaderMethods(t *testing.T) {
 			})
 	})
 
-	t.Run("Get stakeHistory length", func(t *testing.T) {
+	t.Run("Get weight of operator for quorum", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		// A quorum registered in the old workflow should return 0
+		weight, err := chainReader.WeightOfOperatorForQuorum(
+			&bind.CallOpts{},
+			0,
+			operatorAddress,
+		)
+		require.NoError(t, err)
+		require.Equal(t, int64(0), weight.Int64())
+	})
+
+	t.Run("Get strategy params length", func(t *testing.T) {
+		quorumNumber := types.QuorumNum(0)
+		length, err := chainReader.StrategyParamsLength(&bind.CallOpts{}, quorumNumber.UnderlyingType())
+		require.NoError(t, err)
+		require.Equal(t, int64(1), length.Int64())
+	})
+
+	t.Run("Get Stake History", func(t *testing.T) {
+		operatorAddress := common.HexToAddress("0x1234567890123456789012345678901234567890")
 		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		require.NoError(t, err)
+		stakeHistory, err := chainReader.GetStakeHistory(&bind.CallOpts{}, operatorId, quorumNumber.UnderlyingType())
+		require.NoError(t, err)
+		require.Equal(t, 0, len(stakeHistory))
+	})
+
+	t.Run("Get strategy params by index", func(t *testing.T) {
+		params, err := chainReader.StrategyParamsByIndex(&bind.CallOpts{}, quorumNumber.UnderlyingType(), big.NewInt(0))
+		require.NoError(t, err)
+		require.Equal(t, strategy, params.Strategy)
+	})
+
+	t.Run("Get stakeHistory length", func(t *testing.T) {
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber.UnderlyingType())
 		require.NoError(t, err)
@@ -280,7 +275,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -295,7 +290,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update at index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetStakeUpdateAtIndex(
@@ -310,7 +305,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -334,7 +329,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake updated index at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -357,7 +352,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update index at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -382,7 +377,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total current stake", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -411,7 +406,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -434,7 +429,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at block number from index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -458,7 +453,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake indices at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -519,7 +514,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operator restaked strategies", func(t *testing.T) {
-		retrievedStrat, err := chainReader.GetOperatorRestakedStrategies(&bind.CallOpts{}, operatorAddress)
+		retrievedStrat, err := chainReader.GetOperatorRestakedStrategies(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		require.Equal(t, []common.Address{strategy}, retrievedStrat)
 	})
@@ -546,28 +541,28 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operatorPubkeyHash", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
-		pubKeyHash, err := chainReader.GetOperatorIdFromOperatorAddress(&bind.CallOpts{}, operatorAddress)
+		pubKeyHash, err := chainReader.GetOperatorIdFromOperatorAddress(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		require.NotNil(t, pubKeyHash)
 		require.Equal(t, operatorId, pubKeyHash)
 	})
 
 	t.Run("Get operatorPubkeyHash from operatorId", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		gotOperatorAddress, err := chainReader.GetOperatorAddressFromOperatorId(&bind.CallOpts{}, operatorId)
 		require.NoError(t, err)
-		require.Equal(t, operatorAddress, gotOperatorAddress)
+		require.Equal(t, operatorAddr, gotOperatorAddress)
 	})
 
 	t.Run("Get operator bls pubkey", func(t *testing.T) {
 		pubKey, err := chainReader.GetPubkeyFromOperatorAddress(
 			&bind.CallOpts{},
-			operatorAddress,
+			operatorAddr,
 		)
 		require.NoError(t, err)
 		require.NotNil(t, pubKey)
@@ -585,6 +580,142 @@ func TestReaderMethods(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, apk)
 	})
+}
+
+// Test that the reader returns an error when the configuration is invalid.
+func TestReaderWithInvalidConfiguration(t *testing.T) {
+	_, anvilHttpEndpoint := testclients.BuildTestClients(t)
+
+	config := avsregistry.Config{}
+	chainReader, err := testclients.NewTestAvsRegistryReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	quorumNumbers := types.QuorumNums{0}
+	randomOperatorId := types.OperatorId{99}
+
+	tests := []struct {
+		name                string
+		runFunc             func() error
+		expectError         bool
+		expectedErrorString string
+	}{
+		{
+			name: "get operator id",
+			runFunc: func() error {
+				_, err := chainReader.GetOperatorId(&bind.CallOpts{}, common.Address{})
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		},
+		{
+			name: "get operator from id",
+			runFunc: func() error {
+				_, err := chainReader.GetOperatorFromId(&bind.CallOpts{}, randomOperatorId)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		},
+		{
+			name: "check if operator is registered",
+			runFunc: func() error {
+				_, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, common.Address{})
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		},
+		{
+			name: "get quorum state",
+			runFunc: func() error {
+				_, err := chainReader.GetQuorumCount(&bind.CallOpts{})
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		},
+		{
+			name: "get operator stake in quorums at current block",
+			runFunc: func() error {
+				_, err := chainReader.GetOperatorsStakeInQuorumsAtBlock(&bind.CallOpts{}, quorumNumbers, 100)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("OperatorStateRetriever"),
+		},
+		{
+			name: "get operator address in quorums at current block",
+			runFunc: func() error {
+				_, err := chainReader.GetOperatorAddrsInQuorumsAtCurrentBlock(&bind.CallOpts{}, quorumNumbers)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("OperatorStateRetriever"),
+		},
+		{
+			name: "get operators stake in quorums of operator at block",
+			runFunc: func() error {
+				_, _, err := chainReader.GetOperatorsStakeInQuorumsOfOperatorAtBlock(
+					&bind.CallOpts{},
+					randomOperatorId,
+					100,
+				)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("OperatorStateRetriever"),
+		},
+		{
+			name: "get single operator stake in quorums of operator at current block",
+			runFunc: func() error {
+				_, err := chainReader.GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
+					&bind.CallOpts{},
+					randomOperatorId,
+				)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		}, {
+			name: "check signatures indices",
+			runFunc: func() error {
+				_, err := chainReader.GetCheckSignaturesIndices(
+					&bind.CallOpts{},
+					100,
+					quorumNumbers,
+					[]types.OperatorId{randomOperatorId},
+				)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("OperatorStateRetriever"),
+		},
+		{
+			name: "query registered operator sockets",
+			runFunc: func() error {
+				_, err := chainReader.QueryExistingRegisteredOperatorSockets(
+					context.Background(),
+					big.NewInt(0),
+					nil,
+					nil,
+				)
+				return err
+			},
+			expectError:         true,
+			expectedErrorString: elcontracts.CommonErrorMissingContract("RegistryCoordinator"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s with invalid config", tc.name), func(t *testing.T) {
+			err := tc.runFunc()
+			if tc.expectError {
+				require.Error(t, err, "Expected error for %s", tc.name)
+				require.Equal(t, err.Error(), tc.expectedErrorString)
+			}
+		})
+	}
 }
 
 func TestIsOperatorSetQuorum(t *testing.T) {
@@ -653,115 +784,4 @@ func TestIsOperatorSetQuorum(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.True(t, isOperatorSet)
-}
-
-// Test that the reader returns an error when the configuration is invalid.
-func TestReaderWithInvalidConfiguration(t *testing.T) {
-	_, anvilHttpEndpoint := testclients.BuildTestClients(t)
-
-	config := avsregistry.Config{}
-	chainReader, err := testclients.NewTestAvsRegistryReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	quorumNumbers := types.QuorumNums{0}
-	randomOperatorId := types.OperatorId{99}
-
-	tests := []struct {
-		name    string
-		runFunc func() error
-	}{
-		{
-			name: "get operator id",
-			runFunc: func() error {
-				_, err := chainReader.GetOperatorId(&bind.CallOpts{}, common.Address{})
-				return err
-			},
-		},
-		{
-			name: "get operator from id",
-			runFunc: func() error {
-				_, err := chainReader.GetOperatorFromId(&bind.CallOpts{}, randomOperatorId)
-				return err
-			},
-		},
-		{
-			name: "check if operator is registered",
-			runFunc: func() error {
-				_, err := chainReader.IsOperatorRegistered(&bind.CallOpts{}, common.Address{})
-				return err
-			},
-		},
-		{
-			name: "get quorum state",
-			runFunc: func() error {
-				_, err := chainReader.GetQuorumCount(&bind.CallOpts{})
-				return err
-			},
-		},
-		{
-			name: "get operator stake in quorums at current block",
-			runFunc: func() error {
-				_, err := chainReader.GetOperatorsStakeInQuorumsAtBlock(&bind.CallOpts{}, quorumNumbers, 100)
-				return err
-			},
-		},
-		{
-			name: "get operator address in quorums at current block",
-			runFunc: func() error {
-				_, err := chainReader.GetOperatorAddrsInQuorumsAtCurrentBlock(&bind.CallOpts{}, quorumNumbers)
-				return err
-			},
-		},
-		{
-			name: "get operators stake in quorums of operator at block",
-			runFunc: func() error {
-				_, _, err := chainReader.GetOperatorsStakeInQuorumsOfOperatorAtBlock(
-					&bind.CallOpts{},
-					randomOperatorId,
-					100,
-				)
-				return err
-			},
-		},
-		{
-			name: "get single operator stake in quorums of operator at current block",
-			runFunc: func() error {
-				_, err := chainReader.GetOperatorStakeInQuorumsOfOperatorAtCurrentBlock(
-					&bind.CallOpts{},
-					randomOperatorId,
-				)
-				return err
-			},
-		}, {
-			name: "check signatures indices",
-			runFunc: func() error {
-				_, err := chainReader.GetCheckSignaturesIndices(
-					&bind.CallOpts{},
-					100,
-					quorumNumbers,
-					[]types.OperatorId{randomOperatorId},
-				)
-				return err
-			},
-		},
-		{
-			name: "query registered operator sockets",
-			runFunc: func() error {
-				_, err := chainReader.QueryExistingRegisteredOperatorSockets(
-					context.Background(),
-					big.NewInt(0),
-					nil,
-					nil,
-				)
-				return err
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("%s with invalid config", tc.name), func(t *testing.T) {
-			err := tc.runFunc()
-			require.Error(t, err, "Expected error for %s", tc.name)
-		})
-	}
 }
