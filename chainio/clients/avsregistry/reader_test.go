@@ -266,10 +266,8 @@ func TestReaderMethods(t *testing.T) {
 		require.Equal(t, strategy, params.Strategy)
 	})
 
-	operatorAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
 	t.Run("Get stakeHistory length", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		length, err := chainReader.GetStakeHistoryLength(&bind.CallOpts{}, operatorId, quorumNumber.UnderlyingType())
 		require.NoError(t, err)
@@ -277,7 +275,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get latest stake update", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -292,7 +290,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update at index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetStakeUpdateAtIndex(
@@ -307,7 +305,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -331,7 +329,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake updated index at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -354,7 +352,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get stake update index at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -379,7 +377,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total current stake", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -408,7 +406,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -431,7 +429,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake update at block number from index", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -455,7 +453,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get total stake indices at block number", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		stakeUpdate2, err := chainReader.GetLatestStakeUpdate(
@@ -516,7 +514,7 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operator restaked strategies", func(t *testing.T) {
-		retrievedStrat, err := chainReader.GetOperatorRestakedStrategies(&bind.CallOpts{}, operatorAddress)
+		retrievedStrat, err := chainReader.GetOperatorRestakedStrategies(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		require.Equal(t, []common.Address{strategy}, retrievedStrat)
 	})
@@ -543,28 +541,28 @@ func TestReaderMethods(t *testing.T) {
 	})
 
 	t.Run("Get operatorPubkeyHash", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
-		pubKeyHash, err := chainReader.GetOperatorIdFromOperatorAddress(&bind.CallOpts{}, operatorAddress)
+		pubKeyHash, err := chainReader.GetOperatorIdFromOperatorAddress(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 		require.NotNil(t, pubKeyHash)
 		require.Equal(t, operatorId, pubKeyHash)
 	})
 
 	t.Run("Get operatorPubkeyHash from operatorId", func(t *testing.T) {
-		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddress)
+		operatorId, err := chainReader.GetOperatorId(&bind.CallOpts{}, operatorAddr)
 		require.NoError(t, err)
 
 		gotOperatorAddress, err := chainReader.GetOperatorAddressFromOperatorId(&bind.CallOpts{}, operatorId)
 		require.NoError(t, err)
-		require.Equal(t, operatorAddress, gotOperatorAddress)
+		require.Equal(t, operatorAddr, gotOperatorAddress)
 	})
 
 	t.Run("Get operator bls pubkey", func(t *testing.T) {
 		pubKey, err := chainReader.GetPubkeyFromOperatorAddress(
 			&bind.CallOpts{},
-			operatorAddress,
+			operatorAddr,
 		)
 		require.NoError(t, err)
 		require.NotNil(t, pubKey)
