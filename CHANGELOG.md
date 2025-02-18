@@ -19,7 +19,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
   * Introduced `TaskSignature` struct to encapsulate parameters related to task signatures:
   * Updated `ProcessNewSignature` to accept a `TaskSignature` struct instead of multiple parameters.
 
-    ```rust
+    ```go
     // BEFORE
     blsAggServ.ProcessNewSignature(
 			context.Background(),
