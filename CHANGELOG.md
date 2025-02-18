@@ -10,5 +10,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 ## [Unreleased]
 ### Added
 ### Changed
+* fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
+
 ### Breaking changes
 ### Removed
