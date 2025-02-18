@@ -13,6 +13,31 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 * fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
 
 ### Breaking changes
+
+* refactor: encapsulate parameters into `TaskSignature` in [#487](https://github.com/Layr-Labs/eigensdk-go/pull/487)
+
+  * Introduced `TaskSignature` struct to encapsulate parameters related to task signatures:
+  * Updated `ProcessNewSignature` to accept a `TaskSignature` struct instead of multiple parameters.
+
+    ```go
+    // BEFORE
+    blsAggServ.ProcessNewSignature(
+			context.Background(),
+			taskIndex,
+			taskResponse,
+			blsSigOp1,
+			testOperator1.OperatorId,
+		)
+    
+    // AFTER
+    taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
+
+    blsAggServ.ProcessNewSignature(
+			context.Background(),
+			taskSignature,
+		)
+    ```
+  
 * refactor: update interface on `bls aggregation` in [#485](https://github.com/Layr-Labs/eigensdk-go/pull/485).
   * Introduces a new struct `TaskMetadata` with a constructor `NewTaskMetadata` to initialize a new task and a method `WithWindowDuration` to set the window duration.
   * Refactors `InitializeNewTask` and `singleTaskAggregatorGoroutineFunc` to accept a `TaskMetadata` struct instead of multiple parameters.
@@ -62,4 +87,5 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 		).WithWindowDuration(windowDuration)
     blsAggServ.InitializeNewTask(metadata)
     ```
+    
 ### Removed

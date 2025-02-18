@@ -78,6 +78,33 @@ type aggregatedOperators struct {
 	signersOperatorIdsSet map[types.OperatorId]bool
 }
 
+// TaskSignature contains the data required to process and verify a new signature for a task response.
+type TaskSignature struct {
+	// unique identifier of the task associated with this signature
+	taskIndex types.TaskIndex
+	// response data that has been signed
+	taskResponse types.TaskResponse
+	// BLS cryptographic signature for the task response
+	blsSignature *bls.Signature
+	// id of the operator who signed the task response
+	operatorId types.OperatorId
+}
+
+// NewTaskSignature creates a new instance of TaskSignature
+func NewTaskSignature(
+	taskIndex types.TaskIndex,
+	taskResponse types.TaskResponse,
+	blsSignature *bls.Signature,
+	operatorId types.OperatorId,
+) TaskSignature {
+	return TaskSignature{
+		taskIndex:    taskIndex,
+		taskResponse: taskResponse,
+		blsSignature: blsSignature,
+		operatorId:   operatorId,
+	}
+}
+
 // TaskMetadata encapsulates the necessary parameters to initialize a task
 type TaskMetadata struct {
 	// index of the task
@@ -143,10 +170,7 @@ type BlsAggregationService interface {
 	// BlsAggregationService does not verify semantic integrity of the taskResponses)
 	ProcessNewSignature(
 		ctx context.Context,
-		taskIndex types.TaskIndex,
-		taskResponse types.TaskResponse,
-		blsSignature *bls.Signature,
-		operatorId types.OperatorId,
+		task TaskSignature,
 	) error
 
 	// GetResponseChannel returns the single channel that meant to be used as the response channel
@@ -278,14 +302,11 @@ func (a *BlsAggregatorService) InitializeNewTask(
 
 func (a *BlsAggregatorService) ProcessNewSignature(
 	ctx context.Context,
-	taskIndex types.TaskIndex,
-	taskResponse types.TaskResponse,
-	blsSignature *bls.Signature,
-	operatorId types.OperatorId,
+	taskSignature TaskSignature,
 ) error {
 	respC := make(chan error)
 	go func() {
-		respC <- a.processNewSignature(taskIndex, taskResponse, blsSignature, operatorId)
+		respC <- a.processNewSignature(taskSignature)
 	}()
 
 	// NOTE: we do this to let the goroutine consume the result of the operation
@@ -299,17 +320,14 @@ func (a *BlsAggregatorService) ProcessNewSignature(
 }
 
 func (a *BlsAggregatorService) processNewSignature(
-	taskIndex types.TaskIndex,
-	taskResponse types.TaskResponse,
-	blsSignature *bls.Signature,
-	operatorId types.OperatorId,
+	taskSignature TaskSignature,
 ) error {
 	// TODO: move this to a goroutine to avoid sharing state
 	a.taskChansMutex.Lock()
-	taskC, taskInitialized := a.signedTaskRespsCs[taskIndex]
+	taskC, taskInitialized := a.signedTaskRespsCs[taskSignature.taskIndex]
 	a.taskChansMutex.Unlock()
 	if !taskInitialized {
-		return TaskNotFoundErrorFn(taskIndex)
+		return TaskNotFoundErrorFn(taskSignature.taskIndex)
 	}
 
 	signatureVerificationErrorC := make(chan error)
@@ -317,9 +335,9 @@ func (a *BlsAggregatorService) processNewSignature(
 	// and return the error (if any) returned by the signature verification routine
 
 	taskC <- types.SignedTaskResponseDigest{
-		TaskResponse:                taskResponse,
-		BlsSignature:                blsSignature,
-		OperatorId:                  operatorId,
+		TaskResponse:                taskSignature.taskResponse,
+		BlsSignature:                taskSignature.blsSignature,
+		OperatorId:                  taskSignature.operatorId,
 		SignatureVerificationErrorC: signatureVerificationErrorC,
 	}
 	return <-signatureVerificationErrorC
