@@ -65,6 +65,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "execution reverted: custom error 0xaba47339")
 	})
 
 	t.Run("register operator", func(t *testing.T) {
@@ -186,6 +187,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "context canceled")
 	})
 
 	t.Run("fail update stake of operator subset cancelling context", func(t *testing.T) {
@@ -196,6 +198,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "context canceled")
 	})
 
 	t.Run("fail update stake of entire operator set cancelling context", func(t *testing.T) {
@@ -207,6 +210,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "context canceled")
 	})
 
 	t.Run("fail update stake of entire operator set because of quorum length", func(t *testing.T) {
@@ -219,6 +223,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "execution reverted: custom error 0x8e5aeee7")
 	})
 
 	t.Run("fail deregister operator cancelling context", func(t *testing.T) {
@@ -230,6 +235,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "context canceled")
 	})
 
 	t.Run("fail deregister operator because of operator not registered", func(t *testing.T) {
@@ -242,6 +248,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "execution reverted: custom error 0xd16d50ea")
 	})
 
 	t.Run("fail update socket cancelling context", func(t *testing.T) {
@@ -252,6 +259,7 @@ func TestWriterMethods(t *testing.T) {
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
+		assert.Contains(t, err.Error(), "context canceled")
 	})
 
 	t.Run("set slashable stake lookahead", func(t *testing.T) {
