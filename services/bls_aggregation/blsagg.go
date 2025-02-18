@@ -90,8 +90,8 @@ type TaskSignature struct {
 	operatorId types.OperatorId
 }
 
-// NewTaskSiganture creates a new instance of TaskSignature
-func NewTaskSiganture(
+// NewTaskSignature creates a new instance of TaskSignature
+func NewTaskSignature(
 	taskIndex types.TaskIndex,
 	taskResponse types.TaskResponse,
 	blsSignature *bls.Signature,
