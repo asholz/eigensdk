@@ -350,7 +350,18 @@ func (a *ServiceHandler) InitializeNewTask(
 	}
 }
 
-// TODO: continue by adding the process signature option
+func (a *ServiceHandler) ProcessNewSignature(
+	metadata TaskSignature,
+) error {
+	errChan := make(chan error)
+	a.processSignatureC <- ProcessSignatureRequest{metadata, errChan}
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		return nil
+	}
+}
 
 func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
 	return a.aggregatedResponsesC
