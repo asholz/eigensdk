@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
+	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/wallet"
 	"github.com/Layr-Labs/eigensdk-go/chainio/txmgr"
@@ -41,12 +42,15 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 anvilHttpEndpoint,
-		EthWsUrl:                   anvilWsEndpoint,
-		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
-		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
-		AvsName:                    "exampleAvs",
-		PromMetricsIpPortAddress:   ":9090",
+		EthHttpUrl:                  anvilHttpEndpoint,
+		EthWsUrl:                    anvilWsEndpoint,
+		RegistryCoordinatorAddr:     contractAddrs.RegistryCoordinator.String(),
+		OperatorStateRetrieverAddr:  contractAddrs.OperatorStateRetriever.String(),
+		AvsName:                     "exampleAvs",
+		PromMetricsIpPortAddress:    ":9090",
+		ServiceManagerAddress:       contractAddrs.ServiceManager.String(),
+		RewardsCoordinatorAddress:   contractAddrs.RewardsCoordinator.String(),
+		PermissionControllerAddress: contractAddrs.PermissionController.String(),
 	}
 
 	clients, err := clients.BuildAll(
@@ -81,6 +85,7 @@ func BuildTestReadClients(t *testing.T) (*clients.ReadClients, string) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	clients, err := clients.BuildReadClients(
@@ -192,4 +197,71 @@ func NewTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleT
 
 	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
 	return txManager, nil
+}
+
+// Creates an avsRegistry testing ChainWriter from an httpEndpoint, private key and config.
+// This is needed because the existing testclients.BuildTestClients returns a
+// ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
+func NewTestAvsRegistryWriterFromConfig(
+	httpEndpoint string,
+	privateKeyHex string,
+	config avsregistry.Config,
+) (*avsregistry.ChainWriter, error) {
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed convert hex string to ecdsa private key", err)
+	}
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+	chainid, err := ethHttpClient.ChainID(context.Background())
+	if err != nil {
+		return nil, utils.WrapError("Failed to get chain id", err)
+	}
+	signerV2, addr, err := signerv2.SignerFromConfig(signerv2.Config{PrivateKey: privateKey}, chainid)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create the signer from the given config", err)
+	}
+
+	pkWallet, err := wallet.NewPrivateKeyWallet(ethHttpClient, signerV2, addr, logger)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create wallet", err)
+	}
+	txManager := txmgr.NewSimpleTxManager(pkWallet, ethHttpClient, logger, addr)
+	testWriter, err := avsregistry.NewWriterFromConfig(
+		config,
+		ethHttpClient,
+		txManager,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return testWriter, nil
+}
+
+// Creates a testing AVSRegistrer ChainReader from an httpEndpoint, private key and config.
+func NewTestAvsRegistryReaderFromConfig(
+	httpEndpoint string,
+	config avsregistry.Config,
+) (*avsregistry.ChainReader, error) {
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	testReader, err := avsregistry.NewReaderFromConfig(
+		config,
+		ethHttpClient,
+		logger,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create chain reader from config", err)
+	}
+	return testReader, nil
 }

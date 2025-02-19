@@ -2,6 +2,7 @@ package elcontracts_test
 
 import (
 	"context"
+	"encoding/hex"
 	"math/big"
 	"os"
 	"testing"
@@ -10,12 +11,11 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/elcontracts"
 	allocationmanager "github.com/Layr-Labs/eigensdk-go/contracts/bindings/AllocationManager"
-	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
-
-	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IRewardsCoordinator"
 	strategy "github.com/Layr-Labs/eigensdk-go/contracts/bindings/IStrategy"
 	mockerc20 "github.com/Layr-Labs/eigensdk-go/contracts/bindings/MockERC20"
 	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
+	rewardscoordinator "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RewardsCoordinator"
+	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/testutils"
 	"github.com/Layr-Labs/eigensdk-go/testutils/testclients"
@@ -24,9 +24,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,6 +51,7 @@ func TestRegisterOperator(t *testing.T) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	t.Run("register as an operator", func(t *testing.T) {
@@ -130,8 +131,8 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
-	operatorAddressHex := "70997970C51812dc3A010C7d01b50e0d17dc79C8"
-	operatorPrivateKeyHex := "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+	operatorAddressHex := testutils.ANVIL_SECOND_ADDRESS
+	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 
 	config := elcontracts.Config{
 		DelegationManagerAddress:  contractAddrs.DelegationManager,
@@ -145,7 +146,7 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	avsAddress := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	operatorSetId := uint32(1)
 	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
 
@@ -196,6 +197,16 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 		require.Equal(t, true, isRegistered)
 	})
 
+	t.Run("register operator for same operator set", func(t *testing.T) {
+		registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+		_, err = chainWriter.RegisterForOperatorSets(
+			context.Background(),
+			registryCoordinatorAddress,
+			request,
+		)
+		require.Error(t, err, "cannot register an operator to an operator set that is already registered")
+	})
+
 	deregistrationRequest := elcontracts.DeregistrationRequest{
 		AVSAddress:     avsAddress,
 		OperatorSetIds: []uint32{operatorSetId},
@@ -217,8 +228,84 @@ func TestRegisterAndDeregisterFromOperatorSets(t *testing.T) {
 			operatorSet,
 		)
 		require.NoError(t, err)
-		require.Equal(t, false, isRegistered)
+		require.False(t, isRegistered)
 	})
+
+	t.Run("deregister operator from operator set when not registered", func(t *testing.T) {
+		_, err = chainWriter.DeregisterFromOperatorSets(
+			context.Background(),
+			operatorAddress,
+			deregistrationRequest,
+		)
+		require.Error(t, err, "cannot deregister an operator that is not registered")
+	})
+}
+
+func TestEncodeRegistrationParams(t *testing.T) {
+	// Values are random
+	signatureX, ok := new(
+		big.Int,
+	).SetString("756874975973566196338995715738218418291193261429375530560923897690728869289", 10)
+	require.True(t, ok)
+	signatureY, ok := new(
+		big.Int,
+	).SetString("444340189040315797681399101731743234568891767085799644128199800550863908703", 10)
+	require.True(t, ok)
+
+	g1PubkeyX, ok := new(
+		big.Int,
+	).SetString("10371454967541283327403832945957227913391851874635485454053224012738342927470", 10)
+	require.True(t, ok)
+	g1PubkeyY, ok := new(
+		big.Int,
+	).SetString("5591557118325006940652332791312874698324071372762903093203759620236776485604", 10)
+	require.True(t, ok)
+
+	g2PubkeyX0, ok := new(
+		big.Int,
+	).SetString("1357671944470767405259541876666418155809079857448568479000932998534484593852", 10)
+	require.True(t, ok)
+	g2PubkeyX1, ok := new(
+		big.Int,
+	).SetString("5283708918582394678225755661661470830476341241033602812294790796852421312310", 10)
+	require.True(t, ok)
+	g2PubkeyY0, ok := new(
+		big.Int,
+	).SetString("17411007011468414688052176335308121672943440336543041782092111920184779631952", 10)
+	require.True(t, ok)
+	g2PubkeyY1, ok := new(
+		big.Int,
+	).SetString("6486088401181402728530570019430319265466049090881984123818353102069786218525", 10)
+	require.True(t, ok)
+
+	registrationParams := regcoord.IBLSApkRegistryTypesPubkeyRegistrationParams{
+		PubkeyRegistrationSignature: regcoord.BN254G1Point{
+			X: signatureX,
+			Y: signatureY,
+		},
+		PubkeyG1: regcoord.BN254G1Point{
+			X: g1PubkeyX,
+			Y: g1PubkeyY,
+		},
+		PubkeyG2: regcoord.BN254G2Point{
+			X: [2]*big.Int{g2PubkeyX0, g2PubkeyX1},
+			Y: [2]*big.Int{g2PubkeyY0, g2PubkeyY1},
+		},
+	}
+	result, err := elcontracts.AbiEncodeRegistrationParams(
+		elcontracts.RegistrationTypeNormal,
+		"unused",
+		registrationParams,
+	)
+	require.NoError(t, err)
+
+	// This value was generated by running `abi.encode(...)` on the Solidity equivalent of the above struct
+	expected, err := hex.DecodeString(
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014001ac6045296d64b31ed644e53ce1a1c4f72f67a2d47b06b652ca8167f1b2ada900fb7cd59f322f4dffa18360bfcdc15f1f6cd09aea573efa919dc828dfabaf5f16ee091592629fc566636de7b3d53322f4833014b4655dd57279cfb2828bbc6e0c5cb58c8d572dc9dcf5f5999501533e22243fac4f8ee4452a6dd0d4bcaeb2e403006a43453d56eafa7dc4ddcbd41b2330031f58e437ee3806c50a9e554a0cbc0bae792831463d56a1a9983647b77fcdbae38a6621ceef9e147614bb4869bf36267e47def74c144f8e7238dd088097943d1007f8ce7cab028151e9a1beac6d500e56fef5ea67a586d1fbb03dcc0a268f6c4835ad1c215eadc77cc676c378101d0000000000000000000000000000000000000000000000000000000000000006756e757365640000000000000000000000000000000000000000000000000000",
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, expected, result)
 }
 
 func TestChainWriter(t *testing.T) {
@@ -241,6 +328,20 @@ func TestChainWriter(t *testing.T) {
 		assert.True(t, receipt.Status == 1)
 	})
 
+	t.Run("update operator details when address is not an operator", func(t *testing.T) {
+		wrongOperatorModified := types.Operator{
+			Address:                   testutils.ANVIL_THIRD_ADDRESS,
+			DelegationApproverAddress: testutils.ANVIL_FIRST_ADDRESS,
+			MetadataUrl:               "eigensdk-go",
+		}
+		_, err := clients.ElChainWriter.UpdateOperatorDetails(
+			context.Background(),
+			wrongOperatorModified,
+			true,
+		)
+		assert.Error(t, err, "cannot update operator details for an address that is not an operator")
+	})
+
 	t.Run("update metadata URI", func(t *testing.T) {
 		walletModified, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 		assert.NoError(t, err)
@@ -253,6 +354,16 @@ func TestChainWriter(t *testing.T) {
 		)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
+	})
+
+	t.Run("update metadata URI when address is not an operator", func(t *testing.T) {
+		_, err := clients.ElChainWriter.UpdateMetadataURI(
+			context.Background(),
+			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+			"https://0.0.0.0",
+			true,
+		)
+		assert.Error(t, err, "cannot update metadata URI for an address that is not an operator")
 	})
 
 	t.Run("deposit ERC20 into strategy", func(t *testing.T) {
@@ -344,6 +455,11 @@ func TestSetOperatorPISplit(t *testing.T) {
 	updatedSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
 	require.Equal(t, newSplit, updatedSplit)
+
+	// Set a invalid operator PI split
+	invalidSplit := uint16(10001)
+	_, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, invalidSplit, waitForReceipt)
+	require.Error(t, err, "split must be less than 10000")
 }
 
 func TestSetOperatorAVSSplit(t *testing.T) {
@@ -401,6 +517,131 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	updatedSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
 	require.Equal(t, newSplit, updatedSplit)
+
+	// Set a invalid operator AVS split
+	invalidSplit := uint16(10001)
+	_, err = chainWriter.SetOperatorAVSSplit(
+		context.Background(),
+		operatorAddr,
+		avsAddr,
+		invalidSplit,
+		waitForReceipt,
+	)
+	require.Error(t, err, "split must be less than 10000")
+}
+
+func TestSetOperatorSetSplit(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
+	operatorAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	activationDelay := uint32(0)
+
+	// Set activation delay to zero so that the new AVS split can be retrieved immediately after setting it
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: contractAddrs.RewardsCoordinator,
+	}
+
+	// Create operator clients
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, operatorPrivateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	operatorSetId := uint32(1)
+	erc20MockStrategyAddr := contractAddrs.Erc20MockStrategy
+
+	// Create an operator set to register an operator on it
+	err = createOperatorSet(
+		anvilHttpEndpoint,
+		privateKeyHex,
+		avsAddress,
+		operatorSetId,
+		erc20MockStrategyAddr,
+	)
+	require.NoError(t, err)
+
+	//SPLIT TEST START
+
+	operatorSetType1 := allocationmanager.OperatorSet{
+		Avs: avsAddress,
+		Id:  uint32(operatorSetId),
+	}
+
+	//REGISTER OPERATOR IN OPERATOR SET
+
+	keypair, err := bls.NewKeyPairFromString("0x01")
+	require.NoError(t, err)
+
+	request := elcontracts.RegistrationRequest{
+		OperatorAddress: operatorAddress,
+		AVSAddress:      avsAddress,
+		OperatorSetIds:  []uint32{operatorSetId},
+		WaitForReceipt:  true,
+		Socket:          "socket",
+		BlsKeyPair:      keypair,
+	}
+
+	receipt, err = chainWriter.RegisterForOperatorSets(
+		context.Background(),
+		contractAddrs.RegistryCoordinator,
+		request,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	isRegistered, err := chainReader.IsOperatorRegisteredWithOperatorSet(
+		context.Background(),
+		operatorAddress,
+		operatorSetType1,
+	)
+	require.NoError(t, err)
+	require.Equal(t, true, isRegistered)
+
+	//FIRST GET
+	operatorSetType2 := rewardscoordinator.OperatorSet{
+		Avs: avsAddress,
+		Id:  uint32(operatorSetId),
+	}
+
+	expectedInitialSplit := uint16(1000)
+	initialSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddress, operatorSetType2)
+	require.NoError(t, err)
+	require.Equal(t, expectedInitialSplit, initialSplit)
+
+	//FIRST SET
+	newSplit := initialSplit + 1
+	waitForReceipt := true
+	// Set a new operator set split
+	receipt, err = chainWriter.SetOperatorSetSplit(
+		context.Background(),
+		operatorAddress,
+		operatorSetType2,
+		newSplit,
+		waitForReceipt,
+	)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	//SECOND GET
+	updatedSplit, err := chainReader.GetOperatorSetSplit(context.Background(), operatorAddress, operatorSetType2)
+	require.NoError(t, err)
+	require.Equal(t, newSplit, updatedSplit)
 }
 
 func TestSetAllocationDelay(t *testing.T) {
@@ -427,10 +668,24 @@ func TestSetAllocationDelay(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	delay := uint32(10)
-	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+	t.Run("set allocation delay", func(t *testing.T) {
+		delay := uint32(10)
+		receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+	})
+
+	t.Run("set allocation delay with invalid caller", func(t *testing.T) {
+		invalidCaller := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+		delay := uint32(20)
+		_, err = chainWriter.SetAllocationDelay(
+			context.Background(),
+			invalidCaller,
+			delay,
+			waitForReceipt,
+		)
+		require.Error(t, err, "cannot set allocation delay with an invalid caller")
+	})
 }
 
 func TestSetAndRemovePermission(t *testing.T) {
@@ -441,12 +696,11 @@ func TestSetAndRemovePermission(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
@@ -454,8 +708,8 @@ func TestSetAndRemovePermission(t *testing.T) {
 	require.NoError(t, err)
 
 	accountAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	appointeeAddress := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
-	target := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	appointeeAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	target := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
 	selector := [4]byte{0, 1, 2, 3}
 	waitForReceipt := true
 
@@ -474,21 +728,36 @@ func TestSetAndRemovePermission(t *testing.T) {
 		Selector:         selector,
 		WaitForReceipt:   waitForReceipt,
 	}
-	receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
-	require.NoError(t, err)
-	require.True(t, canCall)
+	t.Run("set permission to account", func(t *testing.T) {
+		receipt, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	receipt, err = chainWriter.RemovePermission(context.Background(), removePermissionRequest)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+		canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+		require.NoError(t, err)
+		require.True(t, canCall)
+	})
 
-	canCall, err = chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
-	require.NoError(t, err)
-	require.False(t, canCall)
+	t.Run("set permission to account when already set", func(t *testing.T) {
+		_, err := chainWriter.SetPermission(context.Background(), setPermissionRequest)
+		require.Error(t, err, "cannot set a permission that has already been set")
+	})
+
+	t.Run("remove permission from account", func(t *testing.T) {
+		receipt, err := chainWriter.RemovePermission(context.Background(), removePermissionRequest)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+		canCall, err := chainReader.CanCall(context.Background(), accountAddress, appointeeAddress, target, selector)
+		require.NoError(t, err)
+		require.False(t, canCall)
+	})
+
+	t.Run("remove permission from account when not set", func(t *testing.T) {
+		_, err := chainWriter.RemovePermission(context.Background(), removePermissionRequest)
+		require.Error(t, err, "cannot remove a permission that has not been set")
+	})
 }
 
 func TestModifyAllocations(t *testing.T) {
@@ -516,6 +785,22 @@ func TestModifyAllocations(t *testing.T) {
 	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	operatorSetId := uint32(1)
 
+	operatorSet := allocationmanager.OperatorSet{
+		Avs: avsAddr,
+		Id:  operatorSetId,
+	}
+	newAllocation := uint64(100)
+	allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
+		{
+			OperatorSet:   operatorSet,
+			Strategies:    []common.Address{strategyAddr},
+			NewMagnitudes: []uint64{newAllocation},
+		},
+	}
+
+	_, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, false)
+	require.Error(t, err, "cannot modify allocations without initializing the allocation delay")
+
 	waitForReceipt := true
 	delay := uint32(1)
 	// The allocation delay must be initialized before modifying the allocations
@@ -534,19 +819,6 @@ func TestModifyAllocations(t *testing.T) {
 
 	err = createOperatorSet(anvilHttpEndpoint, privateKeyHex, avsAddr, operatorSetId, strategyAddr)
 	require.NoError(t, err)
-
-	operatorSet := allocationmanager.OperatorSet{
-		Avs: avsAddr,
-		Id:  operatorSetId,
-	}
-	newAllocation := uint64(100)
-	allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
-		{
-			OperatorSet:   operatorSet,
-			Strategies:    []common.Address{strategyAddr},
-			NewMagnitudes: []uint64{newAllocation},
-		},
-	}
 
 	receipt, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, waitForReceipt)
 	require.NoError(t, err)
@@ -572,6 +844,94 @@ func TestModifyAllocations(t *testing.T) {
 	require.Equal(t, big.NewInt(int64(newAllocation)), currentMagnitude)
 }
 
+func TestClearDeallocationQueue(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	config := elcontracts.Config{
+		DelegationManagerAddress: contractAddrs.DelegationManager,
+	}
+
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	strategyAddr := contractAddrs.Erc20MockStrategy
+	avsAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	operatorSetId := uint32(1)
+
+	operatorSet := allocationmanager.OperatorSet{
+		Avs: avsAddr,
+		Id:  operatorSetId,
+	}
+	newAllocation := uint64(100)
+	allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
+		{
+			OperatorSet:   operatorSet,
+			Strategies:    []common.Address{strategyAddr},
+			NewMagnitudes: []uint64{newAllocation},
+		},
+	}
+
+	waitForReceipt := true
+	delay := uint32(1)
+	// The allocation delay must be initialized before modifying the allocations
+	receipt, err := chainWriter.SetAllocationDelay(context.Background(), operatorAddr, delay, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	allocationConfigurationDelay := 1200
+	// Advance the chain by the required number of blocks
+	// (ALLOCATION_CONFIGURATION_DELAY) to apply the allocation delay
+	testutils.AdvanceChainByNBlocksExecInContainer(context.Background(), allocationConfigurationDelay+1, anvilC)
+
+	// Retrieve the allocation delay so that the delay is applied
+	_, err = chainReader.GetAllocationDelay(context.Background(), operatorAddr)
+	require.NoError(t, err)
+
+	err = createOperatorSet(anvilHttpEndpoint, privateKeyHex, avsAddr, operatorSetId, strategyAddr)
+	require.NoError(t, err)
+
+	receipt, err = chainWriter.ModifyAllocations(context.Background(), operatorAddr, allocateParams, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Check that the new allocation is pending and the current magnitude is zero
+	allocationInfo, err := chainReader.GetAllocationInfo(context.Background(), operatorAddr, strategyAddr)
+	require.NoError(t, err)
+	pendingDiff := allocationInfo[0].PendingDiff
+	require.Equal(t, big.NewInt(int64(newAllocation)), pendingDiff)
+	require.Equal(t, allocationInfo[0].CurrentMagnitude, big.NewInt(0))
+
+	strategies := []common.Address{strategyAddr}
+	numsToClear := []uint16{uint16(1)}
+
+	receipt, err = chainWriter.ClearDeallocationQueue(context.Background(), operatorAddr, strategies, numsToClear, true)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Check that the pending allocation has been completed after calling ClearDeallocationQueue
+	allocationInfo, err = chainReader.GetAllocationInfo(context.Background(), operatorAddr, strategyAddr)
+	require.NoError(t, err)
+	assert.Equal(t, big.NewInt(int64(newAllocation)), allocationInfo[0].CurrentMagnitude)
+
+	// Assert that ClearDeallocationQueue fails if strategies and numsToClear have different legths
+	numsToClear = []uint16{}
+	_, err = chainWriter.ClearDeallocationQueue(context.Background(), operatorAddr, strategies, numsToClear, true)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "execution reverted: custom error 0x43714afd")
+
+}
+
 func TestAddAndRemovePendingAdmin(t *testing.T) {
 	testConfig := testutils.GetDefaultTestConfig()
 	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
@@ -580,21 +940,19 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	operatorAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	pendingAdmin := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
+	pendingAdmin := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
 	request := elcontracts.AddPendingAdminRequest{
 		AccountAddress: operatorAddr,
 		AdminAddress:   pendingAdmin,
@@ -606,6 +964,12 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 		AdminAddress:   pendingAdmin,
 		WaitForReceipt: true,
 	}
+
+	t.Run("remove pending admin when not added", func(t *testing.T) {
+		_, err := chainWriter.RemovePendingAdmin(context.Background(), removePendingAdminRequest)
+		require.Error(t, err, "cannot remove a pending admin that has not been added")
+	})
+
 	t.Run("add pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.AddPendingAdmin(context.Background(), request)
 		require.NoError(t, err)
@@ -615,6 +979,12 @@ func TestAddAndRemovePendingAdmin(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isPendingAdmin)
 	})
+
+	t.Run("add pending admin when already added", func(t *testing.T) {
+		_, err := chainWriter.AddPendingAdmin(context.Background(), request)
+		require.Error(t, err, "cannot add a pending admin that has already been added")
+	})
+
 	t.Run("remove pending admin", func(t *testing.T) {
 		receipt, err := chainWriter.RemovePendingAdmin(context.Background(), removePendingAdminRequest)
 		require.NoError(t, err)
@@ -634,19 +1004,17 @@ func TestAcceptAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
 
-	pendingAdminPrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+	pendingAdminPrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 	adminChainWriter, err := testclients.NewTestChainWriterFromConfig(
 		anvilHttpEndpoint,
 		pendingAdminPrivateKeyHex,
@@ -657,7 +1025,7 @@ func TestAcceptAdmin(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
-	pendingAdminAddr := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	pendingAdminAddr := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
 	request := elcontracts.AddPendingAdminRequest{
 		AccountAddress: accountAddr,
 		AdminAddress:   pendingAdminAddr,
@@ -680,6 +1048,11 @@ func TestAcceptAdmin(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, isAdmin)
 	})
+
+	t.Run("accept admin when already accepted", func(t *testing.T) {
+		_, err = adminChainWriter.AcceptAdmin(context.Background(), acceptAdminRequest)
+		require.Error(t, err, "cannot accept an admin that has already been accepted")
+	})
 }
 
 func TestRemoveAdmin(t *testing.T) {
@@ -690,24 +1063,22 @@ func TestRemoveAdmin(t *testing.T) {
 	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	// TODO: unhardcode permissionControllerAddr
-	permissionControllerAddr := common.HexToAddress(testutils.PERMISSION_CONTROLLER_ADDRESS)
 
 	accountAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	accountPrivateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
 	config := elcontracts.Config{
-		DelegationManagerAddress:     contractAddrs.DelegationManager,
-		PermissionsControllerAddress: permissionControllerAddr,
+		DelegationManagerAddress:    contractAddrs.DelegationManager,
+		PermissionControllerAddress: contractAddrs.PermissionController,
 	}
 	accountChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, accountPrivateKeyHex, config)
 	require.NoError(t, err)
 
 	// Adding two admins and removing one. Cannot remove the last admin, so one must remain
-	admin1 := common.HexToAddress("14dC79964da2C08b23698B3D3cc7Ca32193d9955")
-	admin1PrivateKeyHex := "4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+	admin1 := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+	admin1PrivateKeyHex := testutils.ANVIL_SECOND_PRIVATE_KEY
 
-	admin2 := common.HexToAddress("23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f")
-	admin2PrivateKeyHex := "dbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+	admin2 := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+	admin2PrivateKeyHex := testutils.ANVIL_THIRD_PRIVATE_KEY
 
 	admin1ChainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, admin1PrivateKeyHex, config)
 	require.NoError(t, err)
@@ -732,6 +1103,7 @@ func TestRemoveAdmin(t *testing.T) {
 		AccountAddress: accountAddr,
 		WaitForReceipt: true,
 	}
+
 	// Add and accept admin 1
 	receipt, err := accountChainWriter.AddPendingAdmin(context.Background(), addAdmin1Request)
 	require.NoError(t, err)
@@ -755,6 +1127,7 @@ func TestRemoveAdmin(t *testing.T) {
 		AdminAddress:   admin2,
 		WaitForReceipt: true,
 	}
+
 	t.Run("remove admin 2", func(t *testing.T) {
 		receipt, err = admin1ChainWriter.RemoveAdmin(context.Background(), removeAdminRequest)
 		require.NoError(t, err)
@@ -763,6 +1136,602 @@ func TestRemoveAdmin(t *testing.T) {
 		isAdmin, err := chainReader.IsAdmin(context.Background(), accountAddr, admin2)
 		require.NoError(t, err)
 		require.False(t, isAdmin)
+	})
+
+	t.Run("remove admin 2 when already removed", func(t *testing.T) {
+		_, err := admin1ChainWriter.RemoveAdmin(context.Background(), removeAdminRequest)
+		require.Error(t, err, "cannot remove an admin that has already been removed")
+	})
+}
+
+func TestProcessClaim(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	waitForReceipt := true
+	cumulativeEarnings := int64(42)
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
+	require.NoError(t, err)
+
+	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+func TestProcessClaims(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	config := elcontracts.Config{
+		DelegationManagerAddress:  contractAddrs.DelegationManager,
+		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+	}
+
+	// Create ChainWriter
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+	require.NoError(t, err)
+
+	activationDelay := uint32(0)
+	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
+	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	waitForReceipt := true
+	cumulativeEarnings1 := int64(42)
+	cumulativeEarnings2 := int64(4256)
+
+	emptyClaims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{}
+	_, err = chainWriter.ProcessClaims(context.Background(), emptyClaims, recipient, waitForReceipt)
+	require.Error(t, err, "cannot process empty claims")
+
+	// Generate 2 claims
+	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
+	require.NoError(t, err)
+
+	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
+	require.NoError(t, err)
+
+	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
+		*claim1, *claim2,
+	}
+	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
+	require.NoError(t, err)
+	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+}
+
+// Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
+func createOperatorSet(
+	anvilHttpEndpoint string,
+	privateKeyHex string,
+	avsAddress common.Address,
+	operatorSetId uint32,
+	erc20MockStrategyAddr common.Address,
+) error {
+	testConfig := testutils.GetDefaultTestConfig()
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	config := elcontracts.Config{
+		DelegationManagerAddress: contractAddrs.DelegationManager,
+	}
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+	if err != nil {
+		return err
+	}
+
+	elBindings, err := elcontracts.NewBindingsFromConfig(config, ethHttpClient, logger)
+	if err != nil {
+		return err
+	}
+
+	allocationManager := elBindings.AllocationManager
+	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
+	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
+		registryCoordinatorAddress,
+		ethHttpClient,
+	)
+	if err != nil {
+		return err
+	}
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, privateKeyHex)
+	if err != nil {
+		return err
+	}
+	noSendTxOpts, err := txManager.GetNoSendTxOpts()
+	if err != nil {
+		return err
+	}
+
+	tx, err := allocationManager.SetAVSRegistrar(noSendTxOpts, avsAddress, registryCoordinatorAddress)
+	if err != nil {
+		return err
+	}
+
+	waitForReceipt := true
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
+	if err != nil {
+		return err
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	operatorSetParam := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+		MaxOperatorCount:        10,
+		KickBIPsOfOperatorStake: 100,
+		KickBIPsOfTotalStake:    1000,
+	}
+	minimumStake := big.NewInt(0)
+
+	strategyParams := regcoord.IStakeRegistryTypesStrategyParams{
+		Strategy:   erc20MockStrategyAddr,
+		Multiplier: big.NewInt(1),
+	}
+	strategyParamsArray := []regcoord.IStakeRegistryTypesStrategyParams{strategyParams}
+	lookAheadPeriod := uint32(0)
+	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
+		noSendTxOpts,
+		operatorSetParam,
+		minimumStake,
+		strategyParamsArray,
+		lookAheadPeriod,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	if err != nil {
+		return err
+	}
+
+	strategies := []common.Address{erc20MockStrategyAddr}
+	operatorSetParams := allocationmanager.IAllocationManagerTypesCreateSetParams{
+		OperatorSetId: operatorSetId,
+		Strategies:    strategies,
+	}
+	operatorSetParamsArray := []allocationmanager.IAllocationManagerTypesCreateSetParams{operatorSetParams}
+	tx, err = allocationManager.CreateOperatorSets(noSendTxOpts, avsAddress, operatorSetParamsArray)
+	if err != nil {
+		return err
+	}
+
+	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
+	return err
+}
+
+// Sets the testing RewardsCoordinator's activationDelay.
+// This is useful to test ChainWriter setter functions that depend on activationDelay.
+func setTestRewardsCoordinatorActivationDelay(
+	httpEndpoint string,
+	privateKeyHex string,
+	activationDelay uint32,
+) (*gethtypes.Receipt, error) {
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
+	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create rewards coordinator", err)
+	}
+
+	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create tx manager", err)
+	}
+
+	noSendOpts, err := txManager.GetNoSendTxOpts()
+	if err != nil {
+		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
+	}
+
+	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create SetActivationDelay tx", err)
+	}
+
+	receipt, err := txManager.Send(context.Background(), tx, true)
+	if err != nil {
+		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
+	}
+	return receipt, err
+}
+
+// TestInvalidConfig tests the behavior of the chainWriter when the config is invalid (e.g. missing addresses)
+func TestInvalidConfigChainWriter(t *testing.T) {
+	testConfig := testutils.GetDefaultTestConfig()
+	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
+	require.NoError(t, err)
+
+	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
+	require.NoError(t, err)
+
+	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+	anvilFirstAddr := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+
+	operatorAddr := testutils.ANVIL_FIRST_ADDRESS
+	operator := types.Operator{
+		Address: operatorAddr,
+	}
+
+	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
+
+	config := elcontracts.Config{}
+	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
+	require.NoError(t, err)
+
+	t.Run("register as operator", func(t *testing.T) {
+		receipt, err := chainWriter.RegisterAsOperator(
+			context.Background(),
+			operator,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("update operator details", func(t *testing.T) {
+		receipt, err := chainWriter.UpdateOperatorDetails(
+			context.Background(),
+			operator,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("update metadata URI", func(t *testing.T) {
+		receipt, err := chainWriter.UpdateMetadataURI(
+			context.Background(),
+			anvilFirstAddr,
+			"https://0.0.0.0",
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("deposit erc20 into strategy", func(t *testing.T) {
+		receipt, err := chainWriter.DepositERC20IntoStrategy(
+			context.Background(),
+			contractAddrs.Erc20MockStrategy,
+			big.NewInt(1),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("set claimer for", func(t *testing.T) {
+		receipt, err := chainWriter.SetClaimerFor(
+			context.Background(),
+			anvilFirstAddr,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("process claim and process claims", func(t *testing.T) {
+		rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
+		config := elcontracts.Config{
+			DelegationManagerAddress:  contractAddrs.DelegationManager,
+			RewardsCoordinatorAddress: rewardsCoordinatorAddr,
+		}
+		chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
+		require.NoError(t, err)
+
+		activationDelay := uint32(0)
+		receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
+		require.NoError(t, err)
+		require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+		cumulativeEarnings := int64(42)
+		claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
+		require.NoError(t, err)
+
+		receipt, err = chainWriter.ProcessClaim(
+			context.Background(),
+			*claim,
+			anvilFirstAddr,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+
+		receipt, err = chainWriter.ProcessClaims(
+			context.Background(),
+			[]rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{*claim},
+			anvilFirstAddr,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("set operator AVS split", func(t *testing.T) {
+		receipt, err := chainWriter.SetOperatorAVSSplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			anvilFirstAddr,
+			uint16(1),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("set operator PI split", func(t *testing.T) {
+		receipt, err := chainWriter.SetOperatorPISplit(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			uint16(1),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("modify allocations", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		avsAddr := anvilFirstAddr
+		operatorSetId := uint32(1)
+
+		operatorSet := allocationmanager.OperatorSet{
+			Avs: avsAddr,
+			Id:  operatorSetId,
+		}
+		newAllocation := uint64(100)
+		allocateParams := []allocationmanager.IAllocationManagerTypesAllocateParams{
+			{
+				OperatorSet:   operatorSet,
+				Strategies:    []common.Address{strategyAddr},
+				NewMagnitudes: []uint64{newAllocation},
+			},
+		}
+
+		receipt, err := chainWriter.ModifyAllocations(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			allocateParams,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("clear deallocation queue", func(t *testing.T) {
+		strategyAddr := contractAddrs.Erc20MockStrategy
+		strategies := []common.Address{strategyAddr}
+		numsToClear := []uint16{uint16(1)}
+
+		receipt, err := chainWriter.ClearDeallocationQueue(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			strategies,
+			numsToClear,
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("set allocation delay", func(t *testing.T) {
+		receipt, err := chainWriter.SetAllocationDelay(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			uint32(0),
+			true,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("deregister from operator sets", func(t *testing.T) {
+		avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorSetId := uint32(1)
+		deregistrationRequest := elcontracts.DeregistrationRequest{
+			AVSAddress:     avsAddress,
+			OperatorSetIds: []uint32{operatorSetId},
+			WaitForReceipt: true,
+		}
+
+		receipt, err := chainWriter.DeregisterFromOperatorSets(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			deregistrationRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("register for operator sets", func(t *testing.T) {
+		operatorAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+		keypair, err := bls.NewKeyPairFromString("0x01")
+		require.NoError(t, err)
+
+		avsAddress := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
+		operatorSetId := uint32(1)
+
+		request := elcontracts.RegistrationRequest{
+			OperatorAddress: operatorAddress,
+			AVSAddress:      avsAddress,
+			OperatorSetIds:  []uint32{operatorSetId},
+			WaitForReceipt:  true,
+			Socket:          "socket",
+			BlsKeyPair:      keypair,
+		}
+
+		receipt, err := chainWriter.RegisterForOperatorSets(
+			context.Background(),
+			common.HexToAddress(operatorAddr),
+			request,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("remove permission", func(t *testing.T) {
+		accountAddress := anvilFirstAddr
+		appointeeAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+		target := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+		selector := [4]byte{0, 1, 2, 3}
+		waitForReceipt := true
+
+		removePermissionRequest := elcontracts.RemovePermissionRequest{
+			AccountAddress:   accountAddress,
+			AppointeeAddress: appointeeAddress,
+			Target:           target,
+			Selector:         selector,
+			WaitForReceipt:   waitForReceipt,
+		}
+
+		receipt, err := chainWriter.RemovePermission(
+			context.Background(),
+			removePermissionRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("set permission", func(t *testing.T) {
+		accountAddress := anvilFirstAddr
+		appointeeAddress := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+		target := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+		selector := [4]byte{0, 1, 2, 3}
+		waitForReceipt := true
+
+		setPermissionRequest := elcontracts.SetPermissionRequest{
+			AccountAddress:   accountAddress,
+			AppointeeAddress: appointeeAddress,
+			Target:           target,
+			Selector:         selector,
+			WaitForReceipt:   waitForReceipt,
+		}
+
+		receipt, err := chainWriter.SetPermission(
+			context.Background(),
+			setPermissionRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("accept admin", func(t *testing.T) {
+		accountAddress := anvilFirstAddr
+		acceptAdminRequest := elcontracts.AcceptAdminRequest{
+			AccountAddress: accountAddress,
+			WaitForReceipt: true,
+		}
+
+		receipt, err := chainWriter.AcceptAdmin(
+			context.Background(),
+			acceptAdminRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("add pending admin", func(t *testing.T) {
+		accountAddress := anvilFirstAddr
+		admin1 := common.HexToAddress(testutils.ANVIL_SECOND_ADDRESS)
+
+		addAdmin1Request := elcontracts.AddPendingAdminRequest{
+			AccountAddress: accountAddress,
+			AdminAddress:   admin1,
+			WaitForReceipt: true,
+		}
+
+		receipt, err := chainWriter.AddPendingAdmin(
+			context.Background(),
+			addAdmin1Request,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("remove admin", func(t *testing.T) {
+		accountAddress := anvilFirstAddr
+		admin2 := common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS)
+
+		removeAdminRequest := elcontracts.RemoveAdminRequest{
+			AccountAddress: accountAddress,
+			AdminAddress:   admin2,
+			WaitForReceipt: true,
+		}
+
+		receipt, err := chainWriter.RemoveAdmin(
+			context.Background(),
+			removeAdminRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
+	})
+
+	t.Run("remove pending admin", func(t *testing.T) {
+		pendingAdmin := common.HexToAddress("009440d62dc85c73dbf889b7ad1f4da8b231d2ef")
+		removePendingAdminRequest := elcontracts.RemovePendingAdminRequest{
+			AccountAddress: common.HexToAddress(operatorAddr),
+			AdminAddress:   pendingAdmin,
+			WaitForReceipt: true,
+		}
+
+		receipt, err := chainWriter.RemovePendingAdmin(
+			context.Background(),
+			removePendingAdminRequest,
+		)
+		assert.Error(t, err)
+		assert.Nil(t, receipt)
 	})
 }
 
@@ -886,7 +1855,7 @@ func newTestClaim(
 		return nil, utils.WrapError("Failed to call CurrRewardsCalculationEndTimestamp", err)
 	}
 
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
+	rewardsCoordinator, err := rewardscoordinator.NewContractRewardsCoordinator(rewardsCoordinatorAddr, ethClient)
 	if err != nil {
 		return nil, utils.WrapError("Failed to create rewards coordinator contract", err)
 	}
@@ -915,242 +1884,4 @@ func newTestClaim(
 	}
 
 	return &claim, nil
-}
-
-func TestProcessClaim(t *testing.T) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	config := elcontracts.Config{
-		DelegationManagerAddress:  contractAddrs.DelegationManager,
-		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
-	}
-
-	// Create ChainWriter
-	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
-	require.NoError(t, err)
-
-	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	activationDelay := uint32(0)
-	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
-	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-	waitForReceipt := true
-	cumulativeEarnings := int64(42)
-	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
-	require.NoError(t, err)
-
-	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-}
-
-func TestProcessClaims(t *testing.T) {
-	testConfig := testutils.GetDefaultTestConfig()
-	anvilC, err := testutils.StartAnvilContainer(testConfig.AnvilStateFileName)
-	require.NoError(t, err)
-	anvilHttpEndpoint, err := anvilC.Endpoint(context.Background(), "http")
-	require.NoError(t, err)
-
-	privateKeyHex := testutils.ANVIL_FIRST_PRIVATE_KEY
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	config := elcontracts.Config{
-		DelegationManagerAddress:  contractAddrs.DelegationManager,
-		RewardsCoordinatorAddress: rewardsCoordinatorAddr,
-	}
-
-	// Create ChainWriter
-	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
-	require.NoError(t, err)
-
-	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
-	require.NoError(t, err)
-
-	activationDelay := uint32(0)
-	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
-	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-
-	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
-
-	waitForReceipt := true
-	cumulativeEarnings1 := int64(42)
-	cumulativeEarnings2 := int64(4256)
-
-	// Generate 2 claims
-	claim1, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings1, privateKeyHex)
-	require.NoError(t, err)
-
-	claim2, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings2, privateKeyHex)
-	require.NoError(t, err)
-	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
-		*claim1, *claim2,
-	}
-	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
-	require.NoError(t, err)
-	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
-}
-
-// Creates an operator set with `avsAddress`, `operatorSetId` and `erc20MockStrategyAddr`.
-func createOperatorSet(
-	anvilHttpEndpoint string,
-	privateKeyHex string,
-	avsAddress common.Address,
-	operatorSetId uint32,
-	erc20MockStrategyAddr common.Address,
-) error {
-	testConfig := testutils.GetDefaultTestConfig()
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
-	config := elcontracts.Config{
-		DelegationManagerAddress: contractAddrs.DelegationManager,
-	}
-	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
-	ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
-	if err != nil {
-		return err
-	}
-
-	elBindings, err := elcontracts.NewBindingsFromConfig(config, ethHttpClient, logger)
-	if err != nil {
-		return err
-	}
-
-	allocationManager := elBindings.AllocationManager
-	registryCoordinatorAddress := contractAddrs.RegistryCoordinator
-	registryCoordinator, err := regcoord.NewContractRegistryCoordinator(
-		registryCoordinatorAddress,
-		ethHttpClient,
-	)
-	if err != nil {
-		return err
-	}
-	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, privateKeyHex)
-	if err != nil {
-		return err
-	}
-	noSendTxOpts, err := txManager.GetNoSendTxOpts()
-	if err != nil {
-		return err
-	}
-
-	tx, err := allocationManager.SetAVSRegistrar(noSendTxOpts, avsAddress, registryCoordinatorAddress)
-	if err != nil {
-		return err
-	}
-
-	waitForReceipt := true
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return err
-	}
-
-	tx, err = registryCoordinator.EnableOperatorSets(noSendTxOpts)
-	if err != nil {
-		return err
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return err
-	}
-
-	operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
-		MaxOperatorCount:        10,
-		KickBIPsOfOperatorStake: 100,
-		KickBIPsOfTotalStake:    1000,
-	}
-	minimumStake := big.NewInt(0)
-
-	strategyParams := regcoord.IStakeRegistryStrategyParams{
-		Strategy:   erc20MockStrategyAddr,
-		Multiplier: big.NewInt(1),
-	}
-	strategyParamsArray := []regcoord.IStakeRegistryStrategyParams{strategyParams}
-	lookAheadPeriod := uint32(0)
-	tx, err = registryCoordinator.CreateSlashableStakeQuorum(
-		noSendTxOpts,
-		operatorSetParam,
-		minimumStake,
-		strategyParamsArray,
-		lookAheadPeriod,
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	if err != nil {
-		return err
-	}
-
-	strategies := []common.Address{erc20MockStrategyAddr}
-	operatorSetParams := allocationmanager.IAllocationManagerTypesCreateSetParams{
-		OperatorSetId: operatorSetId,
-		Strategies:    strategies,
-	}
-	operatorSetParamsArray := []allocationmanager.IAllocationManagerTypesCreateSetParams{operatorSetParams}
-	tx, err = allocationManager.CreateOperatorSets(noSendTxOpts, avsAddress, operatorSetParamsArray)
-	if err != nil {
-		return err
-	}
-
-	_, err = txManager.Send(context.Background(), tx, waitForReceipt)
-	return err
-}
-
-// Sets the testing RewardsCoordinator's activationDelay.
-// This is useful to test ChainWriter setter functions that depend on activationDelay.
-func setTestRewardsCoordinatorActivationDelay(
-	httpEndpoint string,
-	privateKeyHex string,
-	activationDelay uint32,
-) (*gethtypes.Receipt, error) {
-	contractAddrs := testutils.GetContractAddressesFromContractRegistry(httpEndpoint)
-	rewardsCoordinatorAddr := contractAddrs.RewardsCoordinator
-	ethHttpClient, err := ethclient.Dial(httpEndpoint)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create eth client", err)
-	}
-
-	rewardsCoordinator, err := rewardscoordinator.NewContractIRewardsCoordinator(rewardsCoordinatorAddr, ethHttpClient)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create rewards coordinator", err)
-	}
-
-	txManager, err := testclients.NewTestTxManager(httpEndpoint, privateKeyHex)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create tx manager", err)
-	}
-
-	noSendOpts, err := txManager.GetNoSendTxOpts()
-	if err != nil {
-		return nil, utils.WrapError("Failed to get NoSend tx opts", err)
-	}
-
-	tx, err := rewardsCoordinator.SetActivationDelay(noSendOpts, activationDelay)
-	if err != nil {
-		return nil, utils.WrapError("Failed to create SetActivationDelay tx", err)
-	}
-
-	receipt, err := txManager.Send(context.Background(), tx, true)
-	if err != nil {
-		return nil, utils.WrapError("Failed to send SetActivationDelay tx", err)
-	}
-	return receipt, err
 }
