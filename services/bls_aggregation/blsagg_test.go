@@ -957,12 +957,9 @@ func TestBlsAgg(t *testing.T) {
 				BlsKeypair:     newBlsKeyPairPanics("0x1"),
 				Socket:         "localhost:8080",
 			}
-			testOperator2 := types.TestOperator{
-				OperatorId:     types.OperatorId{2},
-				StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
-				BlsKeypair:     newBlsKeyPairPanics("0x2"),
-				Socket:         "localhost:8081",
-			}
+			testOperator2OperatorId := types.OperatorId{2}
+			testOperator2BlsKeypair := newBlsKeyPairPanics("0x2")
+
 			blockNum := uint32(1)
 			taskIndex := types.TaskIndex(0)
 			quorumNumbers := types.QuorumNums{0}
@@ -998,10 +995,10 @@ func TestBlsAgg(t *testing.T) {
 			taskResponse2 := mockTaskResponse{2}
 			taskResponseDigest2, err := hashFunction(taskResponse2)
 			require.Nil(t, err)
-			blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest2)
+			blsSigOp2 := testOperator2BlsKeypair.SignMessage(taskResponseDigest2)
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2.OperatorId)
+			taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				ctx,
 				taskSignature2,
