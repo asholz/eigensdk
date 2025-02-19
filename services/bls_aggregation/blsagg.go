@@ -209,12 +209,12 @@ type ServiceHandler struct {
 
 type initializeTaskRequest struct {
 	metadata TaskMetadata
-	errC     chan error
+	errC     chan<- error
 }
 
 type processSignatureRequest struct {
 	metadata TaskSignature
-	errC     chan error
+	errC     chan<- error
 }
 
 // This function starts the service thread, initializing the aggregateResponses, initializeTask and processSignature
