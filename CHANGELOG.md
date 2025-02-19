@@ -98,7 +98,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 
     // Initialize task
     metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
-    err = blsAggServ.InitializeNewTask(metadata)
+    err := blsAggServ.InitializeNewTask(metadata)
 
     // Process signature
     taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
@@ -115,11 +115,11 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     ```Go
     // initialize service
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-    handler, receiver, err := blsAggServ.Start()
+    handler, receiver := blsAggServ.Start()
 
     // Initialize task
     metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
-    err = handler.InitializeNewTask(metadata)
+    err := handler.InitializeNewTask(metadata)
 
     // Process signature
     taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
