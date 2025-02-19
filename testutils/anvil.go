@@ -76,6 +76,7 @@ type ContractAddresses struct {
 	Erc20MockStrategy      common.Address
 	RewardsCoordinator     common.Address
 	PermissionController   common.Address
+	StrategyManager        common.Address
 }
 
 func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContracts ContractAddresses) {
@@ -146,6 +147,14 @@ func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContrac
 	if permissionControllerAddr == (common.Address{}) {
 		panic("permissionControllerAddr is empty")
 	}
+
+	strategyManagerAddress, err := contractsRegistry.Contracts(&bind.CallOpts{}, "strategyManager")
+	if err != nil {
+		panic(err)
+	}
+	if strategyManagerAddress == (common.Address{}) {
+		panic("strategyManagerAddress is empty")
+	}
 	mockAvsContracts = ContractAddresses{
 		ServiceManager:         mockAvsServiceManagerAddr,
 		RegistryCoordinator:    mockAvsRegistryCoordinatorAddr,
@@ -154,6 +163,7 @@ func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContrac
 		Erc20MockStrategy:      erc20MockStrategyAddr,
 		RewardsCoordinator:     rewardsCoordinatorAddr,
 		PermissionController:   permissionControllerAddr,
+		StrategyManager:        strategyManagerAddress,
 	}
 	return mockAvsContracts
 }

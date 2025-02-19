@@ -1189,3 +1189,96 @@ func (r *ChainReader) IsAdmin(
 	}
 	return isAdmin, nil
 }
+
+// Gets the EIP-712 typehash for the deposit struct used by the contract
+func (r *ChainReader) GetDepositTypehash(
+	ctx context.Context,
+) ([32]byte, error) {
+	if r.strategyManager == nil {
+		return [32]byte{}, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.DEPOSITTYPEHASH(&bind.CallOpts{Context: ctx})
+}
+
+// Gets the default address for burning slashed shares and transferring underlying tokens
+func (r *ChainReader) GetDefaultBurnAddress(
+	ctx context.Context,
+) (gethcommon.Address, error) {
+	if r.strategyManager == nil {
+		return gethcommon.Address{}, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.DEFAULTBURNADDRESS(&bind.CallOpts{Context: ctx})
+}
+
+// Get the signature `nonce` for each `signer`.
+func (r *ChainReader) GetNonce(
+	ctx context.Context,
+	operatorAddress gethcommon.Address,
+) (*big.Int, error) {
+	if r.strategyManager == nil {
+		return nil, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.Nonces(&bind.CallOpts{Context: ctx}, operatorAddress)
+}
+
+// Gets the permissioned address that can whitelist strategies.
+func (r *ChainReader) GetStrategyWhitelister(ctx context.Context) (common.Address, error) {
+	if r.strategyManager == nil {
+		return common.Address{}, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.StrategyWhitelister(&bind.CallOpts{Context: ctx})
+}
+
+// Gets the number of deposited `shares` for a `staker` for a given `strategy`.
+func (r *ChainReader) GetStakerDepositShares(
+	ctx context.Context,
+	staker common.Address,
+	strategy common.Address,
+) (*big.Int, error) {
+	if r.strategyManager == nil {
+		return nil, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.StakerDepositShares(&bind.CallOpts{Context: ctx}, staker, strategy)
+}
+
+// Returns the strategy that a `staker` is currently staking in, at a given index in the staker's strategy list
+func (r *ChainReader) GetStakerStrategyAtIndex(
+	ctx context.Context,
+	staker common.Address,
+	index *big.Int,
+) (common.Address, error) {
+	if r.strategyManager == nil {
+		return common.Address{}, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.StakerStrategyList(&bind.CallOpts{Context: ctx}, staker, index)
+}
+
+// Returns whether a `strategy` is `whitelisted` for deposits.
+func (r *ChainReader) GetStrategyIsWhitelistedForDeposit(
+	ctx context.Context,
+	strategy common.Address,
+) (bool, error) {
+	if r.strategyManager == nil {
+		return false, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.StrategyIsWhitelistedForDeposit(&bind.CallOpts{Context: ctx}, strategy)
+}
+
+// Get the amount of `shares` that have been slashed on EigenLayer but not burned yet.
+func (r *ChainReader) GetBurnableShares(
+	ctx context.Context,
+	strategy common.Address,
+) (*big.Int, error) {
+	if r.strategyManager == nil {
+		return nil, errors.New("StrategyManager contract not provided")
+	}
+
+	return r.strategyManager.BurnableShares(&bind.CallOpts{Context: ctx}, strategy)
+}
