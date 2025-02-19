@@ -203,16 +203,16 @@ func NewBlsAggregatorService(
 // The service handler is a structure used to use the service without the complexity of it.
 type ServiceHandler struct {
 	//This channels are used to send messages (requests) to the service.
-	taskInitC         chan InitializeTaskRequest
-	processSignatureC chan ProcessSignatureRequest
+	taskInitC         chan initializeTaskRequest
+	processSignatureC chan processSignatureRequest
 }
 
-type InitializeTaskRequest struct {
+type initializeTaskRequest struct {
 	metadata TaskMetadata
 	errC     chan error
 }
 
-type ProcessSignatureRequest struct {
+type processSignatureRequest struct {
 	metadata TaskSignature
 	errC     chan error
 }
@@ -222,8 +222,8 @@ type ProcessSignatureRequest struct {
 // aggregate receiver channel to interact with the service thread.
 func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationServiceResponse) {
 	// Create channels to handle requests
-	initializeTaskC := make(chan InitializeTaskRequest)
-	processSignatureC := make(chan ProcessSignatureRequest)
+	initializeTaskC := make(chan initializeTaskRequest)
+	processSignatureC := make(chan processSignatureRequest)
 
 	aggResponsesC := make(chan BlsAggregationServiceResponse)
 
@@ -243,8 +243,8 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationSer
 // single task aggregator goroutine, where the initialization of the task is done an notified.
 // The loop ends if one of the request channels is closed.
 func (a *BlsAggregatorService) run(
-	initializeTaskChannel chan InitializeTaskRequest,
-	processSignatureChannel chan ProcessSignatureRequest,
+	initializeTaskChannel chan initializeTaskRequest,
+	processSignatureChannel chan processSignatureRequest,
 	aggResponsesC chan BlsAggregationServiceResponse,
 ) {
 	taskChannels := make(map[types.TaskIndex]chan types.SignedTaskResponseDigest)
@@ -318,7 +318,7 @@ func (a *ServiceHandler) InitializeNewTask(
 	metadata TaskMetadata,
 ) error {
 	errChan := make(chan error)
-	a.taskInitC <- InitializeTaskRequest{metadata, errChan}
+	a.taskInitC <- initializeTaskRequest{metadata, errChan}
 	select {
 	case err := <-errChan:
 		return err
@@ -341,7 +341,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 	metadata TaskSignature,
 ) error {
 	errChan := make(chan error)
-	a.processSignatureC <- ProcessSignatureRequest{metadata, errChan}
+	a.processSignatureC <- processSignatureRequest{metadata, errChan}
 
 	// Doing this we let the goroutine consume the result of the operation, but allow
 	// the operation to end early if the context is cancelled
