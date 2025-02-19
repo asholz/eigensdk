@@ -14,6 +14,8 @@ import (
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients"
 	"github.com/Layr-Labs/eigensdk-go/chainio/utils"
+	avssm "github.com/Layr-Labs/eigensdk-go/contracts/bindings/MockAvsServiceManager"
+	regcoord "github.com/Layr-Labs/eigensdk-go/contracts/bindings/RegistryCoordinator"
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	"github.com/Layr-Labs/eigensdk-go/services/avsregistry"
@@ -23,8 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
-
-	avssm "github.com/Layr-Labs/eigensdk-go/contracts/bindings/MockAvsServiceManager"
 )
 
 // TestBlsAgg is a suite of test that tests the main aggregation logic of the aggregation service
@@ -62,7 +62,7 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("1 quorum 1 operator 1 correct signature", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 		}
 		blockNum := uint32(1)
@@ -108,19 +108,19 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("1 quorum 3 operator 3 correct signatures", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 			Socket:         "localhost:8080",
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 			Socket:         "localhost:8081",
 		}
 		testOperator3 := types.TestOperator{
 			OperatorId:     types.OperatorId{3},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(300), 1: big.NewInt(100)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(300)},
 			BlsKeypair:     newBlsKeyPairPanics("0x3"),
 			Socket:         "localhost:8082",
 		}
@@ -233,6 +233,11 @@ func TestBlsAgg(t *testing.T) {
 		)
 		require.Nil(t, err)
 
+		op1G2Key := testOperator1.BlsKeypair.GetPubKeyG2()
+		op2G2Key := testOperator2.BlsKeypair.GetPubKeyG2()
+		op1Signature := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		op2Signature := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err:                 nil,
 			TaskIndex:           taskIndex,
@@ -247,9 +252,9 @@ func TestBlsAgg(t *testing.T) {
 					Add(testOperator1.BlsKeypair.GetPubKeyG1()).
 					Add(testOperator2.BlsKeypair.GetPubKeyG1()),
 			},
-			SignersApkG2: testOperator1.BlsKeypair.GetPubKeyG2().Add(testOperator2.BlsKeypair.GetPubKeyG2()),
-			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
-				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
+			SignersApkG2:    op1G2Key.Add(op1G2Key).Add(op2G2Key).Add(op2G2Key),
+			SignersAggSigG1: op1Signature.Add(op1Signature).Add(op2Signature).Add(op2Signature),
+			// each key is added twice because both operators stake on two quorums
 		}
 		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
 		require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
@@ -339,8 +344,13 @@ func TestBlsAgg(t *testing.T) {
 					Add(testOperator2.BlsKeypair.GetPubKeyG1()),
 			},
 			SignersApkG2: bls.NewZeroG2Point().
-				Add(testOperator1.BlsKeypair.GetPubKeyG2().Add(testOperator2.BlsKeypair.GetPubKeyG2())),
+				Add(testOperator1.BlsKeypair.GetPubKeyG2()).
+				Add(testOperator1.BlsKeypair.GetPubKeyG2()).
+				Add(testOperator2.BlsKeypair.GetPubKeyG2()).
+				Add(testOperator2.BlsKeypair.GetPubKeyG2()),
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(task1ResponseDigest).
+				Add(testOperator1.BlsKeypair.SignMessage(task1ResponseDigest)).
+				Add(testOperator2.BlsKeypair.SignMessage(task1ResponseDigest)).
 				Add(testOperator2.BlsKeypair.SignMessage(task1ResponseDigest)),
 		}
 		wantAggregationServiceResponseTask2 := BlsAggregationServiceResponse{
@@ -357,8 +367,13 @@ func TestBlsAgg(t *testing.T) {
 					Add(testOperator1.BlsKeypair.GetPubKeyG1()).
 					Add(testOperator2.BlsKeypair.GetPubKeyG1()),
 			},
-			SignersApkG2: testOperator1.BlsKeypair.GetPubKeyG2().Add(testOperator2.BlsKeypair.GetPubKeyG2()),
+			SignersApkG2: testOperator1.BlsKeypair.GetPubKeyG2().
+				Add(testOperator1.BlsKeypair.GetPubKeyG2()).
+				Add(testOperator2.BlsKeypair.GetPubKeyG2()).
+				Add(testOperator2.BlsKeypair.GetPubKeyG2()),
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(task2ResponseDigest).
+				Add(testOperator1.BlsKeypair.SignMessage(task2ResponseDigest)).
+				Add(testOperator2.BlsKeypair.SignMessage(task2ResponseDigest)).
 				Add(testOperator2.BlsKeypair.SignMessage(task2ResponseDigest)),
 		}
 
@@ -491,13 +506,13 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("1 quorum 2 operator 1 correct signature quorumThreshold 50% - verified", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 			Socket:         "localhost:8080",
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 			Socket:         "localhost:8081",
 		}
@@ -545,13 +560,13 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("1 quorum 2 operator 1 correct signature quorumThreshold 60% - task expired", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 			Socket:         "localhost:8080",
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 			Socket:         "localhost:8081",
 		}
@@ -938,16 +953,13 @@ func TestBlsAgg(t *testing.T) {
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
 				OperatorId:     types.OperatorId{1},
-				StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+				StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 				BlsKeypair:     newBlsKeyPairPanics("0x1"),
 				Socket:         "localhost:8080",
 			}
-			testOperator2 := types.TestOperator{
-				OperatorId:     types.OperatorId{2},
-				StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
-				BlsKeypair:     newBlsKeyPairPanics("0x2"),
-				Socket:         "localhost:8081",
-			}
+			testOperator2OperatorId := types.OperatorId{2}
+			testOperator2BlsKeypair := newBlsKeyPairPanics("0x2")
+
 			blockNum := uint32(1)
 			taskIndex := types.TaskIndex(0)
 			quorumNumbers := types.QuorumNums{0}
@@ -983,10 +995,10 @@ func TestBlsAgg(t *testing.T) {
 			taskResponse2 := mockTaskResponse{2}
 			taskResponseDigest2, err := hashFunction(taskResponse2)
 			require.Nil(t, err)
-			blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest2)
+			blsSigOp2 := testOperator2BlsKeypair.SignMessage(taskResponseDigest2)
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2.OperatorId)
+			taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				ctx,
 				taskSignature2,
@@ -1216,19 +1228,19 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("if quorum has been reached and the task expires during window, the response is sent", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 			Socket:         "localhost:8080",
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 			Socket:         "localhost:8081",
 		}
 		testOperator3 := types.TestOperator{
 			OperatorId:     types.OperatorId{3},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(100)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x3"),
 			Socket:         "localhost:8082",
 		}
@@ -1316,17 +1328,17 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("if window duration is zero, no signatures are aggregated after reaching quorum", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 		}
 		testOperator3 := types.TestOperator{
 			OperatorId:     types.OperatorId{3},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(100)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x3"),
 		}
 		blockNum := uint32(1)
@@ -1414,19 +1426,19 @@ func TestBlsAgg(t *testing.T) {
 	t.Run("no signatures are aggregated after window", func(t *testing.T) {
 		testOperator1 := types.TestOperator{
 			OperatorId:     types.OperatorId{1},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x1"),
 			Socket:         "localhost:8080",
 		}
 		testOperator2 := types.TestOperator{
 			OperatorId:     types.OperatorId{2},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(200)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x2"),
 			Socket:         "localhost:8081",
 		}
 		testOperator3 := types.TestOperator{
 			OperatorId:     types.OperatorId{3},
-			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100), 1: big.NewInt(100)},
+			StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 			BlsKeypair:     newBlsKeyPairPanics("0x3"),
 			Socket:         "localhost:8082",
 		}
@@ -1537,6 +1549,7 @@ func TestIntegrationBlsAgg(t *testing.T) {
 	anvilWsEndpoint, err := anvilC.Endpoint(context.Background(), "ws")
 	require.NoError(t, err)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
+
 	t.Run("1 quorums 1 operator", func(t *testing.T) {
 		// read input from JSON if available, otherwise use default values
 		var defaultInput = struct {
@@ -1563,7 +1576,7 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: slog.LevelDebug})
 		avsClients, err := clients.BuildAll(clients.BuildAllConfig{
 			EthHttpUrl:                 anvilHttpEndpoint,
-			EthWsUrl:                   anvilWsEndpoint, // not used so doesn't matter that we pass an http url
+			EthWsUrl:                   anvilWsEndpoint,
 			RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
 			OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 			AvsName:                    "avs",
@@ -1650,8 +1663,138 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("2 quorums 1 operator", func(t *testing.T) {
-		// TODO: Implement this test
+	t.Run("2 quorums 1 operator staking on both", func(t *testing.T) {
+		// define operator ecdsa and bls private keys
+		ecdsaPrivKey, err := crypto.HexToECDSA("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+		require.NoError(t, err)
+		blsPrivKeyHex := "0x1"
+		blsKeyPair := newBlsKeyPairPanics(blsPrivKeyHex)
+		operatorId := types.OperatorIdFromG1Pubkey(blsKeyPair.GetPubKeyG1())
+
+		// create avs clients to interact with contracts deployed on anvil
+		ethHttpClient, err := ethclient.Dial(anvilHttpEndpoint)
+		require.NoError(t, err)
+		logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: slog.LevelDebug})
+		avsClients, err := clients.BuildAll(clients.BuildAllConfig{
+			EthHttpUrl:                 anvilHttpEndpoint,
+			EthWsUrl:                   anvilWsEndpoint,
+			RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
+			OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
+			AvsName:                    "avs",
+			PromMetricsIpPortAddress:   "localhost:9090",
+			ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
+		}, ecdsaPrivKey, logger)
+		require.NoError(t, err)
+		avsWriter := avsClients.AvsRegistryChainWriter
+		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
+		require.NoError(t, err)
+
+		// create aggregation service
+		operatorsInfoService := operatorsinfo.NewOperatorsInfoServiceInMemory(
+			context.TODO(),
+			avsClients.AvsRegistryChainSubscriber,
+			avsClients.AvsRegistryChainReader,
+			nil,
+			operatorsinfo.Opts{},
+			logger,
+		)
+		avsRegistryService := avsregistry.NewAvsRegistryServiceChainCaller(
+			avsClients.AvsRegistryChainReader,
+			operatorsInfoService,
+			logger,
+		)
+		blsAggServ := NewBlsAggregatorService(avsRegistryService, hashFunction, logger)
+
+		// create quorum
+		registryCoordinator, _ := regcoord.NewContractRegistryCoordinator(
+			contractAddrs.RegistryCoordinator,
+			ethHttpClient,
+		)
+		operatorSetParam := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
+			MaxOperatorCount:        10,
+			KickBIPsOfOperatorStake: 1,
+			KickBIPsOfTotalStake:    1,
+		}
+		strategyParam := []regcoord.IStakeRegistryTypesStrategyParams{
+			{
+				Strategy:   contractAddrs.Erc20MockStrategy,
+				Multiplier: big.NewInt(1),
+			},
+		}
+		noSendTxOpts, err := avsClients.TxManager.GetNoSendTxOpts()
+		require.NoError(t, err)
+		tx, err := registryCoordinator.CreateTotalDelegatedStakeQuorum(
+			noSendTxOpts,
+			operatorSetParam,
+			big.NewInt(0),
+			strategyParam,
+		)
+		require.NoError(t, err)
+		_, err = avsClients.TxManager.Send(context.TODO(), tx, true)
+		require.NoError(t, err)
+
+		tx, err = registryCoordinator.CreateTotalDelegatedStakeQuorum(
+			noSendTxOpts,
+			operatorSetParam,
+			big.NewInt(0),
+			strategyParam,
+		)
+		require.NoError(t, err)
+		_, err = avsClients.TxManager.Send(context.TODO(), tx, true)
+		require.NoError(t, err)
+
+		// register operator
+		quorumNumbers := types.QuorumNums{1, 2}
+		quorumThresholdPercentages := []types.QuorumThresholdPercentage{100, 100}
+
+		_, err = avsWriter.RegisterOperator(
+			context.Background(),
+			ecdsaPrivKey,
+			blsKeyPair,
+			quorumNumbers,
+			"socket",
+			true,
+		)
+		require.NoError(t, err)
+
+		// create the task related parameters: RBN, quorumThresholdPercentages, taskIndex and taskResponse
+		curBlockNum, err := ethHttpClient.BlockNumber(context.Background())
+		require.NoError(t, err)
+		referenceBlockNumber := uint32(curBlockNum)
+		// need to advance chain by 1 block because of the check in signatureChecker where RBN must be < current block
+		// number
+		testutils.AdvanceChainByNBlocksExecInContainer(context.TODO(), 1, anvilC)
+		taskIndex := types.TaskIndex(0)
+		taskResponse := mockTaskResponse{123} // Initialize with appropriate data
+
+		newTaskMetadata := NewTaskMetadata(taskIndex,
+			uint32(referenceBlockNumber),
+			quorumNumbers,
+			quorumThresholdPercentages,
+			tasksTimeToExpiry,
+		)
+		// initialize the task
+		err = blsAggServ.InitializeNewTask(newTaskMetadata)
+		require.Nil(t, err)
+
+		// compute the signature and send it to the aggregation service
+		taskResponseDigest, err := hashFunction(taskResponse)
+		require.Nil(t, err)
+		blsSig := blsKeyPair.SignMessage(taskResponseDigest)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, operatorId)
+		err = blsAggServ.ProcessNewSignature(context.Background(), taskSignature)
+		require.Nil(t, err)
+
+		// wait for the response from the aggregation service and check the signature
+		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+		_, _, err = avsServiceManager.CheckSignatures(
+			&bind.CallOpts{},
+			taskResponseDigest,
+			quorumNumbers.UnderlyingType(),
+			uint32(referenceBlockNumber),
+			blsAggServiceResp.toNonSignerStakesAndSignature(),
+		)
+		require.NoError(t, err)
 	})
 }
 
