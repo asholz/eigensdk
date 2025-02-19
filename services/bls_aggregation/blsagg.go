@@ -322,6 +322,15 @@ func (a *ServiceHandler) InitializeNewTask(
 	}
 }
 
+// ProcessNewSignature sends to the service thread a request to process a new signature for a previous initialize task.
+//
+// The metadata parameter contains:
+//   - taskIndex: Unique identifier for the task
+//   - taskResponse: Response data that has been signed
+//   - blsSignature: BLS cryptographic signature for the task response
+//   - operatorId: id of the operator who signed the task response
+//
+// The last three attributes are used to make the response digest.
 func (a *ServiceHandler) ProcessNewSignature(
 	ctx context.Context,
 	metadata TaskSignature,
@@ -340,7 +349,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 }
 
 func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
-	return <-a.aggregate_receiver // Maybe can add a select with a timer
+	return <-a.aggregate_receiver
 }
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
@@ -352,7 +361,6 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 		"taskIndex", metadata.taskIndex,
 		"taskCreatedBlock", metadata.taskCreatedBlock)
 
-	// defer a.closeTaskGoroutine(metadata.taskIndex)
 	quorumThresholdPercentagesMap := make(map[types.QuorumNum]types.QuorumThresholdPercentage)
 	for i, quorumNumber := range metadata.quorumNumbers {
 		quorumThresholdPercentagesMap[quorumNumber] = metadata.quorumThresholdPercentages[i]
