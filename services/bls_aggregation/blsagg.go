@@ -202,7 +202,7 @@ func NewBlsAggregatorService(
 type ServiceHandler struct {
 	//This channels are used to send messages (requests) to the service.
 	TaskInitC         chan InitializeTaskRequest
-	processSignatureC chan ProcessSignatureRequest // The type of the channel is being discussed
+	processSignatureC chan ProcessSignatureRequest
 }
 
 type InitializeTaskRequest struct {
@@ -282,6 +282,8 @@ func (a *BlsAggregatorService) run(
 				signedTaskRespsC <- signedDigest
 				result := <-errC
 				signatureReq.errC <- result
+			} else {
+				signatureReq.errC <- TaskNotFoundErrorFn(taskIndex)
 			}
 		}
 	}
