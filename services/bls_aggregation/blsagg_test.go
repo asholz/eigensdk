@@ -1712,12 +1712,12 @@ func TestIntegrationBlsAgg(t *testing.T) {
 			contractAddrs.RegistryCoordinator,
 			ethHttpClient,
 		)
-		operatorSetParam := regcoord.IRegistryCoordinatorOperatorSetParam{
+		operatorSetParam := regcoord.ISlashingRegistryCoordinatorTypesOperatorSetParam{
 			MaxOperatorCount:        10,
 			KickBIPsOfOperatorStake: 1,
 			KickBIPsOfTotalStake:    1,
 		}
-		strategyParam := []regcoord.IStakeRegistryStrategyParams{
+		strategyParam := []regcoord.IStakeRegistryTypesStrategyParams{
 			{
 				Strategy:   contractAddrs.Erc20MockStrategy,
 				Multiplier: big.NewInt(1),
@@ -1769,21 +1769,22 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		taskIndex := types.TaskIndex(0)
 		taskResponse := mockTaskResponse{123} // Initialize with appropriate data
 
-		// initialize the task
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
+		newTaskMetadata := NewTaskMetadata(taskIndex,
 			uint32(referenceBlockNumber),
 			quorumNumbers,
 			quorumThresholdPercentages,
 			tasksTimeToExpiry,
 		)
+		// initialize the task
+		err = blsAggServ.InitializeNewTask(newTaskMetadata)
 		require.Nil(t, err)
 
 		// compute the signature and send it to the aggregation service
 		taskResponseDigest, err := hashFunction(taskResponse)
 		require.Nil(t, err)
 		blsSig := blsKeyPair.SignMessage(taskResponseDigest)
-		err = blsAggServ.ProcessNewSignature(context.Background(), taskIndex, taskResponse, blsSig, operatorId)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, operatorId)
+		err = blsAggServ.ProcessNewSignature(context.Background(), taskSignature)
 		require.Nil(t, err)
 
 		// wait for the response from the aggregation service and check the signature
