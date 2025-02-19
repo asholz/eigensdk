@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/Layr-Labs/eigensdk-go/crypto/bls"
@@ -22,7 +21,7 @@ var (
 	// error string directly.
 	//       see https://go.dev/blog/go1.13-errors
 	TaskInitializationErrorFn = func(err error, taskIndex types.TaskIndex) error {
-		return fmt.Errorf("Failed to initialize task %d: %w", taskIndex, err)
+		return fmt.Errorf("failed to initialize task %d: %w", taskIndex, err)
 	}
 	TaskAlreadyInitializedErrorFn = func(taskIndex types.TaskIndex) error {
 		return fmt.Errorf("task %d already initialized", taskIndex)
@@ -37,12 +36,12 @@ var (
 		return fmt.Errorf("operator %x not part of task %d's quorum", operatorId, taskIndex)
 	}
 	HashFunctionError = func(err error) error {
-		return fmt.Errorf("Failed to hash task response: %w", err)
+		return fmt.Errorf("failed to hash task response: %w", err)
 	}
 	SignatureVerificationError = func(err error) error {
-		return fmt.Errorf("Failed to verify signature: %w", err)
+		return fmt.Errorf("failed to verify signature: %w", err)
 	}
-	IncorrectSignatureError = errors.New("Signature verification failed. Incorrect Signature.")
+	ErrIncorrectSignature = errors.New("signature verification failed. incorrect signature")
 )
 
 // BlsAggregationServiceResponse is the response from the bls aggregation service
@@ -751,7 +750,7 @@ func (a *BlsAggregatorService) verifySignature(
 		return SignatureVerificationError(err)
 	}
 	if !signatureVerified {
-		return IncorrectSignatureError
+		return ErrIncorrectSignature
 	}
 	return nil
 }
