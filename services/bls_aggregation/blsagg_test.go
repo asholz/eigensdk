@@ -81,20 +81,13 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSig,
-			testOperator1.OperatorId,
+			taskSignature,
 		)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
@@ -147,39 +140,28 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 		blsSigOp3 := testOperator3.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature3 := NewTaskSignature(taskIndex, taskResponse, blsSigOp3, testOperator3.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp3,
-			testOperator3.OperatorId,
+			taskSignature3,
 		)
 		require.Nil(t, err)
 
@@ -233,30 +215,21 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 
@@ -311,61 +284,43 @@ func TestBlsAgg(t *testing.T) {
 		task1Response := mockTaskResponse{123}
 		task1ResponseDigest, err := hashFunction(task1Response)
 		require.Nil(t, err)
-		err = blsAggServ.InitializeNewTask(
-			task1Index,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata1 := NewTaskMetadata(task1Index, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata1)
 		require.Nil(t, err)
 		task2Index := types.TaskIndex(2)
 		task2Response := mockTaskResponse{234}
 		task2ResponseDigest, err := hashFunction(task2Response)
 		require.Nil(t, err)
-		err = blsAggServ.InitializeNewTask(
-			task2Index,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata2 := NewTaskMetadata(task2Index, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata2)
 		require.Nil(t, err)
 
 		blsSigTask1Op1 := testOperator1.BlsKeypair.SignMessage(task1ResponseDigest)
+		taskSignature1Op1 := NewTaskSignature(task1Index, task1Response, blsSigTask1Op1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			task1Index,
-			task1Response,
-			blsSigTask1Op1,
-			testOperator1.OperatorId,
+			taskSignature1Op1,
 		)
 		require.Nil(t, err)
 		blsSigTask2Op1 := testOperator1.BlsKeypair.SignMessage(task2ResponseDigest)
+		taskSignature2Op1 := NewTaskSignature(task2Index, task2Response, blsSigTask2Op1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			task2Index,
-			task2Response,
-			blsSigTask2Op1,
-			testOperator1.OperatorId,
+			taskSignature2Op1,
 		)
 		require.Nil(t, err)
 		blsSigTask1Op2 := testOperator2.BlsKeypair.SignMessage(task1ResponseDigest)
+		taskSignature1Op2 := NewTaskSignature(task1Index, task1Response, blsSigTask1Op2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			task1Index,
-			task1Response,
-			blsSigTask1Op2,
-			testOperator2.OperatorId,
+			taskSignature1Op2,
 		)
 		require.Nil(t, err)
 		blsSigTask2Op2 := testOperator2.BlsKeypair.SignMessage(task2ResponseDigest)
+		taskSignature2Op2 := NewTaskSignature(task2Index, task2Response, blsSigTask2Op2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			task2Index,
-			task2Response,
-			blsSigTask2Op2,
-			testOperator2.OperatorId,
+			taskSignature2Op2,
 		)
 		require.Nil(t, err)
 
@@ -448,13 +403,9 @@ func TestBlsAgg(t *testing.T) {
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
 		logger.Info("Initializing new task", "taskIndex", taskIndex)
-		err := blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			10*time.Second, // Longer expiry time for testing
-		)
+		timeToExpire := 10 * time.Second
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, timeToExpire)
+		err := blsAggServ.InitializeNewTask(metadata)
 		require.NoError(t, err)
 
 		taskResponseDigest, err := hashFunction(taskResponse)
@@ -462,23 +413,19 @@ func TestBlsAgg(t *testing.T) {
 
 		logger.Info("Processing first signature", "operatorId", testOperator1.OperatorId)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.NoError(t, err)
 
 		logger.Info("Processing second signature (Operator 1 double sign)", "operatorId", testOperator1.OperatorId)
 		blsSigOp1Dup := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1Dup := NewTaskSignature(taskIndex, taskResponse, blsSigOp1Dup, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1Dup,
-			testOperator1.OperatorId,
+			taskSignature1Dup,
 		)
 
 		if err != nil {
@@ -490,12 +437,10 @@ func TestBlsAgg(t *testing.T) {
 
 		logger.Info("Processing second signature", "operatorId", testOperator2.OperatorId)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.NoError(t, err)
 
@@ -533,13 +478,8 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err := blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err := blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
@@ -577,20 +517,13 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSig,
-			testOperator1.OperatorId,
+			taskSignature,
 		)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
@@ -638,20 +571,13 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSig,
-			testOperator1.OperatorId,
+			taskSignature,
 		)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
@@ -691,30 +617,21 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 
@@ -774,30 +691,27 @@ func TestBlsAgg(t *testing.T) {
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-			err = blsAggServ.InitializeNewTask(
+			metadata := NewTaskMetadata(
 				taskIndex,
 				blockNum,
 				quorumNumbers,
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
+			err = blsAggServ.InitializeNewTask(metadata)
 			require.Nil(t, err)
 			blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+			taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSigOp1,
-				testOperator1.OperatorId,
+				taskSignature1,
 			)
 			require.Nil(t, err)
 			blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+			taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSigOp2,
-				testOperator2.OperatorId,
+				taskSignature2,
 			)
 			require.Nil(t, err)
 
@@ -864,30 +778,27 @@ func TestBlsAgg(t *testing.T) {
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-			err = blsAggServ.InitializeNewTask(
+			metadata := NewTaskMetadata(
 				taskIndex,
 				blockNum,
 				quorumNumbers,
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
+			err = blsAggServ.InitializeNewTask(metadata)
 			require.Nil(t, err)
 			blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+			taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSigOp1,
-				testOperator1.OperatorId,
+				taskSignature1,
 			)
 			require.Nil(t, err)
 			blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+			taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSigOp2,
-				testOperator2.OperatorId,
+				taskSignature2,
 			)
 			require.Nil(t, err)
 
@@ -919,21 +830,14 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature,
 		)
 		require.Nil(t, err)
 
@@ -976,21 +880,20 @@ func TestBlsAgg(t *testing.T) {
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-			err = blsAggServ.InitializeNewTask(
+			metadata := NewTaskMetadata(
 				taskIndex,
 				blockNum,
 				quorumNumbers,
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
+			err = blsAggServ.InitializeNewTask(metadata)
 			require.Nil(t, err)
 			blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+			taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSigOp1,
-				testOperator1.OperatorId,
+				taskSignature,
 			)
 			require.Nil(t, err)
 
@@ -1020,12 +923,10 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSig,
-			testOperator1.OperatorId,
+			taskSignature,
 		)
 		require.Equal(t, TaskNotFoundErrorFn(taskIndex), err)
 	})
@@ -1059,24 +960,23 @@ func TestBlsAgg(t *testing.T) {
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-			err := blsAggServ.InitializeNewTask(
+			metadata := NewTaskMetadata(
 				taskIndex,
 				blockNum,
 				quorumNumbers,
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
+			err := blsAggServ.InitializeNewTask(metadata)
 			require.Nil(t, err)
 			taskResponse1 := mockTaskResponse{1}
 			taskResponseDigest1, err := hashFunction(taskResponse1)
 			require.Nil(t, err)
 			blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest1)
+			taskSignature1 := NewTaskSignature(taskIndex, taskResponse1, blsSigOp1, testOperator1.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse1,
-				blsSigOp1,
-				testOperator1.OperatorId,
+				taskSignature1,
 			)
 			require.Nil(t, err)
 
@@ -1086,7 +986,11 @@ func TestBlsAgg(t *testing.T) {
 			blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest2)
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			err = blsAggServ.ProcessNewSignature(ctx, taskIndex, taskResponse2, blsSigOp2, testOperator2.OperatorId)
+			taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2.OperatorId)
+			err = blsAggServ.ProcessNewSignature(
+				ctx,
+				taskSignature2,
+			)
 			// this should timeout because the task goroutine is blocked on the response channel (since we only listen
 			// for it below)
 			require.Equal(t, context.DeadlineExceeded, err)
@@ -1132,36 +1036,27 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err := blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+		err := blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		taskResponse1 := mockTaskResponse{1}
 		taskResponseDigest1, err := hashFunction(taskResponse1)
 		require.Nil(t, err)
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest1)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse1, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse1,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		taskResponse2 := mockTaskResponse{2}
 		taskResponseDigest2, err := hashFunction(taskResponse2)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest2)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse2, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse2,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
@@ -1198,20 +1093,19 @@ func TestBlsAgg(t *testing.T) {
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-			err = blsAggServ.InitializeNewTask(
+			metadata := NewTaskMetadata(
 				taskIndex,
 				blockNum,
 				quorumNumbers,
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
+			err = blsAggServ.InitializeNewTask(metadata)
 			require.Nil(t, err)
+			taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 			err = blsAggServ.ProcessNewSignature(
 				context.Background(),
-				taskIndex,
-				taskResponse,
-				blsSig,
-				testOperator1.OperatorId,
+				taskSignature,
 			)
 			require.EqualError(t, err, "signature verification failed. Incorrect Signature")
 		},
@@ -1256,42 +1150,36 @@ func TestBlsAgg(t *testing.T) {
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
 		start := time.Now()
-		err = blsAggServ.InitializeNewTaskWithWindow(
+		metadata := NewTaskMetadata(
 			taskIndex,
 			blockNum,
 			quorumNumbers,
 			quorumThresholdPercentages,
-			timeToExpiry,
-			windowDuration,
-		)
+			tasksTimeToExpiry,
+		).WithWindowDuration(windowDuration)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		// quorum has already been reached, but window should still be open
 		require.Nil(t, err)
 		blsSigOp3 := testOperator3.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature3 := NewTaskSignature(taskIndex, taskResponse, blsSigOp3, testOperator3.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp3,
-			testOperator3.OperatorId,
+			taskSignature3,
 		)
 		require.Nil(t, err)
 
@@ -1364,44 +1252,38 @@ func TestBlsAgg(t *testing.T) {
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
 		start := time.Now()
-		err = blsAggServ.InitializeNewTaskWithWindow(
+		metadata := NewTaskMetadata(
 			taskIndex,
 			blockNum,
 			quorumNumbers,
 			quorumThresholdPercentages,
 			timeToExpiry,
-			windowDuration,
-		)
+		).WithWindowDuration(windowDuration)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 
 		// quorum has already been reached, window will be open and receiving signature until the task expires
 
 		blsSigOp3 := testOperator3.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature3 := NewTaskSignature(taskIndex, taskResponse, blsSigOp3, testOperator3.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp3,
-			testOperator3.OperatorId,
+			taskSignature3,
 		)
 		require.Nil(t, err)
 
@@ -1466,34 +1348,30 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTaskWithWindow(
+		metadata := NewTaskMetadata(
 			taskIndex,
 			blockNum,
 			quorumNumbers,
 			quorumThresholdPercentages,
-			timeToExpiry,
-			windowDuration,
-		)
+			tasksTimeToExpiry,
+		).WithWindowDuration(windowDuration)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 
 		start := time.Now()
 
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 
@@ -1503,12 +1381,10 @@ func TestBlsAgg(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		blsSigOp3 := testOperator3.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature3 := NewTaskSignature(taskIndex, taskResponse, blsSigOp3, testOperator3.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			ctx,
-			taskIndex,
-			taskResponse,
-			blsSigOp3,
-			testOperator3.OperatorId,
+			taskSignature3,
 		)
 		require.Equal(t, context.DeadlineExceeded, err)
 
@@ -1573,34 +1449,30 @@ func TestBlsAgg(t *testing.T) {
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
-		err = blsAggServ.InitializeNewTaskWithWindow(
+		metadata := NewTaskMetadata(
 			taskIndex,
 			blockNum,
 			quorumNumbers,
 			quorumThresholdPercentages,
-			timeToExpiry,
-			windowDuration,
-		)
+			tasksTimeToExpiry,
+		).WithWindowDuration(windowDuration)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 
 		start := time.Now()
 
 		blsSigOp1 := testOperator1.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature1 := NewTaskSignature(taskIndex, taskResponse, blsSigOp1, testOperator1.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
+			taskSignature1,
 		)
 		require.Nil(t, err)
 		blsSigOp2 := testOperator2.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature2 := NewTaskSignature(taskIndex, taskResponse, blsSigOp2, testOperator2.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp2,
-			testOperator2.OperatorId,
+			taskSignature2,
 		)
 		require.Nil(t, err)
 
@@ -1611,12 +1483,10 @@ func TestBlsAgg(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		blsSigOp3 := testOperator3.BlsKeypair.SignMessage(taskResponseDigest)
+		taskSignature3 := NewTaskSignature(taskIndex, taskResponse, blsSigOp3, testOperator3.OperatorId)
 		err = blsAggServ.ProcessNewSignature(
 			ctx,
-			taskIndex,
-			taskResponse,
-			blsSigOp3,
-			testOperator3.OperatorId,
+			taskSignature3,
 		)
 		require.Equal(t, context.DeadlineExceeded, err)
 
@@ -1698,11 +1568,10 @@ func TestIntegrationBlsAgg(t *testing.T) {
 			OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 			AvsName:                    "avs",
 			PromMetricsIpPortAddress:   "localhost:9090",
+			ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 		}, ecdsaPrivKey, logger)
 		require.NoError(t, err)
 		avsWriter := avsClients.AvsRegistryChainWriter
-		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
-		require.NoError(t, err)
 
 		// create aggregation service
 		operatorsInfoService := operatorsinfo.NewOperatorsInfoServiceInMemory(
@@ -1744,24 +1613,33 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		quorumThresholdPercentages := testData.Input.QuorumThresholdPercentages
 
 		// initialize the task
-		err = blsAggServ.InitializeNewTask(
+		metadata := NewTaskMetadata(
 			taskIndex,
-			uint32(referenceBlockNumber),
+			uint32(curBlockNum),
 			quorumNumbers,
 			quorumThresholdPercentages,
 			tasksTimeToExpiry,
 		)
+		err = blsAggServ.InitializeNewTask(metadata)
 		require.Nil(t, err)
 
 		// compute the signature and send it to the aggregation service
 		taskResponseDigest, err := hashFunction(taskResponse)
 		require.Nil(t, err)
 		blsSig := blsKeyPair.SignMessage(taskResponseDigest)
-		err = blsAggServ.ProcessNewSignature(context.Background(), taskIndex, taskResponse, blsSig, operatorId)
+		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, operatorId)
+		err = blsAggServ.ProcessNewSignature(
+			context.Background(),
+			taskSignature,
+		)
 		require.Nil(t, err)
 
 		// wait for the response from the aggregation service and check the signature
 		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+
+		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
+		require.NoError(t, err)
+
 		_, _, err = avsServiceManager.CheckSignatures(
 			&bind.CallOpts{},
 			taskResponseDigest,
@@ -1785,7 +1663,7 @@ func newBlsKeyPairPanics(hexKey string) *bls.KeyPair {
 	return keypair
 }
 
-func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerNonSignerStakesAndSignature {
+func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSignature() avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature {
 	nonSignerPubkeys := []avssm.BN254G1Point{}
 	for _, nonSignerPubkey := range blsAggServiceResp.NonSignersPubkeysG1 {
 		nonSignerPubkeys = append(nonSignerPubkeys, avssm.BN254G1Point(utils.ConvertToBN254G1Point(nonSignerPubkey)))
@@ -1794,7 +1672,7 @@ func (blsAggServiceResp *BlsAggregationServiceResponse) toNonSignerStakesAndSign
 	for _, quorumApk := range blsAggServiceResp.QuorumApksG1 {
 		quorumApks = append(quorumApks, avssm.BN254G1Point(utils.ConvertToBN254G1Point(quorumApk)))
 	}
-	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerNonSignerStakesAndSignature{
+	nonSignerStakesAndSignature := avssm.IBLSSignatureCheckerTypesNonSignerStakesAndSignature{
 		NonSignerPubkeys: nonSignerPubkeys,
 		QuorumApks:       quorumApks,
 		ApkG2:            avssm.BN254G2Point(utils.ConvertToBN254G2Point(blsAggServiceResp.SignersApkG2)),

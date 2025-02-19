@@ -42,12 +42,15 @@ func BuildTestClients(t *testing.T) (*clients.Clients, string) {
 	require.NoError(t, err)
 
 	chainioConfig := clients.BuildAllConfig{
-		EthHttpUrl:                 anvilHttpEndpoint,
-		EthWsUrl:                   anvilWsEndpoint,
-		RegistryCoordinatorAddr:    contractAddrs.RegistryCoordinator.String(),
-		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
-		AvsName:                    "exampleAvs",
-		PromMetricsIpPortAddress:   ":9090",
+		EthHttpUrl:                  anvilHttpEndpoint,
+		EthWsUrl:                    anvilWsEndpoint,
+		RegistryCoordinatorAddr:     contractAddrs.RegistryCoordinator.String(),
+		OperatorStateRetrieverAddr:  contractAddrs.OperatorStateRetriever.String(),
+		AvsName:                     "exampleAvs",
+		PromMetricsIpPortAddress:    ":9090",
+		ServiceManagerAddress:       contractAddrs.ServiceManager.String(),
+		RewardsCoordinatorAddress:   contractAddrs.RewardsCoordinator.String(),
+		PermissionControllerAddress: contractAddrs.PermissionController.String(),
 	}
 
 	clients, err := clients.BuildAll(
@@ -82,6 +85,7 @@ func BuildTestReadClients(t *testing.T) (*clients.ReadClients, string) {
 		OperatorStateRetrieverAddr: contractAddrs.OperatorStateRetriever.String(),
 		AvsName:                    "exampleAvs",
 		PromMetricsIpPortAddress:   ":9090",
+		ServiceManagerAddress:      contractAddrs.ServiceManager.String(),
 	}
 
 	clients, err := clients.BuildReadClients(
@@ -195,7 +199,7 @@ func NewTestTxManager(httpEndpoint string, privateKeyHex string) (*txmgr.SimpleT
 	return txManager, nil
 }
 
-// Creates a testing ChainWriter from an httpEndpoint, private key and config.
+// Creates an avsRegistry testing ChainWriter from an httpEndpoint, private key and config.
 // This is needed because the existing testclients.BuildTestClients returns a
 // ChainWriter with a null rewardsCoordinator, which is required for some of the tests.
 func NewTestAvsRegistryWriterFromConfig(
@@ -237,4 +241,27 @@ func NewTestAvsRegistryWriterFromConfig(
 		return nil, err
 	}
 	return testWriter, nil
+}
+
+// Creates a testing AVSRegistrer ChainReader from an httpEndpoint, private key and config.
+func NewTestAvsRegistryReaderFromConfig(
+	httpEndpoint string,
+	config avsregistry.Config,
+) (*avsregistry.ChainReader, error) {
+	testConfig := testutils.GetDefaultTestConfig()
+	logger := logging.NewTextSLogger(os.Stdout, &logging.SLoggerOptions{Level: testConfig.LogLevel})
+	ethHttpClient, err := ethclient.Dial(httpEndpoint)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create eth client", err)
+	}
+
+	testReader, err := avsregistry.NewReaderFromConfig(
+		config,
+		ethHttpClient,
+		logger,
+	)
+	if err != nil {
+		return nil, utils.WrapError("Failed to create chain reader from config", err)
+	}
+	return testReader, nil
 }

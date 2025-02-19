@@ -28,10 +28,6 @@ const (
 	ANVIL_THIRD_PRIVATE_KEY  = "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 )
 
-// This address is hardcoded because it is required by the elcontracts tests but is not
-// registered in the ContractRegistry in the contracts-deployed-anvil-state.json anvil state.
-const PERMISSION_CONTROLLER_ADDRESS = "610178dA211FEF7D417bC0e6FeD39F05609AD788"
-
 func StartAnvilContainer(anvilStateFileName string) (testcontainers.Container, error) {
 
 	ctx := context.Background()
@@ -79,6 +75,7 @@ type ContractAddresses struct {
 	DelegationManager      common.Address
 	Erc20MockStrategy      common.Address
 	RewardsCoordinator     common.Address
+	PermissionController   common.Address
 }
 
 func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContracts ContractAddresses) {
@@ -142,6 +139,13 @@ func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContrac
 	if rewardsCoordinatorAddr == (common.Address{}) {
 		panic("rewardsCoordinatorAddr is empty")
 	}
+	permissionControllerAddr, err := contractsRegistry.Contracts(&bind.CallOpts{}, "permissionController")
+	if err != nil {
+		panic(err)
+	}
+	if permissionControllerAddr == (common.Address{}) {
+		panic("permissionControllerAddr is empty")
+	}
 	mockAvsContracts = ContractAddresses{
 		ServiceManager:         mockAvsServiceManagerAddr,
 		RegistryCoordinator:    mockAvsRegistryCoordinatorAddr,
@@ -149,6 +153,7 @@ func GetContractAddressesFromContractRegistry(ethHttpUrl string) (mockAvsContrac
 		DelegationManager:      delegationManagerAddr,
 		Erc20MockStrategy:      erc20MockStrategyAddr,
 		RewardsCoordinator:     rewardsCoordinatorAddr,
+		PermissionController:   permissionControllerAddr,
 	}
 	return mockAvsContracts
 }
