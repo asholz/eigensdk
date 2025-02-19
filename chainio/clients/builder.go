@@ -34,6 +34,11 @@ type BuildAllConfig struct {
 
 	/// The address of the ServiceManager contract.
 	ServiceManagerAddress string
+
+	/// Setting this to true will disable the fetching of the AllocationManager address.
+	/// This is useful for older deployments, which don't have the contract deployed.
+	// TODO: remove this once mainnet is updated with the new contracts
+	DontUseAllocationManager bool
 }
 
 // ReadClients is a struct that holds only the read clients for interacting with the AVS and EL contracts.
