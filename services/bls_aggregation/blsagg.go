@@ -203,7 +203,7 @@ func NewBlsAggregatorService(
 // The service handler is a structure used to use the service without the complexity of it.
 type ServiceHandler struct {
 	//This channels are used to send messages (requests) to the service.
-	TaskInitC         chan InitializeTaskRequest
+	taskInitC         chan InitializeTaskRequest
 	processSignatureC chan ProcessSignatureRequest
 }
 
@@ -318,7 +318,7 @@ func (a *ServiceHandler) InitializeNewTask(
 	metadata TaskMetadata,
 ) error {
 	errChan := make(chan error)
-	a.TaskInitC <- InitializeTaskRequest{metadata, errChan}
+	a.taskInitC <- InitializeTaskRequest{metadata, errChan}
 	select {
 	case err := <-errChan:
 		return err
