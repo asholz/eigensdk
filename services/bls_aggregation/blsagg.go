@@ -279,17 +279,14 @@ func (a *BlsAggregatorService) run(
 
 			signedTaskRespsC, taskExists := taskChannels[taskIndex]
 			if taskExists {
-				errC := make(chan error, 1)
 				signedDigest := types.SignedTaskResponseDigest{
 					TaskResponse:                signatureReq.metadata.taskResponse,
 					BlsSignature:                signatureReq.metadata.blsSignature,
 					OperatorId:                  signatureReq.metadata.operatorId,
-					SignatureVerificationErrorC: errC,
+					SignatureVerificationErrorC: signatureReq.errC,
 				}
 
 				signedTaskRespsC <- signedDigest
-				result := <-errC
-				signatureReq.errC <- result
 			} else {
 				signatureReq.errC <- TaskNotFoundErrorFn(taskIndex)
 			}
