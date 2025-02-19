@@ -220,6 +220,9 @@ type AggregateReceiver struct {
 	aggregateReceiver chan BlsAggregationServiceResponse
 }
 
+// This function starts the service thread, initializing the aggregateResponses, initializeTask and processSignature
+// channels, passing them to the run method (where the main loop is executed) and returns the service handler an the
+// aggregate receiver to interact with the service thread.
 func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error) {
 	// Create channels to handle requests
 	initializeTaskC := make(chan InitializeTaskRequest)
@@ -235,6 +238,10 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error
 	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregateReceiver: aggResponsesC}, nil
 }
 
+// Here is executed the main loop, where the requests are received from the initialize task and process signature
+// channels, executing the corresponding logic in each case. The aggregated responses channel is passed to the
+// single task aggregator goroutine, where the initialization of the task is done an notified.
+// The loop ends if one of the request channels is closed.
 func (a *BlsAggregatorService) run(
 	initializeTaskChannel chan InitializeTaskRequest,
 	processSignatureChannel chan ProcessSignatureRequest,
@@ -348,6 +355,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 	}
 }
 
+// Returns the aggregated response from the channel connected to the service thread
 func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
 	return <-a.aggregateReceiver
 }
