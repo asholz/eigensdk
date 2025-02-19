@@ -217,7 +217,7 @@ type ProcessSignatureRequest struct {
 
 type AggregateReceiver struct {
 	/// Channel to receive the aggregated responses from the BLS Aggregator Service
-	aggregate_receiver chan BlsAggregationServiceResponse
+	aggregateReceiver chan BlsAggregationServiceResponse
 }
 
 func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error) {
@@ -232,7 +232,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error
 		close(aggResponsesC)
 	}()
 
-	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregate_receiver: aggResponsesC}, nil
+	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregateReceiver: aggResponsesC}, nil
 }
 
 func (a *BlsAggregatorService) run(
@@ -349,7 +349,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 }
 
 func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
-	return <-a.aggregate_receiver
+	return <-a.aggregateReceiver
 }
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
