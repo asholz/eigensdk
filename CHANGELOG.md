@@ -8,9 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Each version will have a separate `Breaking Changes` section as well. To describe in how to upgrade from one version to another if needed
 
 ## [Unreleased]
-### Added
+
+### Added 🎉
+
+* Added field `DontUseAllocationManager` to `BuildAllConfig` in [#580](https://github.com/Layr-Labs/eigensdk-go/pull/580)
+
 ### Changed
-* fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
+
+* Fixed BLS aggregation for multiple quorums by @TomasArrachea in [#394](https://github.com/Layr-Labs/eigensdk-go/pull/394)
+* fix: change requested pr url in changelog's workflow by @maximopalopoli in [#575](https://github.com/Layr-Labs/eigensdk-go/pull/575)
 
 ### Breaking changes
 
@@ -22,20 +28,20 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     ```go
     // BEFORE
     blsAggServ.ProcessNewSignature(
-			context.Background(),
-			taskIndex,
-			taskResponse,
-			blsSigOp1,
-			testOperator1.OperatorId,
-		)
+        context.Background(),
+        taskIndex,
+        taskResponse,
+        blsSigOp1,
+        testOperator1.OperatorId,
+    )
     
     // AFTER
     taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 
     blsAggServ.ProcessNewSignature(
-			context.Background(),
-			taskSignature,
-		)
+        context.Background(),
+        taskSignature,
+    )
     ```
   
 * refactor: update interface on `bls aggregation` in [#485](https://github.com/Layr-Labs/eigensdk-go/pull/485).
@@ -47,12 +53,12 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
     blsAggServ.InitializeNewTask(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		)
+        taskIndex,
+        blockNum,
+        quorumNumbers,
+        quorumThresholdPercentages,
+        tasksTimeToExpiry,
+    )
     
     // AFTER
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
@@ -67,24 +73,24 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     // BEFORE
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
     err = blsAggServ.InitializeNewTaskWithWindow(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			timeToExpiry,
-			windowDuration,
-		)
+        taskIndex,
+        blockNum,
+        quorumNumbers,
+        quorumThresholdPercentages,
+        timeToExpiry,
+        windowDuration,
+    )
 
     // AFTER
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
 
     metadata := NewTaskMetadata(
-			taskIndex,
-			blockNum,
-			quorumNumbers,
-			quorumThresholdPercentages,
-			tasksTimeToExpiry,
-		).WithWindowDuration(windowDuration)
+        taskIndex,
+        blockNum,
+        quorumNumbers,
+        quorumThresholdPercentages,
+        tasksTimeToExpiry,
+    ).WithWindowDuration(windowDuration)
     blsAggServ.InitializeNewTask(metadata)
     ```
     
@@ -133,3 +139,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     ```
 
 ### Removed
+
+------------
+
+Changes made in the v0.1.X versions weren't tracked by this changelog.
