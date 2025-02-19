@@ -254,7 +254,6 @@ func (a *BlsAggregatorService) run(
 	for {
 		select {
 		case taskInitReq, ok := <-initializeTaskChannel:
-			// Initialize task
 			if !ok {
 				return
 			}
@@ -274,7 +273,6 @@ func (a *BlsAggregatorService) run(
 			)
 
 		case signatureReq, ok := <-processSignatureChannel:
-			// Process signature
 			if !ok {
 				return
 			}
