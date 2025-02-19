@@ -363,6 +363,12 @@ func (a *ServiceHandler) ProcessNewSignature(
 	}
 }
 
+func (a *AggregateReceiver) ReceiveAggregatedResponse(
+	metadata TaskSignature,
+) types.SignedTaskResponseDigest {
+	return <-a.aggregate_receiver // Maybe can add a select with a timer
+}
+
 func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
 	return a.aggregatedResponsesC
 }
