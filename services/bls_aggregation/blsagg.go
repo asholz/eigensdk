@@ -145,6 +145,8 @@ func (t TaskMetadata) WithWindowDuration(windowDuration time.Duration) TaskMetad
 // BlsAggregationService is the interface provided to avs aggregator code for doing bls aggregation
 // Currently its only implementation is the BlsAggregatorService, so see the comment there for more details
 type BlsAggregationService interface {
+	// Starts the aggregation service, and returns the handler, to interact with, it and the receiver,
+	// to receive the aggregated responses.
 	Start() (ServiceHandler, AggregateReceiver)
 }
 
