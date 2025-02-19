@@ -191,13 +191,35 @@ type BlsAggregationService interface {
 //     only submitted after the previous one's response has been aggregated and responded onchain, could have
 //     a much simpler AggregationService without all the complicated parallel goroutines.
 type BlsAggregatorService struct {
+	handler  ServiceHandler
+	receiver <-chan BlsAggregationServiceResponse
+}
+
+var _ BlsAggregationService = (*BlsAggregatorService)(nil)
+
+func (a *BlsAggregatorService) InitializeNewTask(
+	metadata TaskMetadata,
+) error {
+	return a.handler.InitializeNewTask(metadata)
+}
+
+func (a *BlsAggregatorService) ProcessNewSignature(
+	ctx context.Context,
+	task TaskSignature,
+) error {
+	return a.handler.ProcessNewSignature(ctx, task)
+}
+
+func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
+	return a.receiver
+}
+
+type BlsAggregatorBuilder struct {
 	avsRegistryService avsregistry.AvsRegistryService
 	logger             logging.Logger
 
 	hashFunction types.TaskResponseHashFunction
 }
-
-var _ BlsAggregationService = (*BlsAggregatorService)(nil)
 
 // NewBlsAggregatorService creates a new BlsAggregatorService
 // avsRegistryService is the AVS registry service to use
@@ -221,10 +243,18 @@ func NewBlsAggregatorService(
 	hashFunction types.TaskResponseHashFunction,
 	logger logging.Logger,
 ) *BlsAggregatorService {
-	return &BlsAggregatorService{
+	// Instantiate builder and save handler and receiver.
+	builder := BlsAggregatorBuilder{
 		avsRegistryService: avsRegistryService,
 		logger:             logger,
 		hashFunction:       hashFunction,
+	}
+
+	handler, receiver := builder.Start()
+
+	return &BlsAggregatorService{
+		handler:  handler,
+		receiver: receiver,
 	}
 }
 
@@ -248,7 +278,7 @@ type processSignatureRequest struct {
 // This function starts the service thread, initializing the aggregateResponses, initializeTask and processSignature
 // channels, passing them to the run method (where the main loop is executed) and returns the service handler an the
 // aggregate receiver channel to interact with the service thread.
-func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationServiceResponse) {
+func (a *BlsAggregatorBuilder) Start() (ServiceHandler, <-chan BlsAggregationServiceResponse) {
 	// Create channels to handle requests
 	initializeTaskC := make(chan initializeTaskRequest)
 	processSignatureC := make(chan processSignatureRequest)
@@ -270,7 +300,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationSer
 // channels, executing the corresponding logic in each case. The aggregated responses channel is passed to the
 // single task aggregator goroutine, where the initialization of the task is done an notified.
 // The loop ends if one of the request channels is closed.
-func (a *BlsAggregatorService) run(
+func (a *BlsAggregatorBuilder) run(
 	initializeTaskChannel <-chan initializeTaskRequest,
 	processSignatureChannel <-chan processSignatureRequest,
 	aggResponsesC chan<- BlsAggregationServiceResponse,
@@ -377,7 +407,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 	}
 }
 
-func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
+func (a *BlsAggregatorBuilder) singleTaskAggregatorGoroutineFunc(
 	metadata TaskMetadata,
 	signedTaskRespsC <-chan types.SignedTaskResponseDigest,
 	aggregatedResponsesC chan<- BlsAggregationServiceResponse,
@@ -592,7 +622,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	}
 }
 
-func (a *BlsAggregatorService) sendAggregatedResponse(
+func (a *BlsAggregatorBuilder) sendAggregatedResponse(
 	operatorsAvsStateDict map[types.OperatorId]types.OperatorAvsState,
 	taskIndex types.TaskIndex,
 	taskCreatedBlock uint32,
@@ -656,7 +686,7 @@ func (a *BlsAggregatorService) sendAggregatedResponse(
 
 // verifySignature verifies that a signature is valid against the operator pubkey stored in the
 // operatorsAvsStateDict for that particular task
-func (a *BlsAggregatorService) verifySignature(
+func (a *BlsAggregatorBuilder) verifySignature(
 	taskIndex types.TaskIndex,
 	signedTaskResponseDigest types.SignedTaskResponseDigest,
 	operatorsAvsStateDict map[types.OperatorId]types.OperatorAvsState,
