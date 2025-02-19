@@ -257,7 +257,8 @@ func (a *BlsAggregatorService) run(
 			}
 			taskIndex := taskInitReq.metadata.taskIndex
 
-			if _, taskExists := taskChannels[taskIndex]; taskExists {
+			_, taskExists := taskChannels[taskIndex]
+			if taskExists {
 				taskInitReq.errC <- TaskAlreadyInitializedErrorFn(taskInitReq.metadata.taskIndex)
 				continue
 			}
@@ -276,7 +277,8 @@ func (a *BlsAggregatorService) run(
 			}
 			taskIndex := signatureReq.metadata.taskIndex
 
-			if signedTaskRespsC, taskExists := taskChannels[taskIndex]; taskExists {
+			signedTaskRespsC, taskExists := taskChannels[taskIndex]
+			if taskExists {
 				errC := make(chan error, 1)
 				signedDigest := types.SignedTaskResponseDigest{
 					TaskResponse:                signatureReq.metadata.taskResponse,
