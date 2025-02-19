@@ -243,8 +243,8 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationSer
 // single task aggregator goroutine, where the initialization of the task is done an notified.
 // The loop ends if one of the request channels is closed.
 func (a *BlsAggregatorService) run(
-	initializeTaskChannel chan initializeTaskRequest,
-	processSignatureChannel chan processSignatureRequest,
+	initializeTaskChannel <-chan initializeTaskRequest,
+	processSignatureChannel <-chan processSignatureRequest,
 	aggResponsesC chan BlsAggregationServiceResponse,
 ) {
 	taskChannels := make(map[types.TaskIndex]chan types.SignedTaskResponseDigest)
