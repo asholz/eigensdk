@@ -221,6 +221,18 @@ type BlsAggregatorBuilder struct {
 	hashFunction types.TaskResponseHashFunction
 }
 
+func NewBlsAggregatorBuilder(
+	avsRegistryService avsregistry.AvsRegistryService,
+	hashFunction types.TaskResponseHashFunction,
+	logger logging.Logger,
+) *BlsAggregatorBuilder {
+	return &BlsAggregatorBuilder{
+		avsRegistryService: avsRegistryService,
+		logger:             logger,
+		hashFunction:       hashFunction,
+	}
+}
+
 // NewBlsAggregatorService creates a new BlsAggregatorService
 // avsRegistryService is the AVS registry service to use
 // hashFunction is the hash function to use to compute the taskResponseDigest from the taskResponse
@@ -244,11 +256,7 @@ func NewBlsAggregatorService(
 	logger logging.Logger,
 ) *BlsAggregatorService {
 	// Instantiate builder and save handler and receiver.
-	builder := BlsAggregatorBuilder{
-		avsRegistryService: avsRegistryService,
-		logger:             logger,
-		hashFunction:       hashFunction,
-	}
+	builder := NewBlsAggregatorBuilder(avsRegistryService, hashFunction, logger)
 
 	handler, receiver := builder.Start()
 
