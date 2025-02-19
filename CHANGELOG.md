@@ -132,5 +132,4 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     aggregationServiceResponse := <-aggResponsesC
     ```
 
-
 ### Removed
