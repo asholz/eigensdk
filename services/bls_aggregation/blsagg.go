@@ -192,17 +192,6 @@ type BlsAggregationService interface {
 //     only submitted after the previous one's response has been aggregated and responded onchain, could have
 //     a much simpler AggregationService without all the complicated parallel goroutines.
 type BlsAggregatorService struct {
-	// aggregatedResponsesC is the channel which all goroutines share to send their responses back to the
-	// main thread after they are done aggregating (either they reached the threshold, or timeout expired)
-	aggregatedResponsesC chan BlsAggregationServiceResponse
-	// signedTaskRespsCs are the channels to send the signed task responses to the goroutines processing them
-	// each new task is assigned a new goroutine and a new channel
-	signedTaskRespsCs map[types.TaskIndex]chan types.SignedTaskResponseDigest
-	// we add chans to taskChans from the main thread (InitializeNewTask) when we create new tasks,
-	// we read them in ProcessNewSignature from the main thread when we receive new signed tasks,
-	// and remove them from its respective goroutine when the task is completed or reached timeout
-	// we thus need a mutex to protect taskChans
-	taskChansMutex     sync.RWMutex
 	avsRegistryService avsregistry.AvsRegistryService
 	logger             logging.Logger
 
@@ -234,12 +223,9 @@ func NewBlsAggregatorService(
 	logger logging.Logger,
 ) *BlsAggregatorService {
 	return &BlsAggregatorService{
-		aggregatedResponsesC: make(chan BlsAggregationServiceResponse),
-		signedTaskRespsCs:    make(map[types.TaskIndex]chan types.SignedTaskResponseDigest),
-		taskChansMutex:       sync.RWMutex{},
-		avsRegistryService:   avsRegistryService,
-		logger:               logger,
-		hashFunction:         hashFunction,
+		avsRegistryService: avsRegistryService,
+		logger:             logger,
+		hashFunction:       hashFunction,
 	}
 }
 
