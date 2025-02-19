@@ -270,6 +270,7 @@ func (a *BlsAggregatorService) run(
 				signedTaskRespC,
 				aggResponsesC,
 			)
+			taskInitReq.errC <- nil
 
 		case signatureReq, ok := <-processSignatureChannel:
 			if !ok {
@@ -318,12 +319,8 @@ func (a *ServiceHandler) InitializeNewTask(
 ) error {
 	errChan := make(chan error)
 	a.taskInitC <- initializeTaskRequest{metadata, errChan}
-	select {
-	case err := <-errChan:
-		return err
-	default:
-		return nil
-	}
+	err := <-errChan
+	return err
 }
 
 // ProcessNewSignature sends to the service thread a request to process a new signature for a previous initialize task.
