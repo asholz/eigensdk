@@ -146,37 +146,7 @@ func (t TaskMetadata) WithWindowDuration(windowDuration time.Duration) TaskMetad
 // BlsAggregationService is the interface provided to avs aggregator code for doing bls aggregation
 // Currently its only implementation is the BlsAggregatorService, so see the comment there for more details
 type BlsAggregationService interface {
-	// InitializeNewTask creates a new task goroutine meant to process new signed task responses for that task
-	// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to
-	// it. The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered
-	// complete, which
-	// happens when a particular TaskResponseDigest (received via the a.taskChans[taskIndex]) has been signed by signers
-	// whose stake in each of the listed quorums adds up to at least quorumThresholdPercentages[i] of the total stake in
-	// that quorum.
-	// Once the quorum is reached, the task is still open for a window of `windowDuration` time (default 0) to receive
-	// more signatures, before sending the aggregation response through the aggregatedResponsesC channel.
-	// If the task expiration is reached before the window finishes, the task response will still be sent to the
-	// aggregatedResponsesC channel.
-	InitializeNewTask(
-		metadata TaskMetadata,
-	) error
-
-	// ProcessNewSignature processes a new signature over a taskResponseDigest for a particular taskIndex by a
-	// particular operator It verifies that the signature is correct and returns an error if it is not, and then
-	// aggregates the signature and stake of
-	// the operator with all other signatures for the same taskIndex and taskResponseDigest pair.
-	// Note: This function currently only verifies signatures over the taskResponseDigest directly, so avs code needs to
-	// verify that the digest passed to ProcessNewSignature is indeed the digest of a valid taskResponse (that is,
-	// BlsAggregationService does not verify semantic integrity of the taskResponses)
-	ProcessNewSignature(
-		ctx context.Context,
-		task TaskSignature,
-	) error
-
-	// GetResponseChannel returns the single channel that meant to be used as the response channel
-	// Any task that is completed (see the completion criterion in the comment above InitializeNewTask)
-	// will be sent on this channel along with all the necessary information to call BLSSignatureChecker onchain
-	GetResponseChannel() <-chan BlsAggregationServiceResponse
+	Start() (ServiceHandler, AggregateReceiver, error)
 }
 
 // BlsAggregatorService is a service that performs BLS signature aggregation for an AVS' tasks
@@ -251,13 +221,7 @@ type AggregateReceiver struct {
 	aggregate_receiver chan types.SignedTaskResponseDigest
 }
 
-func (a *BlsAggregatorService) Start(
-	taskIndex types.TaskIndex,
-	taskCreatedBlock uint32,
-	quorumNumbers types.QuorumNums,
-	quorumThresholdPercentages types.QuorumThresholdPercentages,
-	timeToExpiry time.Duration,
-) (ServiceHandler, AggregateReceiver, error) {
+func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error) {
 	// Create channels to handle requests
 	initializeTaskC := make(chan InitializeTaskRequest)
 	processSignatureC := make(chan ProcessSignatureRequest)
@@ -349,16 +313,11 @@ func (a *ServiceHandler) ProcessNewSignature(
 	}
 }
 
-func (a *AggregateReceiver) ReceiveAggregatedResponse(
-	metadata TaskSignature,
-) types.SignedTaskResponseDigest {
+func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
 	return <-a.aggregate_receiver // Maybe can add a select with a timer
 }
 
-func (a *BlsAggregatorService) GetResponseChannel() <-chan BlsAggregationServiceResponse {
-	return a.aggregatedResponsesC
-}
-
+/*
 // InitializeNewTask creates a new task goroutine meant to process new signed task responses for that task
 // (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to it.
 //
@@ -454,6 +413,7 @@ func (a *BlsAggregatorService) processNewSignature(
 	}
 	return <-signatureVerificationErrorC
 }
+*/
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	metadata TaskMetadata,
