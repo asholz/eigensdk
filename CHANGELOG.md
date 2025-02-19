@@ -11,6 +11,8 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 
 ### Added 🎉
 
+* Added field `DontUseAllocationManager` to `BuildAllConfig` in [#580](https://github.com/Layr-Labs/eigensdk-go/pull/580)
+
 ### Changed
 
 * Fixed BLS aggregation for multiple quorums by @TomasArrachea in [#394](https://github.com/Layr-Labs/eigensdk-go/pull/394)
