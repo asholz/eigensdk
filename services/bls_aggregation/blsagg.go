@@ -245,7 +245,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationSer
 func (a *BlsAggregatorService) run(
 	initializeTaskChannel <-chan initializeTaskRequest,
 	processSignatureChannel <-chan processSignatureRequest,
-	aggResponsesC chan BlsAggregationServiceResponse,
+	aggResponsesC chan<- BlsAggregationServiceResponse,
 ) {
 	taskChannels := make(map[types.TaskIndex]chan types.SignedTaskResponseDigest)
 
@@ -352,7 +352,7 @@ func (a *ServiceHandler) ProcessNewSignature(
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	metadata TaskMetadata,
 	signedTaskRespsC <-chan types.SignedTaskResponseDigest,
-	aggregatedResponsesC chan BlsAggregationServiceResponse,
+	aggregatedResponsesC chan<- BlsAggregationServiceResponse,
 ) {
 	a.logger.Debug("AggregatorService goroutine processing new task",
 		"taskIndex", metadata.taskIndex,
@@ -573,7 +573,7 @@ func (a *BlsAggregatorService) sendAggregatedResponse(
 	quorumNumbers types.QuorumNums,
 	taskResponseDigest types.TaskResponseDigest,
 	quorumApksG1 []*bls.G1Point,
-	aggregatedResponsesC chan BlsAggregationServiceResponse,
+	aggregatedResponsesC chan<- BlsAggregationServiceResponse,
 ) {
 	nonSignersOperatorIds := []types.OperatorId{}
 	for operatorId := range operatorsAvsStateDict {
