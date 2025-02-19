@@ -88,4 +88,49 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     blsAggServ.InitializeNewTask(metadata)
     ```
     
+* refactor: bls aggregation service by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/578>
+  * The new interface implies starting the service before using it, interact with it using a handler and receiving the aggregated responses in a separate channel.
+  
+  * Before, the worflow was the following:
+    ```Go
+    // initialize service
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+
+    // Initialize task
+    metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+    err = blsAggServ.InitializeNewTask(metadata)
+
+    // Process signature
+    taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
+    err = blsAggServ.ProcessNewSignature(
+      context.Background(),
+      taskSignature,
+    )
+
+    // Receive responses
+    aggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+    ```
+
+    Now, the workflow is this one:
+    ```Go
+    // initialize service
+    blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
+    handler, receiver, err := blsAggServ.Start()
+
+    // Initialize task
+    metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
+    err = handler.InitializeNewTask(metadata)
+
+    // Process signature
+    taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
+    err = handler.ProcessNewSignature(
+      context.Background(),
+      taskSignature,
+    )
+
+    // Receive responses
+    aggregationServiceResponse := receiver.ReceiveAggregatedResponse()
+    ```
+
+
 ### Removed
