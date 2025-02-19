@@ -252,6 +252,7 @@ func (a *BlsAggregatorService) run(
 			taskIndex := taskInitReq.metadata.taskIndex
 
 			if _, taskExists := taskChannels[taskIndex]; taskExists {
+				taskInitReq.errC <- TaskAlreadyInitializedErrorFn(taskInitReq.metadata.taskIndex)
 				continue
 			}
 			signedTaskRespC := make(chan types.SignedTaskResponseDigest)
