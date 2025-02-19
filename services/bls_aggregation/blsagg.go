@@ -203,8 +203,8 @@ func NewBlsAggregatorService(
 // The service handler is a structure used to use the service without the complexity of it.
 type ServiceHandler struct {
 	//This channels are used to send messages (requests) to the service.
-	taskInitC         chan initializeTaskRequest
-	processSignatureC chan processSignatureRequest
+	taskInitC         chan<- initializeTaskRequest
+	processSignatureC chan<- processSignatureRequest
 }
 
 type initializeTaskRequest struct {
