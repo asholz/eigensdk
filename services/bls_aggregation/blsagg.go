@@ -290,6 +290,25 @@ func (a *BlsAggregatorService) run(
 	}
 }
 
+// InitializeNewTask sends to the service thread a request to process new signed task responses for that task
+// (that are sent via ProcessNewSignature).
+//
+// The metadata parameter contains:
+//   - taskIndex: Unique identifier for the task
+//   - taskCreatedBlock: Block number at which the task was created
+//   - quorumNumbers: 	Quorum numbers which should respond to the task
+//   - quorumThresholdPercentages: Threshold percentage required per quorum
+//   - timeToExpiry: Time before expiry of the task response aggregation
+//   - windowDuration: Additional time window to collect signatures after reaching quorum (default 0)
+//
+// The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered complete, which
+// happens when a particular TaskResponseDigest (received via the a.taskChans[taskIndex]) has been signed by signers
+// whose stake in each of the listed quorums adds up to at least quorumThresholdPercentages[i] of the total stake in
+// that quorum.
+// Once the quorum is reached, the task is still open for a window of `windowDuration` time (default 0) to receive more
+// signatures, before sending the aggregation response through the aggregatedResponsesC channel.
+// If the task expiration is reached before the window finishes, the task response will still be sent to the
+// aggregatedResponsesC channel.
 func (a *ServiceHandler) InitializeNewTask(
 	metadata TaskMetadata,
 ) error {
@@ -309,6 +328,9 @@ func (a *ServiceHandler) ProcessNewSignature(
 ) error {
 	errChan := make(chan error)
 	a.processSignatureC <- ProcessSignatureRequest{metadata, errChan}
+
+	// Doing this we let the goroutine consume the result of the operation, but allow
+	// the operation to end early if the context is cancelled
 	select {
 	case err := <-errChan:
 		return err
@@ -320,104 +342,6 @@ func (a *ServiceHandler) ProcessNewSignature(
 func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
 	return <-a.aggregate_receiver // Maybe can add a select with a timer
 }
-
-/*
-// InitializeNewTask creates a new task goroutine meant to process new signed task responses for that task
-// (that are sent via ProcessNewSignature) and adds a channel to a.taskChans to send the signed task responses to it.
-//
-// The metadata parameter contains:
-//   - taskIndex: Unique identifier for the task
-//   - taskCreatedBlock: Block number at which the task was created
-//   - quorumNumbers: 	Quorum numbers which should respond to the task
-//   - quorumThresholdPercentages: Threshold percentage required per quorum
-//   - timeToExpiry: Time before expiry of the task response aggregation
-//   - windowDuration: Additional time window to collect signatures after reaching quorum (default 0)
-//
-// The quorumNumbers and quorumThresholdPercentages set the requirements for this task to be considered complete, which
-// happens when a particular TaskResponseDigest (received via the a.taskChans[taskIndex]) has been signed by signers
-// whose stake in each of the listed quorums adds up to at least quorumThresholdPercentages[i] of the total stake in
-// that quorum.
-// Once the quorum is reached, the task is still open for a window of `windowDuration` time (default 0) to receive more
-// signatures, before sending the aggregation response through the aggregatedResponsesC channel.
-// If the task expiration is reached before the window finishes, the task response will still be sent to the
-// aggregatedResponsesC channel.
-func (a *BlsAggregatorService) InitializeNewTask(
-	metadata TaskMetadata,
-) error {
-	a.logger.Debug(
-		"AggregatorService initializing new task",
-		"taskIndex",
-		metadata.taskIndex,
-		"taskCreatedBlock",
-		metadata.taskCreatedBlock,
-		"quorumNumbers",
-		metadata.quorumNumbers,
-		"quorumThresholdPercentages",
-		metadata.quorumThresholdPercentages,
-		"timeToExpiry",
-		metadata.timeToExpiry,
-		"windowDuration",
-		metadata.windowDuration,
-	)
-
-	a.taskChansMutex.Lock()
-	defer a.taskChansMutex.Unlock()
-	if _, taskExists := a.signedTaskRespsCs[metadata.taskIndex]; taskExists {
-		return TaskAlreadyInitializedErrorFn(metadata.taskIndex)
-	}
-	signedTaskRespsC := make(chan types.SignedTaskResponseDigest)
-	a.signedTaskRespsCs[metadata.taskIndex] = signedTaskRespsC
-
-	go a.singleTaskAggregatorGoroutineFunc(
-		metadata,
-		signedTaskRespsC,
-	)
-	return nil
-}
-
-func (a *BlsAggregatorService) ProcessNewSignature(
-	ctx context.Context,
-	taskSignature TaskSignature,
-) error {
-	respC := make(chan error)
-	go func() {
-		respC <- a.processNewSignature(taskSignature)
-	}()
-
-	// NOTE: we do this to let the goroutine consume the result of the operation
-	//   but allow the operation to end early if the context is cancelled
-	select {
-	case err := <-respC:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (a *BlsAggregatorService) processNewSignature(
-	taskSignature TaskSignature,
-) error {
-	// TODO: move this to a goroutine to avoid sharing state
-	a.taskChansMutex.Lock()
-	taskC, taskInitialized := a.signedTaskRespsCs[taskSignature.taskIndex]
-	a.taskChansMutex.Unlock()
-	if !taskInitialized {
-		return TaskNotFoundErrorFn(taskSignature.taskIndex)
-	}
-
-	signatureVerificationErrorC := make(chan error)
-	// send the task to the goroutine processing this task
-	// and return the error (if any) returned by the signature verification routine
-
-	taskC <- types.SignedTaskResponseDigest{
-		TaskResponse:                taskSignature.taskResponse,
-		BlsSignature:                taskSignature.blsSignature,
-		OperatorId:                  taskSignature.operatorId,
-		SignatureVerificationErrorC: signatureVerificationErrorC,
-	}
-	return <-signatureVerificationErrorC
-}
-*/
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	metadata TaskMetadata,
