@@ -218,7 +218,7 @@ type ProcessSignatureRequest struct {
 
 type AggregateReceiver struct {
 	/// Channel to receive the aggregated responses from the BLS Aggregator Service
-	aggregate_receiver chan types.SignedTaskResponseDigest
+	aggregate_receiver chan BlsAggregationServiceResponse
 }
 
 func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error) {
@@ -226,7 +226,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error
 	initializeTaskC := make(chan InitializeTaskRequest)
 	processSignatureC := make(chan ProcessSignatureRequest)
 
-	aggResponsesC := make(chan types.SignedTaskResponseDigest)
+	aggResponsesC := make(chan BlsAggregationServiceResponse)
 
 	go func() {
 		a.run(initializeTaskC, processSignatureC, aggResponsesC)
@@ -239,7 +239,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error
 func (a *BlsAggregatorService) run(
 	initializeTaskChannel chan InitializeTaskRequest,
 	processSignatureChannel chan ProcessSignatureRequest,
-	aggResponsesC chan types.SignedTaskResponseDigest,
+	aggResponsesC chan BlsAggregationServiceResponse,
 ) {
 	taskChannels := make(map[types.TaskIndex]chan types.SignedTaskResponseDigest)
 
@@ -255,11 +255,12 @@ func (a *BlsAggregatorService) run(
 			if _, taskExists := taskChannels[taskIndex]; taskExists {
 				continue
 			}
-			signedTaskRespsC := make(chan types.SignedTaskResponseDigest)
-			taskChannels[taskIndex] = signedTaskRespsC
+			signedTaskRespC := make(chan types.SignedTaskResponseDigest)
+			taskChannels[taskIndex] = signedTaskRespC
 
 			go a.singleTaskAggregatorGoroutineFunc(
 				taskInitReq.metadata,
+				signedTaskRespC,
 				aggResponsesC,
 			)
 
@@ -301,6 +302,7 @@ func (a *ServiceHandler) InitializeNewTask(
 }
 
 func (a *ServiceHandler) ProcessNewSignature(
+	ctx context.Context,
 	metadata TaskSignature,
 ) error {
 	errChan := make(chan error)
@@ -308,8 +310,8 @@ func (a *ServiceHandler) ProcessNewSignature(
 	select {
 	case err := <-errChan:
 		return err
-	default:
-		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
@@ -418,12 +420,13 @@ func (a *BlsAggregatorService) processNewSignature(
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 	metadata TaskMetadata,
 	signedTaskRespsC <-chan types.SignedTaskResponseDigest,
+	aggregatedResponsesC chan BlsAggregationServiceResponse,
 ) {
 	a.logger.Debug("AggregatorService goroutine processing new task",
 		"taskIndex", metadata.taskIndex,
 		"taskCreatedBlock", metadata.taskCreatedBlock)
 
-	defer a.closeTaskGoroutine(metadata.taskIndex)
+	// defer a.closeTaskGoroutine(metadata.taskIndex)
 	quorumThresholdPercentagesMap := make(map[types.QuorumNum]types.QuorumThresholdPercentage)
 	for i, quorumNumber := range metadata.quorumNumbers {
 		quorumThresholdPercentagesMap[quorumNumber] = metadata.quorumThresholdPercentages[i]
@@ -445,7 +448,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			"err",
 			err,
 		)
-		a.aggregatedResponsesC <- BlsAggregationServiceResponse{
+		aggregatedResponsesC <- BlsAggregationServiceResponse{
 			Err:       TaskInitializationErrorFn(fmt.Errorf("AggregatorService failed to get operators state from avs registry at blockNum %d: %w", metadata.taskCreatedBlock, err), metadata.taskIndex),
 			TaskIndex: metadata.taskIndex,
 		}
@@ -464,8 +467,8 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 			"err",
 			err,
 		)
-		a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-			Err:       TaskInitializationErrorFn(fmt.Errorf("Aggregator failed to get quorums state from avs registry: %w", err), metadata.taskIndex),
+		aggregatedResponsesC <- BlsAggregationServiceResponse{
+			Err:       TaskInitializationErrorFn(fmt.Errorf("aggregator failed to get quorums state from avs registry: %w", err), metadata.taskIndex),
 			TaskIndex: metadata.taskIndex,
 		}
 		return
@@ -603,10 +606,11 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 					metadata.quorumNumbers,
 					lastTaskResponseDigest,
 					quorumApksG1,
+					aggregatedResponsesC,
 				)
 			}
 
-			a.aggregatedResponsesC <- BlsAggregationServiceResponse{
+			aggregatedResponsesC <- BlsAggregationServiceResponse{
 				Err:       TaskExpiredErrorFn(metadata.taskIndex),
 				TaskIndex: metadata.taskIndex,
 			}
@@ -622,6 +626,7 @@ func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
 				metadata.quorumNumbers,
 				lastTaskResponseDigest,
 				quorumApksG1,
+				aggregatedResponsesC,
 			)
 			return
 		}
@@ -637,6 +642,7 @@ func (a *BlsAggregatorService) sendAggregatedResponse(
 	quorumNumbers types.QuorumNums,
 	taskResponseDigest types.TaskResponseDigest,
 	quorumApksG1 []*bls.G1Point,
+	aggregatedResponsesC chan BlsAggregationServiceResponse,
 ) {
 	nonSignersOperatorIds := []types.OperatorId{}
 	for operatorId := range operatorsAvsStateDict {
@@ -665,8 +671,8 @@ func (a *BlsAggregatorService) sendAggregatedResponse(
 		nonSignersOperatorIds,
 	)
 	if err != nil {
-		a.aggregatedResponsesC <- BlsAggregationServiceResponse{
-			Err:       utils.WrapError(errors.New("Failed to get check signatures indices"), err),
+		aggregatedResponsesC <- BlsAggregationServiceResponse{
+			Err:       utils.WrapError(errors.New("failed to get check signatures indices"), err),
 			TaskIndex: taskIndex,
 		}
 		return
@@ -686,17 +692,7 @@ func (a *BlsAggregatorService) sendAggregatedResponse(
 		TotalStakeIndices:            indices.TotalStakeIndices,
 		NonSignerStakeIndices:        indices.NonSignerStakeIndices,
 	}
-	a.aggregatedResponsesC <- blsAggregationServiceResponse
-}
-
-// closeTaskGoroutine is run when the goroutine processing taskIndex's task responses ends (for whatever reason)
-// it deletes the response channel for taskIndex from a.taskChans
-// so that the main thread knows that this task goroutine is no longer running
-// and doesn't try to send new signatures to it
-func (a *BlsAggregatorService) closeTaskGoroutine(taskIndex types.TaskIndex) {
-	a.taskChansMutex.Lock()
-	delete(a.signedTaskRespsCs, taskIndex)
-	a.taskChansMutex.Unlock()
+	aggregatedResponsesC <- blsAggregationServiceResponse
 }
 
 // verifySignature verifies that a signature is valid against the operator pubkey stored in the
