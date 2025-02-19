@@ -115,7 +115,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     ```Go
     // initialize service
     blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-    handler, receiver := blsAggServ.Start()
+    handler, aggResponsesC := blsAggServ.Start()
 
     // Initialize task
     metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
@@ -129,7 +129,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
     )
 
     // Receive responses
-    aggregationServiceResponse := receiver.ReceiveAggregatedResponse()
+    aggregationServiceResponse := <-aggResponsesC
     ```
 
 

@@ -145,9 +145,9 @@ func (t TaskMetadata) WithWindowDuration(windowDuration time.Duration) TaskMetad
 // BlsAggregationService is the interface provided to avs aggregator code for doing bls aggregation
 // Currently its only implementation is the BlsAggregatorService, so see the comment there for more details
 type BlsAggregationService interface {
-	// Starts the aggregation service, and returns the handler, to interact with, it and the receiver,
+	// Starts the aggregation service, and returns the handler, to interact with, it and the response channel,
 	// to receive the aggregated responses.
-	Start() (ServiceHandler, AggregateReceiver)
+	Start() (ServiceHandler, <-chan BlsAggregationServiceResponse)
 }
 
 // BlsAggregatorService is a service that performs BLS signature aggregation for an AVS' tasks
@@ -217,15 +217,10 @@ type ProcessSignatureRequest struct {
 	errC     chan error
 }
 
-type AggregateReceiver struct {
-	/// Channel to receive the aggregated responses from the BLS Aggregator Service
-	aggregateReceiver chan BlsAggregationServiceResponse
-}
-
 // This function starts the service thread, initializing the aggregateResponses, initializeTask and processSignature
 // channels, passing them to the run method (where the main loop is executed) and returns the service handler an the
-// aggregate receiver to interact with the service thread.
-func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver) {
+// aggregate receiver channel to interact with the service thread.
+func (a *BlsAggregatorService) Start() (ServiceHandler, <-chan BlsAggregationServiceResponse) {
 	// Create channels to handle requests
 	initializeTaskC := make(chan InitializeTaskRequest)
 	processSignatureC := make(chan ProcessSignatureRequest)
@@ -237,7 +232,10 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver) {
 		close(aggResponsesC)
 	}()
 
-	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregateReceiver: aggResponsesC}
+	// Note: here we return the channel instead of a type with a receive function (different than rust
+	// implementation) because for users is more useful to use select on the channel directly instead
+	// of running a thread on a goroutine and using other channel
+	return ServiceHandler{initializeTaskC, processSignatureC}, aggResponsesC
 }
 
 // Here is executed the main loop, where the requests are received from the initialize task and process signature
@@ -353,11 +351,6 @@ func (a *ServiceHandler) ProcessNewSignature(
 	case <-ctx.Done():
 		return ctx.Err()
 	}
-}
-
-// Returns the aggregated response from the channel connected to the service thread
-func (a *AggregateReceiver) ReceiveAggregatedResponse() BlsAggregationServiceResponse {
-	return <-a.aggregateReceiver
 }
 
 func (a *BlsAggregatorService) singleTaskAggregatorGoroutineFunc(
