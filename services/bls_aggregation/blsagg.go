@@ -145,7 +145,7 @@ func (t TaskMetadata) WithWindowDuration(windowDuration time.Duration) TaskMetad
 // BlsAggregationService is the interface provided to avs aggregator code for doing bls aggregation
 // Currently its only implementation is the BlsAggregatorService, so see the comment there for more details
 type BlsAggregationService interface {
-	Start() (ServiceHandler, AggregateReceiver, error)
+	Start() (ServiceHandler, AggregateReceiver)
 }
 
 // BlsAggregatorService is a service that performs BLS signature aggregation for an AVS' tasks
@@ -223,7 +223,7 @@ type AggregateReceiver struct {
 // This function starts the service thread, initializing the aggregateResponses, initializeTask and processSignature
 // channels, passing them to the run method (where the main loop is executed) and returns the service handler an the
 // aggregate receiver to interact with the service thread.
-func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error) {
+func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver) {
 	// Create channels to handle requests
 	initializeTaskC := make(chan InitializeTaskRequest)
 	processSignatureC := make(chan ProcessSignatureRequest)
@@ -235,7 +235,7 @@ func (a *BlsAggregatorService) Start() (ServiceHandler, AggregateReceiver, error
 		close(aggResponsesC)
 	}()
 
-	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregateReceiver: aggResponsesC}, nil
+	return ServiceHandler{initializeTaskC, processSignatureC}, AggregateReceiver{aggregateReceiver: aggResponsesC}
 }
 
 // Here is executed the main loop, where the requests are received from the initialize task and process signature

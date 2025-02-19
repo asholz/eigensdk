@@ -80,8 +80,7 @@ func TestBlsAgg(t *testing.T) {
 		fakeAvsRegistryService := avsregistry.NewFakeAvsRegistryService(blockNum, []types.TestOperator{testOperator1})
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -141,8 +140,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -218,8 +216,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -284,8 +281,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		// initialize 2 concurrent tasks
 		task1Index := types.TaskIndex(1)
@@ -409,13 +405,12 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		logger.Info("Initializing new task", "taskIndex", taskIndex)
 		timeToExpire := 10 * time.Second
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, timeToExpire)
-		err = handler.InitializeNewTask(metadata)
+		err := handler.InitializeNewTask(metadata)
 		require.NoError(t, err)
 
 		taskResponseDigest, err := hashFunction(taskResponse)
@@ -487,11 +482,10 @@ func TestBlsAgg(t *testing.T) {
 		fakeAvsRegistryService := avsregistry.NewFakeAvsRegistryService(blockNum, []types.TestOperator{testOperator1})
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
-		err = handler.InitializeNewTask(metadata)
+		err := handler.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
@@ -528,8 +522,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -584,8 +577,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -632,8 +624,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -707,8 +698,7 @@ func TestBlsAgg(t *testing.T) {
 			)
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-			handler, receiver, err := blsAggServ.Start()
-			require.NoError(t, err)
+			handler, receiver := blsAggServ.Start()
 
 			metadata := NewTaskMetadata(
 				taskIndex,
@@ -795,8 +785,7 @@ func TestBlsAgg(t *testing.T) {
 			)
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-			handler, receiver, err := blsAggServ.Start()
-			require.NoError(t, err)
+			handler, receiver := blsAggServ.Start()
 
 			metadata := NewTaskMetadata(
 				taskIndex,
@@ -849,8 +838,7 @@ func TestBlsAgg(t *testing.T) {
 		fakeAvsRegistryService := avsregistry.NewFakeAvsRegistryService(blockNum, []types.TestOperator{testOperator1})
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
 		err = handler.InitializeNewTask(metadata)
@@ -900,8 +888,7 @@ func TestBlsAgg(t *testing.T) {
 			)
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-			handler, receiver, err := blsAggServ.Start()
-			require.NoError(t, err)
+			handler, receiver := blsAggServ.Start()
 
 			metadata := NewTaskMetadata(
 				taskIndex,
@@ -945,8 +932,7 @@ func TestBlsAgg(t *testing.T) {
 		fakeAvsRegistryService := avsregistry.NewFakeAvsRegistryService(blockNum, []types.TestOperator{testOperator1})
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, _, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, _ := blsAggServ.Start()
 
 		taskSignature := NewTaskSignature(taskIndex, taskResponse, blsSig, testOperator1.OperatorId)
 		err = handler.ProcessNewSignature(
@@ -984,8 +970,7 @@ func TestBlsAgg(t *testing.T) {
 			)
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-			handler, receiver, err := blsAggServ.Start()
-			require.NoError(t, err)
+			handler, receiver := blsAggServ.Start()
 
 			metadata := NewTaskMetadata(
 				taskIndex,
@@ -994,7 +979,7 @@ func TestBlsAgg(t *testing.T) {
 				quorumThresholdPercentages,
 				tasksTimeToExpiry,
 			)
-			err = handler.InitializeNewTask(metadata)
+			err := handler.InitializeNewTask(metadata)
 			require.Nil(t, err)
 			taskResponse1 := mockTaskResponse{1}
 			taskResponseDigest1, err := hashFunction(taskResponse1)
@@ -1062,11 +1047,10 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(taskIndex, blockNum, quorumNumbers, quorumThresholdPercentages, tasksTimeToExpiry)
-		err = handler.InitializeNewTask(metadata)
+		err := handler.InitializeNewTask(metadata)
 		require.Nil(t, err)
 		taskResponse1 := mockTaskResponse{1}
 		taskResponseDigest1, err := hashFunction(taskResponse1)
@@ -1120,8 +1104,7 @@ func TestBlsAgg(t *testing.T) {
 			)
 			logger := testutils.GetTestLogger()
 			blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-			handler, _, err := blsAggServ.Start()
-			require.NoError(t, err)
+			handler, _ := blsAggServ.Start()
 
 			metadata := NewTaskMetadata(
 				taskIndex,
@@ -1178,8 +1161,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		start := time.Now()
 		metadata := NewTaskMetadata(
@@ -1282,8 +1264,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		start := time.Now()
 		metadata := NewTaskMetadata(
@@ -1381,8 +1362,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(
 			taskIndex,
@@ -1484,8 +1464,7 @@ func TestBlsAgg(t *testing.T) {
 		)
 		logger := testutils.GetTestLogger()
 		blsAggServ := NewBlsAggregatorService(fakeAvsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		metadata := NewTaskMetadata(
 			taskIndex,
@@ -1626,8 +1605,7 @@ func TestIntegrationBlsAgg(t *testing.T) {
 			logger,
 		)
 		blsAggServ := NewBlsAggregatorService(avsRegistryService, hashFunction, logger)
-		handler, receiver, err := blsAggServ.Start()
-		require.NoError(t, err)
+		handler, receiver := blsAggServ.Start()
 
 		// register operator
 		quorumNumbers := testData.Input.QuorumNumbers
