@@ -11,7 +11,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 ### Added
 ### Changed
 * fix: change requested pr url in changelog's workflow by @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/575>
-* chore: use utils WrapError function instead of fmt's Errorf by @pablodeymo in <https://github.com/Layr-Labs/eigensdk-go/pull/391>
+* chore: use utils WrapError function instead of fmt's Errorf by @pablodeymo and @maximopalopoli in <https://github.com/Layr-Labs/eigensdk-go/pull/579>
 
 ### Breaking changes
 
