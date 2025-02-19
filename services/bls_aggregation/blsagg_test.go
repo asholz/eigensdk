@@ -100,7 +100,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersApkG2:        testOperator1.BlsKeypair.GetPubKeyG2(),
 			SignersAggSigG1:     testOperator1.BlsKeypair.SignMessage(taskResponseDigest),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 	})
@@ -182,7 +183,8 @@ func TestBlsAgg(t *testing.T) {
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)).
 				Add(testOperator3.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 	})
@@ -256,7 +258,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersAggSigG1: op1Signature.Add(op1Signature).Add(op2Signature).Add(op2Signature),
 			// each key is added twice because both operators stake on two quorums
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 	})
 
@@ -378,8 +381,10 @@ func TestBlsAgg(t *testing.T) {
 		}
 
 		// we don't know which of task1 or task2 responses will be received first
-		gotAggregationServiceResponseTaskFirstReceived := <-blsAggServ.aggregatedResponsesC
-		gotAggregationServiceResponseTaskSecondReceived := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponseTaskFirstReceived := <-responseChannel
+		responseChannel = blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponseTaskSecondReceived := <-responseChannel
 
 		if gotAggregationServiceResponseTaskFirstReceived.TaskIndex == task1Index {
 			require.EqualValues(t, wantAggregationServiceResponseTask1, gotAggregationServiceResponseTaskFirstReceived)
@@ -473,7 +478,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 
 	})
@@ -499,7 +505,8 @@ func TestBlsAgg(t *testing.T) {
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 	})
 
@@ -553,7 +560,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersApkG2:    testOperator1.BlsKeypair.GetPubKeyG2(),
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 	})
 
@@ -598,7 +606,8 @@ func TestBlsAgg(t *testing.T) {
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 	})
 
@@ -664,12 +673,12 @@ func TestBlsAgg(t *testing.T) {
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 	})
 
-	t.Run(
-		"2 quorums 3 operators which just stake one quorum; 2 correct signature quorumThreshold 50% - verified",
+	t.Run("2 quorums 3 operators which just stake one quorum; 2 correct signature quorumThreshold 50% - verified",
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
 				OperatorId: types.OperatorId{1},
@@ -750,13 +759,13 @@ func TestBlsAgg(t *testing.T) {
 				SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
 					Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
 			}
-			gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+			responseChannel := blsAggServ.GetResponseChannel()
+			gotAggregationServiceResponse := <-responseChannel
 			require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		},
 	)
 
-	t.Run(
-		"2 quorums 3 operators which just stake one quorum; 2 correct signature quorumThreshold 60% - task expired",
+	t.Run("2 quorums 3 operators which just stake one quorum; 2 correct signature quorumThreshold 60% - task expired",
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
 				OperatorId: types.OperatorId{1},
@@ -820,7 +829,8 @@ func TestBlsAgg(t *testing.T) {
 			wantAggregationServiceResponse := BlsAggregationServiceResponse{
 				Err: TaskExpiredErrorFn(taskIndex),
 			}
-			gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+			responseChannel := blsAggServ.GetResponseChannel()
+			gotAggregationServiceResponse := <-responseChannel
 			require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 			require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		},
@@ -859,13 +869,13 @@ func TestBlsAgg(t *testing.T) {
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 	})
 
-	t.Run(
-		"2 quorums 2 operators, 1 operator which just stake one quorum; 1 signatures - task expired",
+	t.Run("2 quorums 2 operators, 1 operator which just stake one quorum; 1 signatures - task expired",
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
 				OperatorId: types.OperatorId{1},
@@ -915,7 +925,8 @@ func TestBlsAgg(t *testing.T) {
 			wantAggregationServiceResponse := BlsAggregationServiceResponse{
 				Err: TaskExpiredErrorFn(taskIndex),
 			}
-			gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+			responseChannel := blsAggServ.GetResponseChannel()
+			gotAggregationServiceResponse := <-responseChannel
 			require.EqualValues(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 			require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		},
@@ -1017,7 +1028,8 @@ func TestBlsAgg(t *testing.T) {
 				SignersApkG2:        testOperator1.BlsKeypair.GetPubKeyG2(),
 				SignersAggSigG1:     testOperator1.BlsKeypair.SignMessage(taskResponseDigest1),
 			}
-			gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+			responseChannel := blsAggServ.GetResponseChannel()
+			gotAggregationServiceResponse := <-responseChannel
 			require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 			require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		},
@@ -1074,13 +1086,13 @@ func TestBlsAgg(t *testing.T) {
 		wantAggregationServiceResponse := BlsAggregationServiceResponse{
 			Err: TaskExpiredErrorFn(taskIndex),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 	})
 
-	t.Run(
-		"1 quorum 1 operator 1 invalid signature (TaskResponseDigest does not match TaskResponse)",
+	t.Run("1 quorum 1 operator 1 invalid signature (TaskResponseDigest does not match TaskResponse)",
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
 				OperatorId:     types.OperatorId{1},
@@ -1119,7 +1131,7 @@ func TestBlsAgg(t *testing.T) {
 				context.Background(),
 				taskSignature,
 			)
-			require.EqualError(t, err, "Signature verification failed. Incorrect Signature.")
+			require.EqualError(t, err, "signature verification failed. incorrect signature")
 		},
 	)
 
@@ -1212,7 +1224,8 @@ func TestBlsAgg(t *testing.T) {
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)).
 				Add(testOperator3.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		elapsed := time.Since(start)
@@ -1316,7 +1329,8 @@ func TestBlsAgg(t *testing.T) {
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)).
 				Add(testOperator3.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		elapsed := time.Since(start)
@@ -1415,7 +1429,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		elapsed := time.Since(start)
@@ -1517,7 +1532,8 @@ func TestBlsAgg(t *testing.T) {
 			SignersAggSigG1: testOperator1.BlsKeypair.SignMessage(taskResponseDigest).
 				Add(testOperator2.BlsKeypair.SignMessage(taskResponseDigest)),
 		}
-		gotAggregationServiceResponse := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		gotAggregationServiceResponse := <-responseChannel
 		require.Equal(t, wantAggregationServiceResponse, gotAggregationServiceResponse)
 		require.EqualValues(t, taskIndex, gotAggregationServiceResponse.TaskIndex)
 		elapsed := time.Since(start)
@@ -1648,7 +1664,8 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		require.Nil(t, err)
 
 		// wait for the response from the aggregation service and check the signature
-		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		blsAggServiceResp := <-responseChannel
 
 		avsServiceManager, err := avssm.NewContractMockAvsServiceManager(contractAddrs.ServiceManager, ethHttpClient)
 		require.NoError(t, err)
@@ -1786,7 +1803,8 @@ func TestIntegrationBlsAgg(t *testing.T) {
 		require.Nil(t, err)
 
 		// wait for the response from the aggregation service and check the signature
-		blsAggServiceResp := <-blsAggServ.aggregatedResponsesC
+		responseChannel := blsAggServ.GetResponseChannel()
+		blsAggServiceResp := <-responseChannel
 		_, _, err = avsServiceManager.CheckSignatures(
 			&bind.CallOpts{},
 			taskResponseDigest,
