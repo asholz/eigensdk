@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/Layr-Labs/eigensdk-go/utils"
-	"github.com/ethereum/go-ethereum/common"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -118,12 +117,12 @@ func GetAddressFromKeyStoreFile(keyStoreFile string) (gethcommon.Address, error)
 	}
 }
 
-func KeyAndAddressFromHexKey(hexkey string) (*ecdsa.PrivateKey, common.Address, error) {
+func KeyAndAddressFromHexKey(hexkey string) (*ecdsa.PrivateKey, gethcommon.Address, error) {
 	hexkey = strings.TrimPrefix(hexkey, "0x")
 	ecdsaSk, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
 		text := fmt.Sprintf("failed to convert hexkey %s to ecdsa key", hexkey)
-		return nil, common.Address{}, utils.WrapError(text, err)
+		return nil, gethcommon.Address{}, utils.WrapError(text, err)
 	}
 	pk := ecdsaSk.Public()
 	address := crypto.PubkeyToAddress(*pk.(*ecdsa.PublicKey))
