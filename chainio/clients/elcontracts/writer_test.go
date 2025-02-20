@@ -84,14 +84,22 @@ func TestRegisterOperator(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		operator :=
-			types.Operator{
+		opts, err := clients.TxManager.GetNoSendTxOpts()
+		require.NoError(t, err)
+		txOptions := &elcontracts.TxOption{
+			Opts: opts,
+		}
+
+		operatorRequest := elcontracts.OperatorRequest{
+			Operator: types.Operator{
 				Address:                   fundedAccount,
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
-			}
+			},
+			WaitForReceipt: true,
+		}
 
-		receipt, err := clients.ElChainWriter.RegisterAsOperator(context.Background(), operator, true)
+		receipt, err := clients.ElChainWriter.RegisterAsOperator(context.Background(), operatorRequest, txOptions)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
 	})
@@ -110,14 +118,22 @@ func TestRegisterOperator(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		operator :=
-			types.Operator{
+		opts, err := clients.TxManager.GetNoSendTxOpts()
+		require.NoError(t, err)
+		txOptions := &elcontracts.TxOption{
+			Opts: opts,
+		}
+
+		operatorRequest := elcontracts.OperatorRequest{
+			Operator: types.Operator{
 				Address:                   operatorAddress,
 				DelegationApproverAddress: "0xd5e099c71b797516c10ed0f0d895f429c2781142",
 				MetadataUrl:               "https://madhur-test-public.s3.us-east-2.amazonaws.com/metadata.json",
-			}
+			},
+			WaitForReceipt: true,
+		}
 
-		_, err = clients.ElChainWriter.RegisterAsOperator(context.Background(), operator, true)
+		_, err = clients.ElChainWriter.RegisterAsOperator(context.Background(), operatorRequest, txOptions)
 		assert.Error(t, err)
 	})
 }
@@ -312,32 +328,44 @@ func TestChainWriter(t *testing.T) {
 	clients, anvilHttpEndpoint := testclients.BuildTestClients(t)
 	contractAddrs := testutils.GetContractAddressesFromContractRegistry(anvilHttpEndpoint)
 
+	opts, err := clients.TxManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+	txOptions := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	t.Run("update operator details", func(t *testing.T) {
 		walletModified, err := crypto.HexToECDSA(testutils.ANVIL_FIRST_PRIVATE_KEY)
 		assert.NoError(t, err)
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
 
-		operatorModified := types.Operator{
-			Address:                   walletModifiedAddress.Hex(),
-			DelegationApproverAddress: walletModifiedAddress.Hex(),
-			MetadataUrl:               "eigensdk-go",
+		operatorRequest := elcontracts.OperatorRequest{
+			Operator: types.Operator{
+				Address:                   walletModifiedAddress.Hex(),
+				DelegationApproverAddress: walletModifiedAddress.Hex(),
+				MetadataUrl:               "eigensdk-go",
+			},
+			WaitForReceipt: true,
 		}
 
-		receipt, err := clients.ElChainWriter.UpdateOperatorDetails(context.Background(), operatorModified, true)
+		receipt, err := clients.ElChainWriter.UpdateOperatorDetails(context.Background(), operatorRequest, txOptions)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
 	})
 
 	t.Run("update operator details when address is not an operator", func(t *testing.T) {
-		wrongOperatorModified := types.Operator{
-			Address:                   testutils.ANVIL_THIRD_ADDRESS,
-			DelegationApproverAddress: testutils.ANVIL_FIRST_ADDRESS,
-			MetadataUrl:               "eigensdk-go",
+		wrongOperatorRequest := elcontracts.OperatorRequest{
+			Operator: types.Operator{
+				Address:                   testutils.ANVIL_THIRD_ADDRESS,
+				DelegationApproverAddress: testutils.ANVIL_FIRST_ADDRESS,
+				MetadataUrl:               "eigensdk-go",
+			},
+			WaitForReceipt: true,
 		}
 		_, err := clients.ElChainWriter.UpdateOperatorDetails(
 			context.Background(),
-			wrongOperatorModified,
-			true,
+			wrongOperatorRequest,
+			txOptions,
 		)
 		assert.Error(t, err, "cannot update operator details for an address that is not an operator")
 	})
@@ -348,9 +376,12 @@ func TestChainWriter(t *testing.T) {
 		walletModifiedAddress := crypto.PubkeyToAddress(walletModified.PublicKey)
 		receipt, err := clients.ElChainWriter.UpdateMetadataURI(
 			context.Background(),
-			walletModifiedAddress,
-			"https://0.0.0.0",
-			true,
+			elcontracts.OperatorMetadataRequest{
+				OperatorAddress: walletModifiedAddress,
+				Uri:             "https://0.0.0.0",
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
@@ -359,9 +390,12 @@ func TestChainWriter(t *testing.T) {
 	t.Run("update metadata URI when address is not an operator", func(t *testing.T) {
 		_, err := clients.ElChainWriter.UpdateMetadataURI(
 			context.Background(),
-			common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
-			"https://0.0.0.0",
-			true,
+			elcontracts.OperatorMetadataRequest{
+				OperatorAddress: common.HexToAddress(testutils.ANVIL_THIRD_ADDRESS),
+				Uri:             "https://0.0.0.0",
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err, "cannot update metadata URI for an address that is not an operator")
 	})
@@ -370,9 +404,12 @@ func TestChainWriter(t *testing.T) {
 		amount := big.NewInt(1)
 		receipt, err := clients.ElChainWriter.DepositERC20IntoStrategy(
 			context.Background(),
-			contractAddrs.Erc20MockStrategy,
-			amount,
-			true,
+			elcontracts.DepositRequest{
+				Amount:          amount,
+				StrategyAddress: contractAddrs.Erc20MockStrategy,
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.NoError(t, err)
 		assert.True(t, receipt.Status == 1)
@@ -399,10 +436,21 @@ func TestSetClaimerFor(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
-	waitForReceipt := true
-	claimer := contractAddrs.RewardsCoordinator
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+	txOption := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	// call SetClaimerFor
-	receipt, err := chainWriter.SetClaimerFor(context.Background(), claimer, waitForReceipt)
+	receipt, err := chainWriter.SetClaimerFor(
+		context.Background(),
+		elcontracts.ClaimerRequest{ClaimerAddress: contractAddrs.RewardsCoordinator, WaitForReceipt: true},
+		txOption,
+	)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
@@ -440,6 +488,15 @@ func TestSetOperatorPISplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+	txOption := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	expectedInitialSplit := uint16(1000)
 	initialSplit, err := chainReader.GetOperatorPISplit(context.Background(), operatorAddr)
 	require.NoError(t, err)
@@ -447,7 +504,15 @@ func TestSetOperatorPISplit(t *testing.T) {
 
 	newSplit := initialSplit + 1
 	// Set a new operator PI split
-	receipt, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, newSplit, waitForReceipt)
+	receipt, err = chainWriter.SetOperatorPISplit(
+		context.Background(),
+		elcontracts.OperatorPISplitRequest{
+			OperatorAddress: operatorAddr,
+			Split:           newSplit,
+			WaitForReceipt:  waitForReceipt,
+		},
+		txOption,
+	)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
@@ -457,8 +522,15 @@ func TestSetOperatorPISplit(t *testing.T) {
 	require.Equal(t, newSplit, updatedSplit)
 
 	// Set a invalid operator PI split
-	invalidSplit := uint16(10001)
-	_, err = chainWriter.SetOperatorPISplit(context.Background(), operatorAddr, invalidSplit, waitForReceipt)
+	_, err = chainWriter.SetOperatorPISplit(
+		context.Background(),
+		elcontracts.OperatorPISplitRequest{
+			OperatorAddress: operatorAddr,
+			Split:           uint16(10001),
+			WaitForReceipt:  waitForReceipt,
+		},
+		txOption,
+	)
 	require.Error(t, err, "split must be less than 10000")
 }
 
@@ -496,6 +568,15 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+	txOption := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	expectedInitialSplit := uint16(1000)
 	initialSplit, err := chainReader.GetOperatorAVSSplit(context.Background(), operatorAddr, avsAddr)
 	require.NoError(t, err)
@@ -505,10 +586,13 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	// Set a new operator AVS split
 	receipt, err = chainWriter.SetOperatorAVSSplit(
 		context.Background(),
-		operatorAddr,
-		avsAddr,
-		newSplit,
-		waitForReceipt,
+		elcontracts.OperatorAVSSplitRequest{
+			OperatorAddress: operatorAddr,
+			AVSAddress:      avsAddr,
+			Split:           newSplit,
+			WaitForReceipt:  waitForReceipt,
+		},
+		txOption,
 	)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
@@ -522,10 +606,13 @@ func TestSetOperatorAVSSplit(t *testing.T) {
 	invalidSplit := uint16(10001)
 	_, err = chainWriter.SetOperatorAVSSplit(
 		context.Background(),
-		operatorAddr,
-		avsAddr,
-		invalidSplit,
-		waitForReceipt,
+		elcontracts.OperatorAVSSplitRequest{
+			OperatorAddress: operatorAddr,
+			AVSAddress:      avsAddr,
+			Split:           invalidSplit,
+			WaitForReceipt:  waitForReceipt,
+		},
+		txOption,
 	)
 	require.Error(t, err, "split must be less than 10000")
 }
@@ -1167,19 +1254,33 @@ func TestProcessClaim(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	txOption := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	activationDelay := uint32(0)
 	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 
-	waitForReceipt := true
 	cumulativeEarnings := int64(42)
-	recipient := common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS)
 	claim, err := newTestClaim(chainReader, anvilHttpEndpoint, cumulativeEarnings, privateKeyHex)
 	require.NoError(t, err)
 
-	receipt, err = chainWriter.ProcessClaim(context.Background(), *claim, recipient, waitForReceipt)
+	request := elcontracts.ClaimProcessRequest{
+		Claim:            *claim,
+		RecipientAddress: common.HexToAddress(testutils.ANVIL_FIRST_ADDRESS),
+		WaitForReceipt:   true,
+	}
+
+	receipt, err = chainWriter.ProcessClaim(context.Background(), request, txOption)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
@@ -1207,6 +1308,16 @@ func TestProcessClaims(t *testing.T) {
 	chainReader, err := testclients.NewTestChainReaderFromConfig(anvilHttpEndpoint, config)
 	require.NoError(t, err)
 
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	txOption := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
 	activationDelay := uint32(0)
 	// Set activation delay to zero so that the earnings can be claimed right after submitting the root
 	receipt, err := setTestRewardsCoordinatorActivationDelay(anvilHttpEndpoint, privateKeyHex, activationDelay)
@@ -1220,7 +1331,15 @@ func TestProcessClaims(t *testing.T) {
 	cumulativeEarnings2 := int64(4256)
 
 	emptyClaims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{}
-	_, err = chainWriter.ProcessClaims(context.Background(), emptyClaims, recipient, waitForReceipt)
+	_, err = chainWriter.ProcessClaims(
+		context.Background(),
+		elcontracts.ClaimsProcessRequest{
+			Claims:           emptyClaims,
+			RecipientAddress: recipient,
+			WaitForReceipt:   waitForReceipt,
+		},
+		txOption,
+	)
 	require.Error(t, err, "cannot process empty claims")
 
 	// Generate 2 claims
@@ -1233,7 +1352,11 @@ func TestProcessClaims(t *testing.T) {
 	claims := []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{
 		*claim1, *claim2,
 	}
-	receipt, err = chainWriter.ProcessClaims(context.Background(), claims, recipient, waitForReceipt)
+	receipt, err = chainWriter.ProcessClaims(
+		context.Background(),
+		elcontracts.ClaimsProcessRequest{Claims: claims, RecipientAddress: recipient, WaitForReceipt: waitForReceipt},
+		txOption,
+	)
 	require.NoError(t, err)
 	require.Equal(t, gethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
@@ -1410,22 +1533,28 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	chainWriter, err := testclients.NewTestChainWriterFromConfig(anvilHttpEndpoint, privateKeyHex, config)
 	require.NoError(t, err)
 
+	txManager, err := testclients.NewTestTxManager(anvilHttpEndpoint, testutils.ANVIL_FIRST_PRIVATE_KEY)
+	require.NoError(t, err)
+	opts, err := txManager.GetNoSendTxOpts()
+	require.NoError(t, err)
+
+	txOptions := &elcontracts.TxOption{
+		Opts: opts,
+	}
+
+	operatorRequest := elcontracts.OperatorRequest{
+		Operator:       operator,
+		WaitForReceipt: true,
+	}
+
 	t.Run("register as operator", func(t *testing.T) {
-		receipt, err := chainWriter.RegisterAsOperator(
-			context.Background(),
-			operator,
-			true,
-		)
+		receipt, err := chainWriter.RegisterAsOperator(context.Background(), operatorRequest, txOptions)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
 	})
 
 	t.Run("update operator details", func(t *testing.T) {
-		receipt, err := chainWriter.UpdateOperatorDetails(
-			context.Background(),
-			operator,
-			true,
-		)
+		receipt, err := chainWriter.UpdateOperatorDetails(context.Background(), operatorRequest, txOptions)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
 	})
@@ -1433,9 +1562,12 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	t.Run("update metadata URI", func(t *testing.T) {
 		receipt, err := chainWriter.UpdateMetadataURI(
 			context.Background(),
-			anvilFirstAddr,
-			"https://0.0.0.0",
-			true,
+			elcontracts.OperatorMetadataRequest{
+				OperatorAddress: anvilFirstAddr,
+				Uri:             "https://0.0.0.0",
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
@@ -1444,9 +1576,12 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	t.Run("deposit erc20 into strategy", func(t *testing.T) {
 		receipt, err := chainWriter.DepositERC20IntoStrategy(
 			context.Background(),
-			contractAddrs.Erc20MockStrategy,
-			big.NewInt(1),
-			true,
+			elcontracts.DepositRequest{
+				StrategyAddress: contractAddrs.Erc20MockStrategy,
+				Amount:          big.NewInt(1),
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
@@ -1455,8 +1590,8 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	t.Run("set claimer for", func(t *testing.T) {
 		receipt, err := chainWriter.SetClaimerFor(
 			context.Background(),
-			anvilFirstAddr,
-			true,
+			elcontracts.ClaimerRequest{ClaimerAddress: anvilFirstAddr, WaitForReceipt: true},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
@@ -1482,18 +1617,24 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 
 		receipt, err = chainWriter.ProcessClaim(
 			context.Background(),
-			*claim,
-			anvilFirstAddr,
-			true,
+			elcontracts.ClaimProcessRequest{
+				Claim:            *claim,
+				RecipientAddress: anvilFirstAddr,
+				WaitForReceipt:   true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
 
 		receipt, err = chainWriter.ProcessClaims(
 			context.Background(),
-			[]rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{*claim},
-			anvilFirstAddr,
-			true,
+			elcontracts.ClaimsProcessRequest{
+				Claims:           []rewardscoordinator.IRewardsCoordinatorTypesRewardsMerkleClaim{*claim},
+				RecipientAddress: anvilFirstAddr,
+				WaitForReceipt:   true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
@@ -1502,10 +1643,13 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	t.Run("set operator AVS split", func(t *testing.T) {
 		receipt, err := chainWriter.SetOperatorAVSSplit(
 			context.Background(),
-			common.HexToAddress(operatorAddr),
-			anvilFirstAddr,
-			uint16(1),
-			true,
+			elcontracts.OperatorAVSSplitRequest{
+				OperatorAddress: common.HexToAddress(operatorAddr),
+				AVSAddress:      anvilFirstAddr,
+				Split:           uint16(1),
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
@@ -1514,9 +1658,12 @@ func TestInvalidConfigChainWriter(t *testing.T) {
 	t.Run("set operator PI split", func(t *testing.T) {
 		receipt, err := chainWriter.SetOperatorPISplit(
 			context.Background(),
-			common.HexToAddress(operatorAddr),
-			uint16(1),
-			true,
+			elcontracts.OperatorPISplitRequest{
+				OperatorAddress: common.HexToAddress(operatorAddr),
+				Split:           uint16(1),
+				WaitForReceipt:  true,
+			},
+			txOptions,
 		)
 		assert.Error(t, err)
 		assert.Nil(t, receipt)
