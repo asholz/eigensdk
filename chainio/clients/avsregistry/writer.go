@@ -93,6 +93,7 @@ func NewWriterFromConfig(
 	elReader, err := elcontracts.NewReaderFromConfig(elcontracts.Config{
 		DelegationManagerAddress: bindings.DelegationManagerAddr,
 		AvsDirectoryAddress:      bindings.AvsDirectoryAddr,
+		DontUseAllocationManager: cfg.DontUseAllocationManager,
 	}, client, logger)
 	if err != nil {
 		return nil, err
