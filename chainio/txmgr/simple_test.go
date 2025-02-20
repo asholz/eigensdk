@@ -2,7 +2,6 @@ package txmgr_test
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -108,7 +108,7 @@ func (s *FailingEthBackend) SendTransaction(ctx context.Context, tx *types.Trans
 		return nil
 	}
 	s.pendingFailures--
-	return fmt.Errorf("did not send tx")
+	return errors.New("did not send tx")
 }
 
 func (s *FailingEthBackend) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
