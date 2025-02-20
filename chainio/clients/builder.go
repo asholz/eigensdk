@@ -3,9 +3,9 @@ package clients
 import (
 	"context"
 	"crypto/ecdsa"
+	"errors"
 	"time"
 
-	"github.com/cockroachdb/errors"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/avsregistry"
