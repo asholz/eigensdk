@@ -234,7 +234,8 @@ func (t *fireblocksWallet) SendTransaction(ctx context.Context, tx *types.Transa
 	if len(tx.Data()) == 0 && tx.Value().Cmp(big.NewInt(0)) > 0 {
 		targetAccount, clientErr := t.getWhitelistedAccount(ctx, *tx.To())
 		if clientErr != nil {
-			return "", fmt.Errorf("error getting whitelisted account %s: %w", tx.To().Hex(), clientErr)
+			text := fmt.Sprintf("error getting whitelisted account %s", tx.To().Hex())
+			return "", utils.WrapError(text, clientErr)
 		}
 		req := fireblocks.NewTransferRequest(
 			"", // externalTxID
@@ -253,7 +254,8 @@ func (t *fireblocksWallet) SendTransaction(ctx context.Context, tx *types.Transa
 	} else if len(tx.Data()) > 0 {
 		contract, clientErr := t.getWhitelistedContract(ctx, *tx.To())
 		if clientErr != nil {
-			return "", fmt.Errorf("error getting whitelisted contract %s: %w", tx.To().Hex(), clientErr)
+			text := fmt.Sprintf("error getting whitelisted contract %s", tx.To().Hex())
+			return "", utils.WrapError(text, clientErr)
 		}
 		req := fireblocks.NewContractCallRequest(
 			"", // externalTxID
