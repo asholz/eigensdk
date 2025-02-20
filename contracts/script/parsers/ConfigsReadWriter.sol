@@ -8,7 +8,7 @@ import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
 contract ConfigsReadWriter is Script {
-    // Forge scripts best practice: https://book.getfoundry.sh/tutorials/best-practices#scripts
+    // Forge scripts best practice: https://book.getfoundry.sh/guides/best-practices#scripts
     // inputFileName should not contain the .json extension, we add it automatically
     function readInput(string memory inputFileName) internal view returns (string memory) {
         string memory inputDir = string.concat(vm.projectRoot(), "/script/input/");
