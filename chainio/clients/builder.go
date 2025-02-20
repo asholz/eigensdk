@@ -187,6 +187,7 @@ func BuildAll(
 	avsCfg := avsregistry.Config{
 		RegistryCoordinatorAddress:    gethcommon.HexToAddress(config.RegistryCoordinatorAddr),
 		OperatorStateRetrieverAddress: gethcommon.HexToAddress(config.OperatorStateRetrieverAddr),
+		DontUseAllocationManager:      config.DontUseAllocationManager,
 	}
 	if config.ServiceManagerAddress != "" {
 		avsCfg.ServiceManagerAddress = gethcommon.HexToAddress(config.ServiceManagerAddress)
@@ -207,6 +208,7 @@ func BuildAll(
 	elcontractsCfg := elcontracts.Config{
 		DelegationManagerAddress: avsRegistryContractBindings.DelegationManagerAddr,
 		AvsDirectoryAddress:      avsRegistryContractBindings.AvsDirectoryAddr,
+		DontUseAllocationManager: config.DontUseAllocationManager,
 	}
 	if config.RewardsCoordinatorAddress != "" {
 		elcontractsCfg.RewardsCoordinatorAddress = gethcommon.HexToAddress(config.RewardsCoordinatorAddress)
