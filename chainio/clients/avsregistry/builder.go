@@ -94,6 +94,7 @@ func BuildClients(
 		elcontracts.Config{
 			DelegationManagerAddress: avsBindings.DelegationManagerAddr,
 			AvsDirectoryAddress:      avsBindings.AvsDirectoryAddr,
+			DontUseAllocationManager: config.DontUseAllocationManager,
 		},
 		client,
 		logger,

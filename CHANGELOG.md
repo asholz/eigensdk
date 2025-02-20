@@ -41,6 +41,7 @@ Each version will have a separate `Breaking Changes` section as well. To describ
 
 * Fixed BLS aggregation for multiple quorums by @TomasArrachea in [#394](https://github.com/Layr-Labs/eigensdk-go/pull/394)
 * fix: change requested pr url in changelog's workflow by @maximopalopoli in [#575](https://github.com/Layr-Labs/eigensdk-go/pull/575)
+* fix: propagate DontUseAllocationManager flag between builders configs by @maximopalopoli in [#581](https://github.com/Layr-Labs/eigensdk-go/pull/581)
 
 ### Breaking changes
 
