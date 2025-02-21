@@ -963,7 +963,7 @@ func TestBlsAgg(t *testing.T) {
 		"send new signedTaskDigest before listen on responseChan - context timeout cancels the request to prevent deadlock",
 		func(t *testing.T) {
 			testOperator1 := types.TestOperator{
-				OperatorId:     types.OperatorId{1},
+				OperatorId:     types.OperatorId{2},
 				StakePerQuorum: map[types.QuorumNum]types.StakeAmount{0: big.NewInt(100)},
 				BlsKeypair:     newBlsKeyPairPanics("0x1"),
 				Socket:         "localhost:8080",
