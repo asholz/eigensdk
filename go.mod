@@ -1,8 +1,7 @@
 module github.com/Layr-Labs/eigensdk-go
 
 go 1.22.0
-
-toolchain go1.22.5
+toolchain go1.24.1
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
@@ -15,7 +14,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.30.0
 	github.com/urfave/cli/v2 v2.27.5
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.2
 	go.uber.org/zap v1.27.0
 )
 
